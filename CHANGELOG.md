@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `explaining-code` 5.1 triggers on more requests: how something works, what a PR or
   commit changed, onboarding, walkthroughs, architecture or UML diagrams of existing
-  code, and Dutch phrasings ("leg uit", "hoe werkt", "wat is er veranderd").
+  code; the request may be in any language.
 - `explaining-code` 5.0: real C4 diagrams in Simon Brown's notation (system context,
   container, component, code, landscape, dynamic, deployment; title, legend, element
   type, technology and description, labelled one-way arrows, one colour palette) and
