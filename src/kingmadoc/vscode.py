@@ -53,3 +53,21 @@ def enable_markdown_preview(root: Path) -> str:
     data[SETTING] = {**associations, PREVIEW_PATTERN: EDITOR_ID}
     write_document(path, json.dumps(data, indent=2) + "\n", overwrite=True)
     return f"VS Code now opens explainers (docs/explain/) as a rendered preview ({path})."
+
+
+def preview_enabled(root: Path) -> bool:
+    """Tell whether ``<root>/.vscode/settings.json`` already opens explainers as a preview.
+
+    Args:
+        root: Project root.
+
+    Returns:
+        True if the association is set (to the preview or to another editor the user chose).
+    """
+    path = root / ".vscode" / "settings.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    associations = data.get(SETTING) if isinstance(data, dict) else None
+    return isinstance(associations, dict) and PREVIEW_PATTERN in associations

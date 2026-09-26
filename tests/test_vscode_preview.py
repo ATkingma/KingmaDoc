@@ -91,3 +91,15 @@ def test_skills_install_only_touches_vscode_when_asked(tmp_path: Path) -> None:
     assert "--vscode" in plain.output
     assert asked.exit_code == 0, asked.output
     assert _settings(other).is_file()
+
+
+def test_no_tip_when_the_preview_is_already_set_up(tmp_path: Path) -> None:
+    """The --vscode tip is only shown while the setting is missing."""
+    runner = CliRunner()
+    first = runner.invoke(cli, ["skills", "install", "--root", str(tmp_path), "--vscode"])
+    assert first.exit_code == 0, first.output
+
+    again = runner.invoke(cli, ["skills", "install", "--root", str(tmp_path)])
+
+    assert again.exit_code == 0, again.output
+    assert "Tip" not in again.output

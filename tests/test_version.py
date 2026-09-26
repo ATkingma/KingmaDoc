@@ -52,3 +52,18 @@ def test_cli_version_includes_the_build(monkeypatch: pytest.MonkeyPatch) -> None
 def test_version_is_a_development_version() -> None:
     """Unreleased work is marked as such, so an update is visible in the version."""
     assert __version__ == "0.2.0.dev0"
+
+
+@pytest.mark.parametrize("raw", ["{not json", '{"vcs_info": "git"}', '{"dir_info": []}', "[]"])
+def test_a_malformed_direct_url_shows_the_plain_version(
+    monkeypatch: pytest.MonkeyPatch, raw: str
+) -> None:
+    """--version never crashes on an odd direct_url.json."""
+
+    class _Raw:
+        def read_text(self, name: str) -> str:
+            return raw
+
+    monkeypatch.setattr(about, "_distribution", lambda: _Raw())
+
+    assert about.version_text() == __version__

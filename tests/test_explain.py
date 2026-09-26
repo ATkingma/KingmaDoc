@@ -83,3 +83,41 @@ def test_blank_name_is_refused(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert not (tmp_path / EXPLAIN_DIR).exists()
+
+
+def test_titles_with_table_characters_do_not_break_the_index(tmp_path: Path) -> None:
+    """| and ] in a title are escaped; a # comment in a code block is not the title."""
+    folder = tmp_path / EXPLAIN_DIR / "0001-pipes"
+    folder.mkdir(parents=True)
+    (folder / "README.md").write_text(
+        "```bash\n# install first\n```\n\n# Input | output [v2]\n", encoding="utf-8"
+    )
+
+    text = index_markdown(read_entries(tmp_path / EXPLAIN_DIR))
+
+    assert r"[Input \| output \[v2\]](0001-pipes/README.md)" in text
+    assert "install first" not in text
+
+
+def test_explainers_from_before_the_folders_are_listed(tmp_path: Path) -> None:
+    """docs/explain/<slug>.md from the older layout still shows up in the index."""
+    directory = tmp_path / EXPLAIN_DIR
+    directory.mkdir(parents=True)
+    (directory / "shop.md").write_text(EXPLAINER, encoding="utf-8")
+
+    text = re.sub(r" +", " ", index_markdown(read_entries(directory)))
+
+    assert "| | [Contact form](shop.md) | feature | 2026-09-26 |" in text
+
+
+def test_a_hand_written_index_is_not_overwritten(tmp_path: Path) -> None:
+    """A docs/explain/README.md that KingmaDoc did not write is kept, with a warning."""
+    directory = tmp_path / EXPLAIN_DIR
+    directory.mkdir(parents=True)
+    (directory / "README.md").write_text("# My notes\n", encoding="utf-8")
+
+    result = _new(tmp_path, "Checkout")
+
+    assert result.exit_code == 0, result.output
+    assert (directory / "README.md").read_text(encoding="utf-8") == "# My notes\n"
+    assert "not written by KingmaDoc" in result.output

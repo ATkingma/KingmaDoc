@@ -27,15 +27,22 @@ def version_text() -> str:
     if not raw:
         return __version__
     try:
-        info: dict[str, Any] = json.loads(raw)
+        info = json.loads(raw)
     except json.JSONDecodeError:
         return __version__
-    commit = info.get("vcs_info", {}).get("commit_id")
+    if not isinstance(info, dict):
+        return __version__
+    commit = _section(info, "vcs_info").get("commit_id")
     if isinstance(commit, str) and commit:
         return f"{__version__} (git {commit[:7]})"
-    if info.get("dir_info", {}).get("editable"):
+    if _section(info, "dir_info").get("editable") is True:
         return f"{__version__} (editable)"
     return __version__
+
+
+def _section(info: dict[str, Any], key: str) -> dict[str, Any]:
+    value = info.get(key)
+    return value if isinstance(value, dict) else {}
 
 
 def _distribution() -> Any:

@@ -60,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decoded by a parts or arrows table instead of prose.
 - `explain.format` in `.featuredoc.yml` (`arc42` default, or `c4`).
 
+### Changed
+
+- API: `skills.install_skills` returns an `InstallResult` (`written`, `up_to_date`,
+  `removed`) instead of a `(written, up_to_date)` tuple.
+
 ### Security
 
 - `kingmadoc skills install`: paths in a skill folder's `.kingmadoc-skill.json` (which is
@@ -72,6 +77,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `img/figure-<n>` and overwrite each other's images and D2 sources; only an explainer
   folder's README uses `figure-<n>`. Images an explainer had under its old name
   (`img/README-<n>`) are removed when it is rendered again.
+- `kingmadoc --version` no longer crashes on an unusual `direct_url.json`.
+- The explainer index escapes `|`, `[` and `]` in titles, ignores `#` lines in code
+  blocks, lists explainers from before the folders (`docs/explain/<slug>.md`), and never
+  overwrites a `docs/explain/README.md` that KingmaDoc did not write.
+- `kingmadoc skills install` only shows the `--vscode` tip while the setting is missing.
 - `kingmadoc render` no longer fails with "Invalid cross-device link" (Errno 18) when
   the system temp dir is on another disk than the project.
 - `explaining-code` never asks the user to install D2 (`kingmadoc render` downloads it)

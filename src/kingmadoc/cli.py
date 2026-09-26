@@ -21,6 +21,7 @@ from kingmadoc.explain import (
     explainer_folder,
     index_markdown,
     index_path,
+    is_generated_index,
     read_entries,
 )
 from kingmadoc.plan.analyzer import CodebaseReport, analyze, format_report, report_to_dict
@@ -37,7 +38,7 @@ from kingmadoc.plan.generator import (
 from kingmadoc.render import render_file
 from kingmadoc.skills import AGENT_DIRS, install_skills
 from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
-from kingmadoc.vscode import enable_markdown_preview
+from kingmadoc.vscode import enable_markdown_preview, preview_enabled
 
 ROOT_OPTION = click.option(
     "--root",
@@ -329,9 +330,13 @@ def explain_new(name: str, root: Path) -> None:
 
 
 def _write_explain_index(directory: Path) -> None:
-    write_document(
-        directory / EXPLAINER_FILE, index_markdown(read_entries(directory)), overwrite=True
-    )
+    index = directory / EXPLAINER_FILE
+    if index.is_file() and not is_generated_index(index.read_text(encoding="utf-8")):
+        click.echo(
+            f"{index} was not written by KingmaDoc, so the index was not updated.", err=True
+        )
+        return
+    write_document(index, index_markdown(read_entries(directory)), overwrite=True)
 
 
 @cli.group("skills")
@@ -374,7 +379,7 @@ def skills_install(root: Path, agent: str, force: bool, vscode: bool) -> None:
         click.echo(f"{len(result.up_to_date)} skill file(s) already up to date.", err=True)
     if preview:
         click.echo(preview, err=True)
-    else:
+    elif not preview_enabled(root):
         click.echo(
             "Tip: --vscode makes VS Code open explainers (docs/explain/) as a rendered preview.",
             err=True,
