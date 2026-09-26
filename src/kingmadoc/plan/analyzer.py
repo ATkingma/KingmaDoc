@@ -580,16 +580,26 @@ def _grep_frameworks(root: Path, files: list[Path]) -> set[str]:
 
 
 def _find_source_dirs(files: list[Path]) -> tuple[Path, ...]:
-    """Find top-level source modules; descends one level into ``src/`` layouts."""
+    """Find top-level source modules; descends one level into ``src/`` layouts.
+
+    Test directories (:data:`TEST_DIR_NAMES`) are skipped at every level, including
+    ``src/tests``. Loose files directly in ``src/`` count as a ``src`` module only when
+    ``src/`` has no sub-packages.
+    """
     dirs: set[Path] = set()
+    loose_src = False
     for f in files:
         if EXTENSION_LANGUAGES.get(f.suffix.lower()) not in SOURCE_LANGUAGES or len(f.parts) < 2:
             continue
         top = f.parts[0]
-        if top in NON_SOURCE_DIRS or top.startswith("."):
+        if top in NON_SOURCE_DIRS or top in TEST_DIR_NAMES or top.startswith("."):
             continue
-        if top == "src" and len(f.parts) >= 3:
-            dirs.add(Path(top, f.parts[1]))
-        else:
+        if top != "src":
             dirs.add(Path(top))
+        elif len(f.parts) == 2:
+            loose_src = True
+        elif f.parts[1] not in TEST_DIR_NAMES and not f.parts[1].startswith("."):
+            dirs.add(Path(top, f.parts[1]))
+    if loose_src and not any(d.parts[0] == "src" for d in dirs):
+        dirs.add(Path("src"))
     return tuple(sorted(dirs))
