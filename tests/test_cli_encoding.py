@@ -28,5 +28,6 @@ def test_plan_stdout_is_utf8_under_cp1252(tmp_path: Path) -> None:
 
     assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
     text = result.stdout.decode("utf-8")  # raises if the bytes are not UTF-8
+    text = text.replace("\r\n", "\n")  # Windows text mode writes CRLF; not what we test here
     assert f"# Feature: {DESCRIPTION}\n" in text
     assert "└── app.py" in text
