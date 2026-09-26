@@ -21,6 +21,8 @@ from kingmadoc.templating import load_template
 
 # More containers than this makes the inferred diagram unreadable.
 MAX_INFERRED_CONTAINERS = 6
+# The person drawn in the C4 diagrams.
+USER_NAME = "User"
 # The summary is the doc title; longer titles wrap badly in editors and PR views.
 MAX_SUMMARY_LENGTH = 120
 # Words ending in "." that do not end a sentence (compared lowercased, with the dot).
@@ -157,8 +159,13 @@ def build_plan_context(
         raise GenerationError("The feature description must not be empty")
     project_name = config.project.name or report.root.name
     backend = get_backend(config.diagram_format)
-    user = {"name": "User", "description": "Person who uses the feature"}
     containers = infer_containers(report, project_name)
+    # Diagram elements are referenced by name, so the actor must not share one.
+    taken = {project_name, *(c["name"] for c in containers)}
+    user = {
+        "name": USER_NAME if USER_NAME not in taken else f"{USER_NAME} (person)",
+        "description": "Person who uses the feature",
+    }
     c4_context = c4_container = ""
     if "c4_context" in config.diagrams:
         c4_context = backend.render_context(
@@ -335,13 +342,16 @@ def infer_containers(analysis: CodebaseReport, project_name: str) -> list[dict[s
     technology = analysis.primary_language or "Unknown"
     if not analysis.source_dirs:
         return [{"name": project_name, "tech": technology, "description": "Main application"}]
+    dirs = analysis.source_dirs[:MAX_INFERRED_CONTAINERS]
+    # Same directory name in two places (app/ and src/app/): use the paths instead.
+    counts = Counter(d.name for d in dirs)
     return [
         {
-            "name": d.name,
+            "name": d.name if counts[d.name] == 1 else d.as_posix(),
             "tech": _dir_language(analysis, d) or technology,
             "description": f"Source module {d.as_posix()}/",
         }
-        for d in analysis.source_dirs[:MAX_INFERRED_CONTAINERS]
+        for d in dirs
     ]
 
 

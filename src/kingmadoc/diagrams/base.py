@@ -353,7 +353,16 @@ def register(aliases: dict[str, str], name: str, *, referable: bool = True) -> s
 
     Returns:
         The new alias (``name``'s alias, suffixed ``_2``, ``_3`` … on collisions).
+
+    Raises:
+        DiagramError: If another referable element already has this name, since
+            relationships refer to elements by name and would be ambiguous.
     """
+    if referable and name in aliases:
+        raise DiagramError(
+            f"Duplicate element name {name!r}: relationships refer to elements by name, "
+            "so every name in a diagram must be unique"
+        )
     base = alias = make_alias(name)
     taken = set(aliases.values())
     n = 2
