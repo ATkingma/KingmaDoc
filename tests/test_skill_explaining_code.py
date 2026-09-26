@@ -217,3 +217,13 @@ def test_d2_examples_compile(tmp_path: Path, index: int) -> None:
     )
 
     assert result.returncode == 0, f"example {index}:\n{examples[index]}\n{result.stderr}"
+
+
+def test_explaining_again_starts_from_explain_status() -> None:
+    """Re-explaining checks what changed since the Based on commit, which needs the commit."""
+    text = re.sub(r"\s+", " ", _read(SKILL))
+
+    assert "kingmadoc explain status" in text
+    assert "code spans" in text
+    for reference in (ARC42, C4):
+        assert "| **Based on** | <commit hash" in re.sub(r"[ \t]+", " ", _read(reference))

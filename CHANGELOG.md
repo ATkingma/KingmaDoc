@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `kingmadoc explain status`: per explainer, the files changed since the commit in its
+  **Based on** row (committed or not), limited to the files it names in code spans (or
+  the whole project); `--check` exits with 1 when one is outdated, for CI.
+  `explaining-code` runs it before explaining a subject again.
 - `kingmadoc render` images follow the viewer's dark mode: each SVG also carries D2's
   dark theme (`--light` renders light only). `explaining-code` 5.2 gives every filled
   shape a text colour and black dots a grey border, so they stay readable in dark mode;

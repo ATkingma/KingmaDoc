@@ -9,6 +9,7 @@ folder, so the ID and links stay stable.
 from __future__ import annotations
 
 import re
+import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,6 +26,10 @@ _SCOPE = re.compile(r"^\|\s*\*\*Scope\*\*\s*\|\s*(.*?)\s*\|", re.M)
 _BASED_ON = re.compile(r"^\|\s*\*\*Based on\*\*\s*\|.*?(\d{4}-\d{2}-\d{2})", re.M)
 _FENCE = re.compile(r"^(```|~~~).*?^\1[ \t]*$", re.S | re.M)
 INDEX_TITLE = "# Explained code"
+_BASED_ON_ROW = re.compile(r"^\|\s*\*\*Based on\*\*\s*\|(.*)$", re.M)
+_COMMIT = re.compile(r"\b[0-9a-f]{7,40}\b")
+_CODE_SPAN = re.compile(r"`([^`\n]+)`")
+GIT_TIMEOUT = 30
 INDEX_MARKER = "<!-- kingmadoc:explain-index -->"
 
 
@@ -147,6 +152,116 @@ def index_path(document: Path) -> Path | None:
     if _FOLDER.fullmatch(folder.name) and folder.parent.parts[-len(parts):] == parts:
         return folder.parent / EXPLAINER_FILE
     return None
+
+
+@dataclass(frozen=True)
+class Freshness:
+    """Whether the code an explainer describes changed since the commit it is based on."""
+
+    folder: Path
+    commit: str | None
+    changed: tuple[str, ...]
+    whole_project: bool
+    problem: str | None
+
+
+def explainer_folders(directory: Path) -> list[Path]:
+    """Return the ``<NNNN>-<slug>`` folders in ``directory``, in ID order.
+
+    Args:
+        directory: The ``docs/explain`` directory.
+
+    Returns:
+        The folder paths (empty when the directory does not exist).
+    """
+    return [folder for _, folder in _folders(directory)]
+
+
+def based_on_commit(text: str) -> str | None:
+    """Return the commit in an explainer's **Based on** row.
+
+    Args:
+        text: The explainer.
+
+    Returns:
+        The (abbreviated) commit hash, or None when the row or the hash is missing.
+    """
+    row = _BASED_ON_ROW.search(text)
+    commit = _COMMIT.search(row.group(1)) if row else None
+    return commit.group(0) if commit else None
+
+
+def referenced_paths(text: str, root: Path) -> list[str]:
+    """Return the project files and folders an explainer names in `code spans`.
+
+    Args:
+        text: The explainer.
+        root: Project root; only paths that exist under it count.
+
+    Returns:
+        Sorted POSIX paths relative to ``root``; ``:line`` suffixes are dropped.
+    """
+    found = set()
+    for span in _CODE_SPAN.findall(text):
+        candidate = re.sub(r"(:\d+.*|#.*)$", "", span.strip()).rstrip("/")
+        parts = candidate.split("/")
+        if (
+            candidate in ("", ".")
+            or candidate.startswith("/")
+            or any(c in candidate for c in " *?<>|\\:")
+            or ".." in parts
+        ):
+            continue
+        if (root / candidate).exists():
+            found.add(candidate)
+    return sorted(found)
+
+
+def freshness(root: Path, folder: Path) -> Freshness:
+    """Compare an explainer with the code: what changed since its **Based on** commit.
+
+    Committed and uncommitted changes count; changes under ``docs/explain`` do not.
+    Only the paths the explainer names are compared, or the whole project if it names
+    none.
+
+    Args:
+        root: Project root (inside a git repository).
+        folder: The explainer folder (``docs/explain/<NNNN>-<slug>``).
+
+    Returns:
+        The result; ``problem`` says why it could not be compared.
+    """
+    docs = sorted(folder.glob("*.md"), key=lambda p: p.name.lower() != EXPLAINER_FILE.lower())
+    text = "\n".join(p.read_text(encoding="utf-8", errors="replace") for p in docs)
+    commit = based_on_commit(text)
+    paths = referenced_paths(text, root)
+
+    def result(changed: tuple[str, ...] = (), problem: str | None = None) -> Freshness:
+        return Freshness(folder, commit, changed, not paths, problem)
+
+    if commit is None:
+        return result(problem="no commit in its **Based on** row")
+    if _git(root, "rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}") is None:
+        return result(problem=f"commit {commit} is not in this repository")
+    output = _git(
+        root, "diff", "--relative", "--name-only", commit, "--",
+        *(paths or ["."]), f":(exclude){EXPLAIN_DIR.as_posix()}",
+    )
+    if output is None:
+        return result(problem="git could not compare it")
+    return result(changed=tuple(sorted(line for line in output.splitlines() if line)))
+
+
+def _git(root: Path, *args: str) -> str | None:
+    """Run git in ``root``; None when git is missing or fails."""
+    try:
+        done = subprocess.run(  # noqa: S603 - fixed program, no shell
+            ["git", "-C", str(root), *args],  # noqa: S607 - git from PATH, like a user would
+            capture_output=True, text=True, timeout=GIT_TIMEOUT, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return done.stdout if done.returncode == 0 else None
 
 
 def _entry(number: str, link: str, fallback: str, doc: Path) -> Entry:

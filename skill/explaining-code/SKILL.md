@@ -24,7 +24,9 @@ Every subject gets its own folder with a unique ID and its name:
 `docs/explain/<NNNN>-<slug>/README.md` (the explainer, or its cover page when split)
 and `img/` (its pictures).
 `docs/explain/README.md` lists all subjects. Explaining a subject again updates its
-folder.
+folder: first run `kingmadoc explain status`, which lists the files changed since the
+commit in its **Based on** row, and update what those changes touch. Name the files you
+explain in `code spans` (e.g. in "where to find what"): that is what the status compares.
 
 For a feature that is not built yet, use the `kingmadoc` skill (plan mode) instead.
 

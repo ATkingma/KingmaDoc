@@ -17,8 +17,11 @@ from kingmadoc.d2_binary import ensure_d2
 from kingmadoc.documents import write_document, write_documents
 from kingmadoc.exceptions import KingmaDocError
 from kingmadoc.explain import (
+    EXPLAIN_DIR,
     EXPLAINER_FILE,
     explainer_folder,
+    explainer_folders,
+    freshness,
     index_markdown,
     index_path,
     is_generated_index,
@@ -330,6 +333,40 @@ def explain_new(name: str, root: Path) -> None:
     if not created:
         click.echo(f"Reusing {folder.name} (explained before).", err=True)
     click.echo(folder / EXPLAINER_FILE)
+
+
+@explain_group.command("status")
+@ROOT_OPTION
+@click.option("--check", is_flag=True, help="Exit with 1 when an explainer is outdated (CI).")
+def explain_status(root: Path, check: bool) -> None:
+    """Show which explainers the code has changed under since they were written.
+
+    Compares the files an explainer names (or the whole project) with the commit in its
+    Based on row, including uncommitted changes.
+    """
+    directory = root / EXPLAIN_DIR
+    names = {entry.link.split("/")[0]: entry.name for entry in read_entries(directory)}
+    folders = explainer_folders(directory)
+    if not folders:
+        click.echo(f"No explainers in {directory}.", err=True)
+        return
+    outdated = 0
+    for folder in folders:
+        result = freshness(root, folder)
+        label = f"{folder.name.partition('-')[0]} {names.get(folder.name, folder.name)}"
+        if result.problem:
+            click.echo(f"{label}: cannot tell ({result.problem})")
+        elif result.changed:
+            outdated += 1
+            count = len(result.changed)
+            shown = ", ".join(result.changed[:5]) + (", …" if count > 5 else "")
+            scope = " in the project" if result.whole_project else ""
+            noun = "file" if count == 1 else "files"
+            click.echo(f"{label}: {count} {noun} changed{scope} since {result.commit}: {shown}")
+        else:
+            click.echo(f"{label}: up to date (since {result.commit})")
+    if check and outdated:
+        raise SystemExit(1)
 
 
 def _write_explain_index(directory: Path) -> None:
