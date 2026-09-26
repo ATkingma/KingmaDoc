@@ -174,3 +174,35 @@ def test_a_file_the_skill_no_longer_ships_is_removed_when_unchanged(tmp_path: Pa
     assert result.exit_code == 0, result.output
     assert not (folder / "reference" / "old.md").exists()
     assert (folder / "reference" / "mine.md").read_text(encoding="utf-8") == "edited"
+
+
+@pytest.mark.parametrize("key", ["../../../outside.txt", "reference/../../../outside.txt"])
+def test_a_manifest_cannot_remove_files_outside_the_skill(tmp_path: Path, key: str) -> None:
+    """The manifest is repository content: its paths never reach outside the skill folder."""
+    assert _install(tmp_path).exit_code == 0
+    folder = _skill_md(tmp_path).parent
+    outside = tmp_path / "outside.txt"
+    outside.write_text("keep me", encoding="utf-8")
+    data = json.loads((folder / MANIFEST).read_text(encoding="utf-8"))
+    data["files"][key] = _sha("keep me")
+    data["files"][str(outside)] = _sha("keep me")
+    (folder / MANIFEST).write_text(json.dumps(data), encoding="utf-8")
+
+    result = _install(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    assert outside.read_text(encoding="utf-8") == "keep me"
+
+
+def test_a_corrupt_manifest_is_treated_as_missing(tmp_path: Path) -> None:
+    """An unreadable manifest does not crash the install; unchanged files are rewritten."""
+    assert _install(tmp_path).exit_code == 0
+    folder = _skill_md(tmp_path).parent
+    (folder / MANIFEST).write_text("{not json", encoding="utf-8")
+
+    result = _install(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    assert json.loads((folder / MANIFEST).read_text(encoding="utf-8"))["skill"] == (
+        "explaining-code"
+    )

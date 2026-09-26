@@ -16,7 +16,7 @@ import hashlib
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 
 from kingmadoc.documents import write_documents
@@ -151,13 +151,20 @@ def install_skills(root: Path, agent: str, force: bool = False) -> InstallResult
             if found == hashes[key]:
                 current.append(target)
                 continue
-            known = PREVIOUS_RELEASES.get(f"{name}/{key}", frozenset()) | {installed.get(key)}
+            known = PREVIOUS_RELEASES.get(f"{name}/{key}", frozenset())
+            if key in installed:
+                known = known | {installed[key]}
             if target.exists() and not force and found not in known:
                 changed.append(str(target))
             pending.append((target, content))
         for key, digest in installed.items():
-            old = folder / key
-            if key not in hashes and old.is_file() and _sha256(_read(old)) == digest:
+            old = _inside(folder, key)
+            if (
+                key not in hashes
+                and old is not None
+                and old.is_file()
+                and _sha256(_read(old)) == digest
+            ):
                 stale.append(old)
         manifest = json.dumps({"skill": name, "files": hashes}, indent=2, sort_keys=True)
         if installed != hashes:
@@ -169,12 +176,31 @@ def install_skills(root: Path, agent: str, force: bool = False) -> InstallResult
         )
     written = write_documents(pending, overwrite=True)
     for path in stale:
-        path.unlink()
+        try:
+            path.unlink()
+        except OSError as exc:
+            raise KingmaDocError(f"Cannot remove {path}: {exc.strerror}") from exc
     return InstallResult(
         written=tuple(p for p in written if p.name != MANIFEST),
         up_to_date=tuple(current),
         removed=tuple(stale),
     )
+
+
+def _inside(folder: Path, key: str) -> Path | None:
+    """``folder / key`` if it stays inside ``folder``; None for ``..``, absolute or odd keys.
+
+    The manifest is part of the repository, so it is not trusted to name paths.
+    """
+    parts = PurePosixPath(key).parts
+    if not parts or key.startswith("/") or "\\" in key or ":" in key or ".." in parts:
+        return None
+    path = folder.joinpath(*parts)
+    try:
+        path.resolve().relative_to(folder.resolve())
+    except ValueError:
+        return None
+    return path
 
 
 def _read(path: Path) -> str:
