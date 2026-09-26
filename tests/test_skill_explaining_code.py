@@ -91,6 +91,18 @@ def test_frontmatter_follows_the_agent_skills_standard() -> None:
         assert word in meta["description"]
 
 
+def test_description_triggers_on_the_ways_people_ask() -> None:
+    """Agents pick a skill by its description, so it names the common requests (also Dutch)."""
+    description = yaml.safe_load(_read(SKILL).split("---", 2)[1])["description"]
+
+    for trigger in (
+        "explain", "document", "diagram", "overview", "how something works", "what it does",
+        "PR", "onboarding", "walkthrough", "C4", "UML", "leg uit", "hoe werkt",
+        "wat is er veranderd", "Not for features that are not built yet",
+    ):
+        assert trigger in description, trigger
+
+
 def test_workflow_sections_in_order_and_short() -> None:
     """The workflow is complete, in order; details live in reference files (one level)."""
     text = _read(SKILL)
