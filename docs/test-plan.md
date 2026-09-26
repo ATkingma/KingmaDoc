@@ -108,8 +108,9 @@ Try each scope:
 
 For each explainer in `docs/explain/`:
 
-- [ ] Open it in any Markdown viewer: you see **pictures** (SVG images from
-      `docs/explain/img/`), with the diagram source folded below each one.
+- [ ] Open it in VS Code: it opens as a **rendered preview** with the pictures (SVG images
+      from `docs/explain/img/`), the diagram source folded below each one.
+- [ ] Figures are numbered and each is followed by a short table, not paragraphs of text.
 - [ ] After reading only "In short" and the pictures, you can say what is there and how
       the main actions flow. This is the real test.
 - [ ] "How it works" has one sequence picture per main action, and they are right.

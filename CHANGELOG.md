@@ -27,7 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   downloaded automatically on first use (pinned, SHA-256-verified; opt out with
   `KINGMADOC_D2_DOWNLOAD=0`), so nothing has to be installed besides KingmaDoc.
 - `kingmadoc skills install [--agent claude|cursor|codex|copilot]`: installs the bundled
-  agent skills into the project.
+  agent skills into the project, and makes VS Code open `docs/explain/*.md` as a
+  rendered preview (`--no-vscode` skips that).
+- `explaining-code` 3.0: numbered figures per zoom level (context, containers,
+  components, flows, data), each decoded by a parts or arrows table instead of prose.
 
 ## [0.1.1] - 2026-09-26
 

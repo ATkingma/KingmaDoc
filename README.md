@@ -34,6 +34,9 @@ kingmadoc skills install --agent cursor     # or: codex, copilot
 
 Nothing else to install: the first `kingmadoc render` downloads the D2 diagram renderer by
 itself (pinned version, checksum-verified; `KINGMADOC_D2_DOWNLOAD=0` turns that off).
+`skills install` also makes VS Code open explainers (`docs/explain/`) as a rendered
+preview, so you see the pictures right away (`--no-vscode` skips that; Visual Studio
+shows a preview by default).
 
 ### pip
 
@@ -67,9 +70,9 @@ installed, the skill uses it for the codebase analysis.
 [`skill/explaining-code/SKILL.md`](skill/explaining-code/SKILL.md), explains code that
 already exists, with pictures: a feature, a branch (what did this branch or task
 change), a whole project, or a part of one. It writes a short explainer in
-`docs/explain/` with the big picture, how each main action flows, the building blocks
-and the data as rendered diagrams, plus a where-to-find-what table. No audit, no risk
-list. Install it next to the first one and ask the agent to "explain <feature / branch /
+`docs/explain/` that zooms in step by step (context, containers, components, main flows,
+data), each as a numbered, rendered figure decoded by a small table, plus a
+where-to-find-what table. No stories, no audit, no risk list. Install it next to the first one and ask the agent to "explain <feature / branch /
 project>". `kingmadoc skills install` installs it together with the first skill; the
 pictures are rendered with `kingmadoc render`.
 
