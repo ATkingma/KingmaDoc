@@ -45,6 +45,11 @@ path = "src/kingmadoc/__init__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/kingmadoc"]
 
+# The sdist is the source of truth for rebuilding the package (and for distro
+# packagers), so it keeps tests/docs/skill; only Claude Code dev tooling is left out.
+[tool.hatch.build.targets.sdist]
+exclude = [".claude"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
