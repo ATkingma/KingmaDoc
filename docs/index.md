@@ -23,7 +23,7 @@ Feature Verification Doc afterwards.
 - **Using KingmaDoc without installing Python** → the agent skill [`skill/SKILL.md`](../skill/SKILL.md),
   or its generated variants for [Cursor](../skill/cursor.md), [Codex](../skill/codex.md) and
   [GitHub Copilot](../skill/copilot.md); for features that already exist:
-  [`documenting-existing-features`](../skill/documenting-existing-features/SKILL.md)
+  [`explaining-code`](../skill/explaining-code/SKILL.md)
   ([README: Markdown-only install](../README.md#markdown-only-no-python))
 - **Seeing what the output looks like** → [Example plan doc](../examples/verify-mode-plan.md)
 - **Contributing code** → [Conventions: Python coding standards](conventions.md#d-python-coding-standards)

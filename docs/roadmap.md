@@ -18,7 +18,7 @@ few days, **L** ≈ a week or more. Rule IDs (B1, C3, …) refer to
 | [WP9](#wp9-models-derived-from-the-code) | Models derived from the code: dependency graph, ERD, permissions, data flow, threat model, domain model, deployment | WP8 | L |
 | [WP10](#wp10-template-models) | Template models: use case, activity, state, BPMN, event storming, user journey, requirements | WP8 (WP1 for requirements) | M |
 | [WP11](#wp11-rendered-images-optional) | Optional rendered images (SVG) next to the diagram source | WP8 | M |
-| [WP12](#wp12-document-an-existing-feature) | Document an existing feature (as-built docs) | — | M |
+| [WP12](#wp12-explain-existing-code) | Explain existing code with pictures (feature, branch, project, part) | WP11 | M |
 
 ## WP1. Machine-readable plans
 
@@ -223,6 +223,9 @@ and the parity tests cover the new format blocks.
 
 ## WP11. Rendered images (optional)
 
+**Status:** `kingmadoc render` for D2 done (unreleased). Rendering from `plan` itself
+(`render_images: true`) and the other formats are open.
+
 **Goal.** Show diagrams as images where Markdown viewers can't render them (older
 Mermaid on GitHub, editors without a Mermaid plugin), while keeping the text source.
 
@@ -243,23 +246,25 @@ Mermaid on GitHub, editors without a Mermaid plugin), while keeping the text sou
 **Done when** images are generated and embedded with each installed tool, the text source
 is always kept, and nothing is sent anywhere without explicit configuration.
 
-## WP12. Document an existing feature
+## WP12. Explain existing code
 
-**Status:** task 1 and 2 done (agent skill, unreleased); task 3 (CLI command) open.
+**Status:** agent skill `explaining-code` done (unreleased), after the first test run
+showed that an as-built document in the plan format read like an audit (risks, open
+questions) instead of giving insight. CLI support (task 3) open.
 
-**Goal.** Document a feature that already exists, as built, instead of only planning new
-ones: for projects that grew without docs, or to review what an earlier agent session
-built.
+**Goal.** Cure code blindness for code that already exists: show with pictures what is
+there and how it works, for a feature, a branch (what it changed), a whole project or a
+part of one.
 
 **Tasks**
 
-1. Agent skill `documenting-existing-features`: find the code of a named feature
-   (search, entry points, git history), then write an as-built document in the plan
-   format with `status: implemented`, filled from the code; open questions for what the
-   code cannot tell.
-2. Same output format as `plan`, so `verify` and every design model work on it.
-3. Later: a CLI command (`kingmadoc document <feature>`) for the deterministic parts
-   (locating files, analysis, diagrams).
+1. Agent skill `explaining-code`: an explainer in `docs/explain/` with, in this order,
+   the big picture, how each main action flows (sequence diagrams), the building blocks,
+   the data, what changed (branches), and where to find what. D2 diagrams rendered to
+   images with `kingmadoc render` (WP11). No risk list; at most three questions.
+2. Tests that keep the format and every D2 example in the skill valid.
+3. Later: a CLI command (`kingmadoc explain <scope>`) for the deterministic parts
+   (the branch diff, the module graph, the data model from ORM code).
 
-**Done when** the skill produces a correct as-built document for a feature in a real
-project, and that document passes the same checks as a generated plan.
+**Done when** a developer who did not write the code can say what is there and how the
+main actions flow after reading only "In short" and the pictures.

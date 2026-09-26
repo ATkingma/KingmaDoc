@@ -18,9 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `technical_design`: a module dependency graph derived from the imports between the
   project's own Python modules (merged into packages above 25 modules).
 - `kingmadoc analyze` reports `module_dependencies` (also in `--json`).
-- Agent skill `documenting-existing-features`: documents a feature that already exists, as
-  built (status `implemented`), in the plan format plus an implementation map with file
-  and line references.
+- Agent skill `explaining-code`: explains existing code with pictures, for a feature, a
+  branch (what it changed), a whole project or a part of one. Writes `docs/explain/*.md`
+  with the big picture, one sequence diagram per main action, the building blocks, the
+  data and a where-to-find-what table; no audit or risk list, at most three questions.
+- `kingmadoc render <doc>`: renders the D2 diagrams in a Markdown document to SVG images
+  next to it and embeds them, keeping the source folded below each image.
 
 ## [0.1.1] - 2026-09-26
 

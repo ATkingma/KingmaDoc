@@ -52,20 +52,24 @@ mkdir -p .github && cat skill/copilot.md >> .github/copilot-instructions.md
 Then ask the agent to "plan <feature>" or "verify <slug>". If the `kingmadoc` CLI is
 installed, the skill uses it for the codebase analysis.
 
-**Documenting an existing feature.** A second skill,
-[`skill/documenting-existing-features/SKILL.md`](skill/documenting-existing-features/SKILL.md),
-documents a feature that already exists (for example code from an earlier agent
-session): it finds the code and writes an as-built document in the same format, with
-file and line references. Install it next to the first one and ask the agent to
-"document the existing <feature>":
+**Explaining existing code.** A second skill,
+[`skill/explaining-code/SKILL.md`](skill/explaining-code/SKILL.md), explains code that
+already exists, with pictures: a feature, a branch (what did this branch or task
+change), a whole project, or a part of one. It writes a short explainer in
+`docs/explain/` with the big picture, how each main action flows, the building blocks
+and the data as rendered diagrams, plus a where-to-find-what table. No audit, no risk
+list. Install it next to the first one and ask the agent to "explain <feature / branch /
+project>":
 
 ```bash
-mkdir -p .claude/skills/documenting-existing-features
-cp skill/documenting-existing-features/SKILL.md .claude/skills/documenting-existing-features/
+mkdir -p .claude/skills/explaining-code
+cp skill/explaining-code/SKILL.md .claude/skills/explaining-code/
 ```
 
 For Cursor, Codex and Copilot, copy the same folder into `.cursor/skills/`,
-`.agents/skills/` or `.github/skills/` (Agent Skills standard).
+`.agents/skills/` or `.github/skills/` (Agent Skills standard). For the pictures, install
+[D2](https://d2lang.com/tour/install) (a single binary); the skill renders the diagrams
+with `kingmadoc render`.
 
 - The Codex and Copilot files are loaded in **every** session (about 17 KB). Codex
   stops reading `AGENTS.md` files after 32 KiB in total by default
@@ -101,6 +105,7 @@ More commands:
 
 ```bash
 kingmadoc plan "…" --no-input --stdout   # no questions, print instead of writing
+kingmadoc render docs/explain/shop.md    # D2 diagrams -> SVG images in the doc (needs d2)
 kingmadoc adr "Use PostgreSQL" --status accepted   # needs adr.enabled
 ```
 

@@ -32,9 +32,9 @@ every problem in the [results table](#results) at the end.
 
   ```bash
   K=<path to a KingmaDoc checkout>
-  mkdir -p .claude/skills/kingmadoc .claude/skills/documenting-existing-features
+  mkdir -p .claude/skills/kingmadoc .claude/skills/explaining-code
   cp $K/skill/SKILL.md .claude/skills/kingmadoc/
-  cp $K/skill/documenting-existing-features/SKILL.md .claude/skills/documenting-existing-features/
+  cp $K/skill/explaining-code/SKILL.md .claude/skills/explaining-code/
   ```
 
 ## 1. Codebase analysis
@@ -99,23 +99,31 @@ In your agent (e.g. Claude Code), in the project:
 - [ ] It asks for **yes / edit / stop** before touching any code, and changes no code
       when you answer **stop**.
 
-## 5. Document an existing feature
+## 5. Explain existing code
 
-This is the main test for projects from earlier sessions. Pick a feature that exists and
-that you know well, so you can judge the result.
+This is the main test for projects from earlier sessions: does it cure code blindness?
+Install [D2](https://d2lang.com/tour/install) first, so the diagrams become pictures
+(`d2 --version`). Try each scope:
 
-> Document the existing <feature name> feature.
+> Explain the <feature name> feature.
+> Explain what branch <branch> changed.
+> Explain this project.
+> Explain the <folder or service>.
 
-- [ ] The agent asks which feature you mean if the name is ambiguous, and shows candidates.
-- [ ] It writes `docs/features/<slug>-plan.md` with status **Implemented (as-built)**.
-- [ ] **Scope** describes what the code actually does, with `path:line` references.
-      Open a few references: do they point at the right code?
-- [ ] The **implementation map** lists the files that really make up the feature, and no
-      unrelated ones.
-- [ ] **Risks** mention real gaps (untested paths, `TODO`s), not generic advice.
-- [ ] **Open questions** ask about intent the code cannot tell you.
-- [ ] `git status`: no source files changed, only the new document.
-- [ ] Repeat for a second feature built in a different part of the code.
+For each explainer in `docs/explain/`:
+
+- [ ] Open it in any Markdown viewer: you see **pictures** (SVG images from
+      `docs/explain/img/`), with the diagram source folded below each one.
+- [ ] After reading only "In short" and the pictures, you can say what is there and how
+      the main actions flow. This is the real test.
+- [ ] "How it works" has one sequence picture per main action, and they are right.
+- [ ] For the branch: new parts are green, changed parts orange, and "What changed"
+      matches the branch's commits.
+- [ ] "Where to find what" points to the files you would really open.
+- [ ] No risk list or code review; at most three questions, and only real ones.
+- [ ] `git status`: no source files changed, only files under `docs/explain/`.
+- [ ] Edit a diagram source, run `kingmadoc render docs/explain/<file>.md`: the image
+      updates.
 
 ## 6. Verify
 
