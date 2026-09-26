@@ -139,6 +139,7 @@ def test_cli_explains_how_to_install_d2(tmp_path: Path, monkeypatch: pytest.Monk
     doc = _doc(tmp_path)
     monkeypatch.setenv("PATH", str(tmp_path / "empty"))
     monkeypatch.setenv("KINGMADOC_D2_DOWNLOAD", "0")  # no network in this test
+    monkeypatch.setenv("KINGMADOC_CACHE_DIR", str(tmp_path / "cache"))  # not the real cache
     monkeypatch.delenv("KINGMADOC_D2", raising=False)
 
     result = CliRunner().invoke(cli, ["render", str(doc)])
