@@ -23,18 +23,14 @@ every problem in the [results table](#results) at the end.
 - [ ] Install the CLI (Python 3.11+) and check the version:
 
   ```bash
-  pipx install git+https://github.com/ATkingma/KingmaDoc
-  kingmadoc --version             # 0.1.1 or later
+  pipx install --force git+https://github.com/ATkingma/KingmaDoc   # --force: also upgrades
+  kingmadoc --version
   ```
 
-- [ ] Install both agent skills into the project (Claude Code; for Cursor, Codex or
-      Copilot see the README):
+- [ ] Install both agent skills into the project (nothing else needs installing):
 
   ```bash
-  K=<path to a KingmaDoc checkout>
-  mkdir -p .claude/skills/kingmadoc .claude/skills/explaining-code
-  cp $K/skill/SKILL.md .claude/skills/kingmadoc/
-  cp $K/skill/explaining-code/SKILL.md .claude/skills/explaining-code/
+  kingmadoc skills install        # Claude Code; --agent cursor|codex|copilot for others
   ```
 
 ## 1. Codebase analysis
@@ -102,8 +98,8 @@ In your agent (e.g. Claude Code), in the project:
 ## 5. Explain existing code
 
 This is the main test for projects from earlier sessions: does it cure code blindness?
-Install [D2](https://d2lang.com/tour/install) first, so the diagrams become pictures
-(`d2 --version`). Try each scope:
+You do not install anything for the pictures: the first render downloads D2 by itself.
+Try each scope:
 
 > Explain the <feature name> feature.
 > Explain what branch <branch> changed.

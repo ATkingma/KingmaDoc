@@ -223,7 +223,8 @@ and the parity tests cover the new format blocks.
 
 ## WP11. Rendered images (optional)
 
-**Status:** `kingmadoc render` for D2 done (unreleased). Rendering from `plan` itself
+**Status:** `kingmadoc render` for D2 done (unreleased), with D2 downloaded automatically
+(pinned and verified), so users install nothing extra. Rendering from `plan` itself
 (`render_images: true`) and the other formats are open.
 
 **Goal.** Show diagrams as images where Markdown viewers can't render them (older

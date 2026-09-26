@@ -23,7 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with the big picture, one sequence diagram per main action, the building blocks, the
   data and a where-to-find-what table; no audit or risk list, at most three questions.
 - `kingmadoc render <doc>`: renders the D2 diagrams in a Markdown document to SVG images
-  next to it and embeds them, keeping the source folded below each image.
+  next to it and embeds them, keeping the source folded below each image. D2 is
+  downloaded automatically on first use (pinned, SHA-256-verified; opt out with
+  `KINGMADOC_D2_DOWNLOAD=0`), so nothing has to be installed besides KingmaDoc.
+- `kingmadoc skills install [--agent claude|cursor|codex|copilot]`: installs the bundled
+  agent skills into the project.
 
 ## [0.1.1] - 2026-09-26
 

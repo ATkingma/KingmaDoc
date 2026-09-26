@@ -25,6 +25,16 @@ pipx install git+https://github.com/ATkingma/KingmaDoc
 
 Once KingmaDoc is published on PyPI, this becomes `pipx install kingmadoc`.
 
+Then, in your project, install the agent skills; that's all:
+
+```bash
+kingmadoc skills install                    # Claude Code (.claude/skills/)
+kingmadoc skills install --agent cursor     # or: codex, copilot
+```
+
+Nothing else to install: the first `kingmadoc render` downloads the D2 diagram renderer by
+itself (pinned version, checksum-verified; `KINGMADOC_D2_DOWNLOAD=0` turns that off).
+
 ### pip
 
 ```bash
@@ -33,7 +43,8 @@ pip install git+https://github.com/ATkingma/KingmaDoc   # into the current envir
 
 ### Markdown-only (no Python)
 
-Copy one file into your project; the agent follows it and writes the same docs itself.
+Without the CLI, copy the skill files into your project; the agent follows them and
+writes the same docs itself (diagrams then stay as text unless `d2` is installed).
 
 | Agent          | Copy                                   | To                                                               |
 | -------------- | -------------------------------------- | ---------------------------------------------------------------- |
@@ -59,17 +70,8 @@ change), a whole project, or a part of one. It writes a short explainer in
 `docs/explain/` with the big picture, how each main action flows, the building blocks
 and the data as rendered diagrams, plus a where-to-find-what table. No audit, no risk
 list. Install it next to the first one and ask the agent to "explain <feature / branch /
-project>":
-
-```bash
-mkdir -p .claude/skills/explaining-code
-cp skill/explaining-code/SKILL.md .claude/skills/explaining-code/
-```
-
-For Cursor, Codex and Copilot, copy the same folder into `.cursor/skills/`,
-`.agents/skills/` or `.github/skills/` (Agent Skills standard). For the pictures, install
-[D2](https://d2lang.com/tour/install) (a single binary); the skill renders the diagrams
-with `kingmadoc render`.
+project>". `kingmadoc skills install` installs it together with the first skill; the
+pictures are rendered with `kingmadoc render`.
 
 - The Codex and Copilot files are loaded in **every** session (about 17 KB). Codex
   stops reading `AGENTS.md` files after 32 KiB in total by default
@@ -105,7 +107,7 @@ More commands:
 
 ```bash
 kingmadoc plan "…" --no-input --stdout   # no questions, print instead of writing
-kingmadoc render docs/explain/shop.md    # D2 diagrams -> SVG images in the doc (needs d2)
+kingmadoc render docs/explain/shop.md    # D2 diagrams -> SVG images in the doc
 kingmadoc adr "Use PostgreSQL" --status accepted   # needs adr.enabled
 ```
 
