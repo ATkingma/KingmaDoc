@@ -1,6 +1,9 @@
-"""Tests for kingmadoc.documents: multi-file writes are all-or-nothing (fix 4)."""
+"""Tests for kingmadoc.documents (all-or-nothing writes, fix 4) and the variant --check."""
 
+import importlib.util
 import os
+import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -78,3 +81,39 @@ def test_write_document_takes_path_then_content(tmp_path: Path) -> None:
     path = write_document(tmp_path / "doc.md", "hello")
 
     assert path.read_text(encoding="utf-8") == "hello"
+
+
+def _build_script():
+    """Import scripts/build_skill_variants.py (a repo script, not part of the package)."""
+    path = Path(__file__).resolve().parents[1] / "scripts" / "build_skill_variants.py"
+    spec = importlib.util.spec_from_file_location("build_skill_variants_check", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses look their module up while defining
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_variants_check_passes_when_current(capsys: pytest.CaptureFixture[str]) -> None:
+    """`build_skill_variants.py --check` exits 0 for the committed variants."""
+    assert _build_script().main(["--check"]) == 0
+
+
+def test_variants_check_fails_when_stale(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--check reports stale variants without writing; a normal run then fixes them."""
+    build = _build_script()
+    skill_dir = tmp_path / "skill"
+    shutil.copytree(build.SKILL.parent, skill_dir)
+    skill = skill_dir / "SKILL.md"
+    skill.write_text(skill.read_text(encoding="utf-8") + "\nOne more line.\n", encoding="utf-8")
+    before = (skill_dir / "codex.md").read_text(encoding="utf-8")
+    monkeypatch.setattr(build, "SKILL", skill)
+    monkeypatch.setattr(build, "ROOT", tmp_path)
+
+    assert build.main(["--check"]) == 1
+    assert "Out of date: cursor.md, codex.md, copilot.md" in capsys.readouterr().out
+    assert (skill_dir / "codex.md").read_text(encoding="utf-8") == before
+
+    assert build.main([]) == 0
+    assert build.main(["--check"]) == 0
