@@ -1,4 +1,4 @@
-"""Command-line interface: ``kingmadoc init | analyze | plan | verify | adr``."""
+"""Command-line interface: ``kingmadoc init | analyze | plan | verify | adr | render``."""
 
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ from kingmadoc.plan.generator import (
     render_extra_design,
     render_plan,
 )
+from kingmadoc.render import find_d2, render_file
 from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
 
 ROOT_OPTION = click.option(
@@ -248,6 +249,32 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
         raise click.ClickException(str(exc)) from exc
 
     click.echo(written)
+
+
+@cli.command("render")
+@click.argument(
+    "documents",
+    nargs=-1,
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+def render_command(documents: tuple[Path, ...]) -> None:
+    """Render the D2 diagrams in DOCUMENTS to SVG images and embed them.
+
+    Images go to img/<document>-<n>.svg next to each document; the D2 source stays in the
+    document, collapsed below the image. Needs D2 (https://d2lang.com) on PATH or in
+    KINGMADOC_D2. Prints the written image paths.
+    """
+    try:
+        d2 = find_d2()
+        for document in documents:
+            images = render_file(document, d2)
+            if not images:
+                click.echo(f"No D2 diagrams in {document}", err=True)
+            for image in images:
+                click.echo(image)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 def main() -> None:

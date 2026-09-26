@@ -27,3 +27,7 @@ class VerificationError(KingmaDocError):
 
 class AdrError(KingmaDocError):
     """Raised when an Architecture Decision Record cannot be created."""
+
+
+class RenderError(KingmaDocError):
+    """Raised when diagrams cannot be rendered to images (e.g. D2 missing or failing)."""
