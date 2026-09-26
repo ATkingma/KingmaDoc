@@ -83,3 +83,16 @@ def test_local_changes_are_kept_unless_forced(tmp_path: Path) -> None:
 def test_unknown_agent_is_a_usage_error(tmp_path: Path) -> None:
     """Only the supported agents are accepted."""
     assert _install(tmp_path, "--agent", "emacs").exit_code == 2
+
+
+def test_skill_folders_are_installed_completely(tmp_path: Path) -> None:
+    """Every file of a skill folder (e.g. reference/*.md) is installed, not just SKILL.md."""
+    folder = REPO / "skill" / "explaining-code"
+    expected = sorted(p.relative_to(folder) for p in folder.rglob("*") if p.is_file())
+
+    assert _install(tmp_path).exit_code == 0
+
+    installed = tmp_path / ".claude" / "skills" / "explaining-code"
+    assert sorted(p.relative_to(installed) for p in installed.rglob("*") if p.is_file()) == expected
+    for rel in expected:
+        assert (installed / rel).read_bytes() == (folder / rel).read_bytes()

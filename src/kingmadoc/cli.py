@@ -311,7 +311,7 @@ def skills_install(root: Path, agent: str, force: bool, no_vscode: bool) -> None
     for path in written:
         click.echo(path)
     if current:
-        click.echo(f"{len(current)} skill(s) already up to date.", err=True)
+        click.echo(f"{len(current)} skill file(s) already up to date.", err=True)
     if vscode:
         click.echo(vscode, err=True)
 

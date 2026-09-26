@@ -51,8 +51,27 @@ def bundled_skill(name: str) -> Path:
     raise KingmaDocError(f"Skill {name!r} is missing from this KingmaDoc installation")
 
 
+def bundled_files(name: str) -> list[tuple[Path, Path]]:
+    """Return every file of a bundled skill as ``(path inside the skill folder, source)``.
+
+    Args:
+        name: One of :data:`SKILL_NAMES`.
+
+    Returns:
+        ``SKILL.md`` plus any other files of the skill (e.g. ``reference/*.md``), sorted.
+
+    Raises:
+        KingmaDocError: If the skill is unknown or missing from the installation.
+    """
+    skill_md = bundled_skill(name)
+    if name == "kingmadoc":  # skill/ also holds the other skills and the agent variants
+        return [(Path("SKILL.md"), skill_md)]
+    folder = skill_md.parent
+    return sorted((f.relative_to(folder), f) for f in folder.rglob("*") if f.is_file())
+
+
 def install_skills(root: Path, agent: str, force: bool = False) -> tuple[list[Path], list[Path]]:
-    """Copy every bundled skill into ``<root>/<agent dir>/<name>/SKILL.md``.
+    """Copy every bundled skill folder into ``<root>/<agent dir>/<name>/``.
 
     Args:
         root: Project root.
@@ -72,14 +91,15 @@ def install_skills(root: Path, agent: str, force: bool = False) -> tuple[list[Pa
     current: list[Path] = []
     changed: list[str] = []
     for name in SKILL_NAMES:
-        target = base / name / "SKILL.md"
-        content = bundled_skill(name).read_text(encoding="utf-8")
-        if target.is_file() and target.read_text(encoding="utf-8") == content:
-            current.append(target)
-            continue
-        if target.exists() and not force:
-            changed.append(str(target))
-        pending.append((target, content))
+        for relative, source in bundled_files(name):
+            target = base / name / relative
+            content = source.read_text(encoding="utf-8")
+            if target.is_file() and target.read_text(encoding="utf-8") == content:
+                current.append(target)
+                continue
+            if target.exists() and not force:
+                changed.append(str(target))
+            pending.append((target, content))
     if changed:
         raise KingmaDocError(
             f"{', '.join(changed)} differ from the bundled version (local edits or another "
