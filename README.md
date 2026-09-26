@@ -33,6 +33,9 @@ kingmadoc skills install                    # Claude Code (.claude/skills/)
 kingmadoc skills install --agent cursor     # or: codex, copilot
 ```
 
+Run it again after updating KingmaDoc: skill files still as an earlier version installed
+them are updated; files you edited are kept (`--force` replaces them too).
+
 Nothing else to install: the first `kingmadoc render` downloads the D2 diagram renderer by
 itself (pinned version, checksum-verified; `KINGMADOC_D2_DOWNLOAD=0` turns that off).
 `skills install` also makes VS Code open explainers (`docs/explain/`) as a rendered

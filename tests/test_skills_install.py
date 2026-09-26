@@ -1,12 +1,16 @@
 """Tests for `kingmadoc skills install`: the agent skills ship inside the package."""
 
+import hashlib
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner, Result
 
+from kingmadoc import skills
 from kingmadoc.cli import cli
-from kingmadoc.skills import SKILL_NAMES, bundled_skill
+from kingmadoc.skills import MANIFEST, SKILL_NAMES, bundled_skill
 
 REPO = Path(__file__).resolve().parents[1]
 SOURCES = {
@@ -93,7 +97,80 @@ def test_skill_folders_are_installed_completely(tmp_path: Path) -> None:
     assert _install(tmp_path).exit_code == 0
 
     installed = tmp_path / ".claude" / "skills" / "explaining-code"
-    files = [p for p in installed.rglob("*") if p.is_file()]
+    files = [p for p in installed.rglob("*") if p.is_file() and p.name != MANIFEST]
     assert sorted(p.relative_to(installed) for p in files) == expected
     for rel in expected:
         assert (installed / rel).read_bytes() == (folder / rel).read_bytes()
+
+
+def _skill_md(root: Path) -> Path:
+    return root / ".claude" / "skills" / "explaining-code" / "SKILL.md"
+
+
+def _sha(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def test_an_older_installed_version_is_updated_without_force(tmp_path: Path) -> None:
+    """A file still as an earlier install left it is not a local edit: it is replaced."""
+    assert _install(tmp_path).exit_code == 0
+    target = _skill_md(tmp_path)
+    manifest = target.parent / MANIFEST
+    target.write_text("skill as KingmaDoc 0.1 shipped it", encoding="utf-8")
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+    data["files"]["SKILL.md"] = _sha("skill as KingmaDoc 0.1 shipped it")
+    manifest.write_text(json.dumps(data), encoding="utf-8")
+
+    result = _install(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    assert target.read_text(encoding="utf-8") == SOURCES["explaining-code"].read_text(
+        encoding="utf-8"
+    )
+
+
+def test_installs_from_before_the_manifest_are_recognised(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Without a manifest, a file matching a previously shipped version is replaced."""
+    old = "explaining-code 3.0 as it was shipped"
+    history = {**skills.PREVIOUS_RELEASES, "explaining-code/SKILL.md": frozenset({_sha(old)})}
+    monkeypatch.setattr(skills, "PREVIOUS_RELEASES", history)
+    _skill_md(tmp_path).parent.mkdir(parents=True)
+    _skill_md(tmp_path).write_text(old, encoding="utf-8")
+
+    result = _install(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    assert _skill_md(tmp_path).read_text(encoding="utf-8") != old
+
+
+def test_previous_releases_cover_every_released_skill_version() -> None:
+    """The frozen history holds the version installed from commit 29244f7 (pre-manifest)."""
+    shown = subprocess.run(
+        ["git", "-C", str(REPO), "show", "29244f7:skill/explaining-code/SKILL.md"],
+        capture_output=True, check=False,
+    )
+    if shown.returncode != 0:
+        pytest.skip("git history not available (shallow clone)")
+    text = shown.stdout.decode("utf-8").replace("\r\n", "\n")
+
+    assert _sha(text) in skills.PREVIOUS_RELEASES["explaining-code/SKILL.md"]
+
+
+def test_a_file_the_skill_no_longer_ships_is_removed_when_unchanged(tmp_path: Path) -> None:
+    """Files an earlier version installed but the current one dropped are cleaned up."""
+    assert _install(tmp_path).exit_code == 0
+    folder = _skill_md(tmp_path).parent
+    (folder / "reference" / "old.md").write_text("old", encoding="utf-8")
+    (folder / "reference" / "mine.md").write_text("edited", encoding="utf-8")
+    data = json.loads((folder / MANIFEST).read_text(encoding="utf-8"))
+    data["files"]["reference/old.md"] = _sha("old")
+    data["files"]["reference/mine.md"] = _sha("as shipped")
+    (folder / MANIFEST).write_text(json.dumps(data), encoding="utf-8")
+
+    result = _install(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    assert not (folder / "reference" / "old.md").exists()
+    assert (folder / "reference" / "mine.md").read_text(encoding="utf-8") == "edited"

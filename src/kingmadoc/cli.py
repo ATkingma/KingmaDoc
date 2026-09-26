@@ -308,7 +308,9 @@ def skills_group() -> None:
     show_default=True,
     help="Agent whose skills directory to install into.",
 )
-@click.option("--force", is_flag=True, help="Replace installed skills that differ.")
+@click.option(
+    "--force", is_flag=True, help="Also replace skill files you edited locally."
+)
 @click.option(
     "--no-vscode", is_flag=True, help="Don't make VS Code open explainers as a preview."
 )
@@ -318,14 +320,16 @@ def skills_install(root: Path, agent: str, force: bool, no_vscode: bool) -> None
     Also makes VS Code open docs/explain/*.md as a rendered preview (--no-vscode skips).
     """
     try:
-        written, current = install_skills(root, agent, force)
+        result = install_skills(root, agent, force)
         vscode = None if no_vscode else enable_markdown_preview(root)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
-    for path in written:
+    for path in result.written:
         click.echo(path)
-    if current:
-        click.echo(f"{len(current)} skill file(s) already up to date.", err=True)
+    for path in result.removed:
+        click.echo(f"Removed {path} (no longer part of the skill).", err=True)
+    if result.up_to_date:
+        click.echo(f"{len(result.up_to_date)} skill file(s) already up to date.", err=True)
     if vscode:
         click.echo(vscode, err=True)
 
