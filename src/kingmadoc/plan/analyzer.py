@@ -111,6 +111,11 @@ ENTRY_POINT_NAMES: frozenset[str] = frozenset({
 
 TEST_DIR_NAMES: frozenset[str] = frozenset({"tests", "test", "__tests__", "spec", "specs"})
 
+NPM_DEPENDENCY_KEYS: tuple[str, ...] = (
+    "dependencies", "devDependencies", "peerDependencies", "optionalDependencies",
+)
+CARGO_DEPENDENCY_KEYS: tuple[str, ...] = ("dependencies", "dev-dependencies")
+
 # Normalized dependency name (package, Go module, Docker image) -> technology.
 DEPENDENCY_TECH: Mapping[str, str] = MappingProxyType({
     # Python
@@ -418,8 +423,9 @@ def _iter_files(root: Path, exclude: tuple[str, ...]) -> Iterator[Path]:
 
 
 def _read_text(path: Path) -> str:
+    # utf-8-sig strips a byte-order mark (common on Windows), which json/tomllib reject.
     try:
-        return path.read_text(encoding="utf-8", errors="ignore")
+        return path.read_text(encoding="utf-8-sig", errors="ignore")
     except OSError:
         return ""
 
@@ -441,48 +447,74 @@ def _in_test_dir(f: Path) -> bool:
 
 
 def _manifest_dependencies(name: str, text: str) -> set[str]:
-    """Return normalized dependency names declared in one manifest (empty if unknown)."""
+    """Return normalized dependency names declared in one manifest (empty if unknown).
+
+    Every table and list is type-checked before use; anything of an unexpected type is
+    skipped, so a malformed manifest never stops the analysis.
+    """
     try:
         if name == "pyproject.toml":
             return _pyproject_dependencies(tomllib.loads(text))
         if name == "requirements.txt":
             return {_python_name(line) for line in text.splitlines()} - {""}
         if name == "package.json":
-            data = json.loads(text)
+            data = _mapping(json.loads(text))
             return {
                 dep.lower()
-                for key in ("dependencies", "devDependencies", "peerDependencies")
-                for dep in _mapping(data.get(key) if isinstance(data, dict) else None)
+                for key in NPM_DEPENDENCY_KEYS
+                for dep in _mapping(data.get(key))
             }
         if name == "go.mod":
             return set(re.findall(r"^\s*(?:require\s+)?([\w.-]+\.[\w/.-]+)\s+v", text, re.M))
         if name == "Cargo.toml":
-            data = tomllib.loads(text)
-            return {
-                dep.lower()
-                for key in ("dependencies", "dev-dependencies")
-                for dep in _mapping(data.get(key))
-            }
+            return _cargo_dependencies(tomllib.loads(text))
         if fnmatch(name, "*compose.y*ml"):
             services = _mapping(_mapping(yaml.safe_load(text)).get("services"))
             return {
-                str(service["image"]).split("@")[0].split(":")[0].rsplit("/", 1)[-1].lower()
+                _image_name(service["image"])
                 for service in services.values()
-                if isinstance(service, dict) and service.get("image")
+                if isinstance(service, dict) and isinstance(service.get("image"), str)
             }
     except (tomllib.TOMLDecodeError, json.JSONDecodeError, yaml.YAMLError):
         pass
     return set()
 
 
+def _image_name(image: str) -> str:
+    """``registry.local:5000/library/postgres:16`` or ``postgres@sha256:…`` -> ``postgres``."""
+    # Path first: a registry host may contain a port ("host:5000/"), which is not a tag.
+    last = image.split("@")[0].rsplit("/", 1)[-1]
+    return last.split(":")[0].lower()
+
+
 def _pyproject_dependencies(data: Mapping[str, Any]) -> set[str]:
     project = _mapping(data.get("project"))
-    specs = [s for s in project.get("dependencies") or [] if isinstance(s, str)]
+    specs = _strings(project.get("dependencies"))
     for group in _mapping(project.get("optional-dependencies")).values():
-        specs.extend(s for s in group or [] if isinstance(s, str))
+        specs += _strings(group)
+    # PEP 735; entries may also be {include-group = "..."} tables, which _strings skips.
+    for group in _mapping(data.get("dependency-groups")).values():
+        specs += _strings(group)
     poetry = _mapping(_mapping(data.get("tool")).get("poetry"))
-    specs.extend(_mapping(poetry.get("dependencies")))
+    specs += list(_mapping(poetry.get("dependencies")))
+    for group in _mapping(poetry.get("group")).values():
+        specs += list(_mapping(_mapping(group).get("dependencies")))
     return {_python_name(spec) for spec in specs} - {"", "python"}
+
+
+def _cargo_dependencies(data: Mapping[str, Any]) -> set[str]:
+    tables = [data, _mapping(data.get("workspace")), *_mapping(data.get("target")).values()]
+    return {
+        dep.lower()
+        for table in tables
+        for key in CARGO_DEPENDENCY_KEYS
+        for dep in _mapping(_mapping(table).get(key))
+    }
+
+
+def _strings(value: Any) -> list[str]:
+    """The string items of a list; anything else (wrong type, nested tables) is skipped."""
+    return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
 
 
 def _python_name(spec: str) -> str:
