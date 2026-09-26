@@ -52,6 +52,21 @@ mkdir -p .github && cat skill/copilot.md >> .github/copilot-instructions.md
 Then ask the agent to "plan <feature>" or "verify <slug>". If the `kingmadoc` CLI is
 installed, the skill uses it for the codebase analysis.
 
+**Documenting an existing feature.** A second skill,
+[`skill/documenting-existing-features/SKILL.md`](skill/documenting-existing-features/SKILL.md),
+documents a feature that already exists (for example code from an earlier agent
+session): it finds the code and writes an as-built document in the same format, with
+file and line references. Install it next to the first one and ask the agent to
+"document the existing <feature>":
+
+```bash
+mkdir -p .claude/skills/documenting-existing-features
+cp skill/documenting-existing-features/SKILL.md .claude/skills/documenting-existing-features/
+```
+
+For Cursor, Codex and Copilot, copy the same folder into `.cursor/skills/`,
+`.agents/skills/` or `.github/skills/` (Agent Skills standard).
+
 - The Codex and Copilot files are loaded in **every** session (about 17 KB). Codex
   stops reading `AGENTS.md` files after 32 KiB in total by default
   (`project_doc_max_bytes`). **Lighter alternative:** all three agents also support the

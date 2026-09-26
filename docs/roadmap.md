@@ -245,6 +245,8 @@ is always kept, and nothing is sent anywhere without explicit configuration.
 
 ## WP12. Document an existing feature
 
+**Status:** task 1 and 2 done (agent skill, unreleased); task 3 (CLI command) open.
+
 **Goal.** Document a feature that already exists, as built, instead of only planning new
 ones: for projects that grew without docs, or to review what an earlier agent session
 built.

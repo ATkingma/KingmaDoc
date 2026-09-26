@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `technical_design`: a module dependency graph derived from the imports between the
   project's own Python modules (merged into packages above 25 modules).
 - `kingmadoc analyze` reports `module_dependencies` (also in `--json`).
+- Agent skill `documenting-existing-features`: documents a feature that already exists, as
+  built (status `implemented`), in the plan format plus an implementation map with file
+  and line references.
 
 ## [0.1.1] - 2026-09-26
 
