@@ -28,6 +28,7 @@ from kingmadoc.plan.generator import (
     render_plan,
 )
 from kingmadoc.render import render_file
+from kingmadoc.skills import AGENT_DIRS, install_skills
 from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
 
 ROOT_OPTION = click.option(
@@ -276,6 +277,33 @@ def render_command(documents: tuple[Path, ...]) -> None:
                 click.echo(image)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
+
+
+@cli.group("skills")
+def skills_group() -> None:
+    """Agent skills bundled with KingmaDoc (plan/verify, and explaining existing code)."""
+
+
+@skills_group.command("install")
+@ROOT_OPTION
+@click.option(
+    "--agent",
+    type=click.Choice(list(AGENT_DIRS)),
+    default="claude",
+    show_default=True,
+    help="Agent whose skills directory to install into.",
+)
+@click.option("--force", is_flag=True, help="Replace installed skills that differ.")
+def skills_install(root: Path, agent: str, force: bool) -> None:
+    """Install the KingmaDoc skills into the project for AGENT (Agent Skills standard)."""
+    try:
+        written, current = install_skills(root, agent, force)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    for path in written:
+        click.echo(path)
+    if current:
+        click.echo(f"{len(current)} skill(s) already up to date.", err=True)
 
 
 def main() -> None:

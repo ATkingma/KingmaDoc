@@ -45,6 +45,12 @@ path = "src/kingmadoc/__init__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/kingmadoc"]
 
+# The agent skills live in skill/ (easy to find on GitHub) and ship as package data, so
+# `kingmadoc skills install` works after a plain pip install.
+[tool.hatch.build.targets.wheel.force-include]
+"skill/SKILL.md" = "kingmadoc/skills/kingmadoc/SKILL.md"
+"skill/explaining-code/SKILL.md" = "kingmadoc/skills/explaining-code/SKILL.md"
+
 # The sdist is the source of truth for rebuilding the package (and for distro
 # packagers), so it keeps tests/docs/skill; only Claude Code dev tooling is left out.
 [tool.hatch.build.targets.sdist]
