@@ -1,102 +1,94 @@
-# Feature Design Doc: {{ feature.name }}
+{% set report = codebase_report %}
+# Feature: {{ feature_summary }}
 
 | | |
 |---|---|
 | **Project** | {{ project_name }} |
 | **Status** | Draft |
-| **Generated** | {{ generated_on }} by KingmaDoc {{ version }} |
+| **Generated** | {{ generated_at.isoformat(timespec="minutes") }} by KingmaDoc {{ version }} |
 
-> Generated before implementation. Review every section: diagrams and module
-> lists are inferred from the codebase and are a starting point, not the truth.
+> Generated before implementation. Fill in every _TODO_ and review everything marked
+> _(inferred)_: it comes from the codebase analysis and is a starting point, not the truth.
 
-## 1. Summary
+## One-sentence summary
 
-{{ feature.description or "_TODO: describe the feature in one or two sentences._" }}
-{% if project_description %}
+{{ feature_summary }}
+{% if feature_description != feature_summary %}
 
-**System context:** {{ project_description }}
+**Full description:** {{ feature_description }}
 {% endif %}
 
-## 2. Clarifying questions
+## Scope (in / out)
 
-{% if feature.answers %}
-{% for question, answer in feature.answers %}
-**Q{{ loop.index }}. {{ question }}**
-{{ answer or "_Not answered._" }}
+**In scope**
 
-{% endfor %}
-{% else %}
-_No questions were asked (`--no-input`). Consider answering:_ who triggers the
-feature, which systems it touches, which modules change, and how success is measured.
+- _TODO: what this feature delivers._
 
+**Out of scope**
+
+- _TODO: what it deliberately does not do._
+
+## Assumptions
+
+{% if report.detected_stack %}
+- _(inferred)_ Built on the existing stack: {{ report.detected_stack | join(", ") }}.
 {% endif %}
-## 3. Codebase context
+- _TODO: what must be true for this plan to work (users, data, services, limits)._
 
-**Tech stack:** {{ analysis.tech_stack | join(", ") if analysis.tech_stack else "_not detected_" }}
+## Risks
 
-{% if analysis.languages %}
-| Language | Files |
-|---|---|
-{% for language, count in analysis.languages.items() %}
-| {{ language }} | {{ count }} |
-{% endfor %}
+- _TODO: what could go wrong, and how you will notice or limit it._
 
-{% endif %}
-<details>
-<summary>File tree ({{ analysis.files | length }} files{% if analysis.truncated %}, truncated{% endif %})</summary>
-
-```text
-{{ analysis.tree }}
-```
-
-</details>
-
-{% if "c4_context" in diagrams %}
-## 4. C4 Context
+## C4 Context ({{ diagram_label }})
 
 Who uses the system and which external systems it depends on.
 
-```mermaid
-{{ diagrams.c4_context }}
+{{ c4_context or "_Disabled in `.featuredoc.yml` (`diagrams`)._" }}
+
+## C4 Container ({{ diagram_label }})
+
+The runnable units inside the system _(inferred from source directories)_.
+
+{{ c4_container or "_Disabled in `.featuredoc.yml` (`diagrams`)._" }}
+
+## Open questions
+
+{% set open = answers | rejectattr(1) | map(attribute=0) | list %}
+{% set answered = answers | selectattr(1) | list %}
+{% for question in open %}
+- [ ] {{ question }}
+{% endfor %}
+- [ ] _TODO: anything else that must be decided before implementation._
+{% if answered %}
+
+**Answered while planning**
+
+{% for question, answer in answered %}
+- **{{ question }}** {{ answer }}
+{% endfor %}
+{% endif %}
+
+## Appendix: codebase context _(inferred)_
+
+- **Tech stack:** {{ report.detected_stack | join(", ") if report.detected_stack else "_not detected_" }}
+{% for label, paths in [("Entry points", report.entry_points), ("Config files", report.config_files), ("Test directories", report.test_dirs)] %}
+- **{{ label }}:** {% for p in paths %}`{{ p }}`{{ ", " if not loop.last }}{% else %}_none found_{% endfor %}
+
+{% endfor %}
+{% if report.language_breakdown %}
+
+| Language | Files |
+|---|---|
+{% for language, count in report.language_breakdown.items() %}
+| {{ language }} | {{ count }} |
+{% endfor %}
+{% endif %}
+
+<details>
+<summary>File tree ({{ report.file_count }} file{{ "s" if report.file_count != 1 }}{% if report.truncated %}, truncated{% endif %})</summary>
+
+```text
+{{ report.tree }}
 ```
 
-{% endif %}
-{% if "c4_container" in diagrams %}
-## 5. C4 Container
-
-The runnable units inside the system (inferred from source directories).
-
-```mermaid
-{{ diagrams.c4_container }}
-```
-
-{% endif %}
-## 6. C4 Component
-
-_TODO: components inside the container this feature changes._
-
-## 7. Sequence
-
-_TODO: the main flow of the feature, step by step._
-
-## 8. Class model
-
-_TODO: new or changed classes and their relationships._
-
-## 9. Implementation plan
-
-- [ ] _TODO: step 1_
-- [ ] _TODO: step 2_
-
-## 10. Validation plan
-
-How the developer can check the result without reading every line of code.
-
-- [ ] Build succeeds
-- [ ] Tests pass (list new tests here)
-- [ ] Lint is clean
-- [ ] Manual check: _TODO_
-
-## 11. Risks and open questions
-
-- _TODO_
+</details>

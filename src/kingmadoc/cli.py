@@ -1,22 +1,30 @@
-"""Command-line interface: ``kingmadoc init | plan | verify``."""
+"""Command-line interface: ``kingmadoc init | plan | verify | adr``."""
 
 from __future__ import annotations
 
+import json
+import sys
+from datetime import date, datetime
 from pathlib import Path
 
 import click
 
 from kingmadoc import __version__
-from kingmadoc.config import CONFIG_FILENAME, default_config_yaml, load_config
+from kingmadoc.adr import STATUSES, adr_path, render_adr
+from kingmadoc.config import CONFIG_FILENAME, MAX_FILES_LIMIT, default_config_yaml, load_config
+from kingmadoc.documents import write_document, write_documents
 from kingmadoc.exceptions import KingmaDocError
-from kingmadoc.plan.analyzer import analyze
+from kingmadoc.plan.analyzer import analyze, report_to_dict
 from kingmadoc.plan.generator import (
-    FeatureRequest,
+    build_plan_context,
     build_questions,
     default_output_path,
+    enabled_extra_designs,
+    extra_design_path,
+    render_extra_design,
     render_plan,
-    write_document,
 )
+from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
 
 ROOT_OPTION = click.option(
     "--root",
@@ -30,7 +38,7 @@ ROOT_OPTION = click.option(
 @click.group()
 @click.version_option(__version__, prog_name="kingmadoc")
 def cli() -> None:
-    """KingmaDoc: feature design docs before you build, verification docs after."""
+    """KingmaDoc: feature plan docs before you build, verification docs after."""
 
 
 @cli.command()
@@ -46,9 +54,8 @@ def init(root: Path, force: bool) -> None:
 
 
 @cli.command()
-@click.argument("feature_name")
+@click.argument("description", required=False)
 @ROOT_OPTION
-@click.option("-d", "--description", default="", help="One-line feature description.")
 @click.option(
     "-c",
     "--config",
@@ -62,66 +69,159 @@ def init(root: Path, force: bool) -> None:
     "--output",
     type=click.Path(dir_okay=False, path_type=Path),
     default=None,
-    help="Output file (default: <output_dir>/<feature-slug>/design.md).",
+    help="Output file (default: <output_dir>/<slug>-plan.md).",
 )
-@click.option("--no-input", is_flag=True, help="Skip clarifying questions.")
+@click.option(
+    "--no-input", is_flag=True, help="Don't ask; list the questions as open questions."
+)
 @click.option("--stdout", "to_stdout", is_flag=True, help="Print the doc instead of writing it.")
 @click.option("--force", is_flag=True, help="Overwrite an existing output file.")
+@click.option(
+    "--json", "as_json", is_flag=True, help="Print the codebase analysis as JSON and exit."
+)
 def plan(
-    feature_name: str,
+    description: str | None,
     root: Path,
-    description: str,
     config_path: Path | None,
     output: Path | None,
     no_input: bool,
     to_stdout: bool,
     force: bool,
+    as_json: bool,
 ) -> None:
-    """Analyze the codebase and generate a Feature Design Doc for FEATURE_NAME."""
+    """Analyze the codebase and write a plan doc for the feature in DESCRIPTION.
+
+    The doc goes to <output_dir>/<slug>-plan.md (slug derived from DESCRIPTION) and its
+    path is printed. Extra docs enabled under extra_designs in the config
+    (<slug>-functional-design.md, <slug>-technical-design.md) are written next to it,
+    one printed path per line. With --json, DESCRIPTION is optional and only the analysis
+    is printed.
+    """
+    if description is None and not as_json:
+        raise click.UsageError("Missing argument 'DESCRIPTION'.")
     try:
         config = load_config(root, config_path)
-        analysis = analyze(root, config.analyzer)
+        report = analyze(root, config.analyzer)
+        if report.truncated:
+            click.echo(
+                f"Warning: stopped after {report.file_count} files; the analysis is "
+                f"incomplete (analyzer.max_files, at most {MAX_FILES_LIMIT}).",
+                err=True,
+            )
+        if as_json or description is None:
+            click.echo(json.dumps(report_to_dict(report), indent=2))
+            return
 
-        answers: list[tuple[str, str]] = []
-        if not no_input:
-            questions = build_questions(analysis, config)
-            if questions:
-                click.echo("Answer a few questions (press Enter to skip):", err=True)
-            for question in questions:
-                answer = click.prompt(question, default="", show_default=False, err=True)
-                answers.append((question, answer.strip()))
-
-        feature = FeatureRequest(name=feature_name, description=description, answers=answers)
-        content = render_plan(feature, analysis, config)
+        questions = build_questions(report, config)
+        answers = [(q, "") for q in questions] if no_input else _ask(questions)
+        context = build_plan_context(
+            description, report, config, now=datetime.now().astimezone(), answers=answers
+        )
+        path = output or default_output_path(report.root, config, description)
+        documents = [(path, render_plan(context, config))]
+        documents += [
+            (extra_design_path(design, path), render_extra_design(design, context, path))
+            for design in enabled_extra_designs(config)
+        ]
 
         if to_stdout:
-            click.echo(content, nl=False)
+            # Extra docs follow the plan, separated by a horizontal rule.
+            click.echo("\n---\n\n".join(content for _, content in documents), nl=False)
             return
-        path = output or default_output_path(analysis.root, config, feature_name)
-        written = write_document(content, path, overwrite=force)
+        written = write_documents(documents, overwrite=force)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    if analysis.truncated:
-        click.echo(
-            f"Warning: stopped after {config.analyzer.max_files} files; "
-            "raise analyzer.max_files for a complete analysis.",
-            err=True,
-        )
-    click.echo(f"Wrote {written}")
+    for written_path in written:
+        click.echo(written_path)
+
+
+def _ask(questions: list[str]) -> list[tuple[str, str]]:
+    """Prompt for each question on stderr; unasked questions keep an empty answer."""
+    if questions:
+        click.echo("Answer a few questions (press Enter to skip):", err=True)
+    answers: list[tuple[str, str]] = []
+    for question in questions:
+        try:
+            answer = click.prompt(question, default="", show_default=False, err=True)
+        except click.Abort:
+            # EOF on non-interactive stdin (e.g. an AI agent): keep going.
+            if sys.stdin.isatty():
+                raise
+            click.echo("\nstdin closed; skipping remaining questions.", err=True)
+            break
+        answers.append((question, answer.strip()))
+    return answers + [(q, "") for q in questions[len(answers):]]
 
 
 @cli.command()
-@click.argument("plan_path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.argument("slug")
 @ROOT_OPTION
-def verify(plan_path: Path, root: Path) -> None:
-    """Compare PLAN_PATH against the code and generate a Feature Verification Doc.
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
+)
+@click.option("--force", is_flag=True, help="Overwrite an existing verification doc.")
+def verify(slug: str, root: Path, config_path: Path | None, force: bool) -> None:
+    """[WORK IN PROGRESS] Write a placeholder verification doc for plan SLUG.
 
-    Not implemented yet (planned for phase 2).
+    Reads <output_dir>/SLUG-plan.md and writes SLUG-verify.md next to it, then prints
+    its path. The comparison against the code is not implemented yet (phase 2).
     """
-    raise click.ClickException(
-        f"verify is not implemented yet (phase 2). Plan: {plan_path}, root: {root}"
-    )
+    try:
+        config = load_config(root, config_path)
+        root = root.resolve()
+        plan_path = find_plan(root, config, slug)
+        content = render_verify_stub(
+            slug,
+            plan_path.relative_to(root).as_posix(),
+            now=datetime.now().astimezone(),
+        )
+        written = write_document(content, verify_output_path(plan_path), overwrite=force)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo("verify is a work-in-progress stub: nothing was checked.", err=True)
+    click.echo(written)
+
+
+@cli.command()
+@click.argument("title")
+@ROOT_OPTION
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
+)
+@click.option(
+    "--status",
+    type=click.Choice(STATUSES),
+    default="proposed",
+    show_default=True,
+    help="Initial status of the decision.",
+)
+def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
+    """Write an Architecture Decision Record to docs/adr/<NNNN>-<slug>.md.
+
+    NNNN is one above the highest existing ADR number. Requires
+    extra_designs.adr.enabled: true in the config. Prints the path.
+    """
+    try:
+        config = load_config(root, config_path)
+        number, path = adr_path(root.resolve(), config, title)
+        content = render_adr(root, number, title, status=status, today=date.today())
+        written = write_document(content, path)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(written)
 
 
 def main() -> None:

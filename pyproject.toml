@@ -5,13 +5,16 @@ build-backend = "hatchling.build"
 [project]
 name = "kingmadoc"
 dynamic = ["version"]
-description = "Feature documentation skill for AI coding agents: design docs before, verification docs after."
+description = "Feature docs for AI coding agents: a plan with C4 diagrams before the code, a verification doc after."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [{ name = "KingmaDoc contributors" }]
 keywords = ["documentation", "c4", "mermaid", "ai-agents", "claude-code"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -24,6 +27,11 @@ dependencies = [
     "jinja2>=3.1",
     "pyyaml>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ATkingma/KingmaDoc"
+Issues = "https://github.com/ATkingma/KingmaDoc/issues"
+Changelog = "https://github.com/ATkingma/KingmaDoc/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]

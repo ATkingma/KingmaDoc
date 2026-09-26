@@ -1,0 +1,15 @@
+```plantuml
+@startuml
+!include <C4/C4_Context>
+title System Context: Web "Shop"
+
+Person(customer, "Customer", "Buys <U+0022>things<U+0022> for $5; 100% #1")
+System(web_shop, "Web <U+0022>Shop<U+0022>", "Sells C:\stuff")
+System_Ext(stripe, "Stripe", "Card payments")
+System_Ext(label, "Label")
+
+Rel(customer, web_shop, "Uses")
+Rel(web_shop, stripe, "Uses")
+Rel(web_shop, label, "Uses")
+@enduml
+```

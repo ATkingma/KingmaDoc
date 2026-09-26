@@ -1,0 +1,16 @@
+```mermaid
+C4Container
+    title Containers: Shop
+
+    Person(customer, "Customer", "Buys things")
+    System_Boundary(shop_boundary, "Shop") {
+        Container(web, "Web", "React", "Storefront, a #quot;SPA#quot;")
+        Container(api, "API", "FastAPI", "Orders")
+        Container(api_2, "api", "Python", "")
+        Container(db, "DB", "", "")
+    }
+
+    Rel(customer, web, "Visits")
+    Rel(web, api, "Calls #quot;/orders#quot;")
+    Rel(api, db, "Reads/writes")
+```

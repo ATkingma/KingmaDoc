@@ -1,0 +1,83 @@
+# Functional design: {{ feature_summary }}
+
+| | |
+|---|---|
+| **Project** | {{ project_name }} |
+| **Plan** | [`{{ plan_file }}`]({{ plan_file }}) |
+| **Status** | Draft |
+| **Generated** | {{ generated_at.isoformat(timespec="minutes") }} by KingmaDoc {{ version }} |
+
+> Optional companion to the plan doc (`extra_designs.functional_design` in `.featuredoc.yml`).
+> Describes _what_ the feature does from the user's point of view, not how it is built.
+> Fill in every _TODO_; write rules so a tester could check them without reading code.
+
+## User flows
+
+_TODO: one diagram per main flow. Start with the happy path, then add the error paths.
+Replace the example steps below._
+
+{% if diagram_format == "plantuml" %}
+```plantuml
+@startuml
+start
+:Actor starts the flow (TODO);
+repeat
+  :TODO: first step;
+repeat while (TODO: condition?) is (No: TODO: message shown to the user) not (Yes)
+:TODO: success outcome;
+stop
+@enduml
+```
+{% elif diagram_format == "d2" %}
+```d2
+start: "Actor starts the flow (TODO)" {shape: oval}
+step1: "TODO: first step"
+check: "TODO: condition?" {shape: diamond}
+done: "TODO: success outcome" {shape: oval}
+error: "TODO: message shown to the user"
+start -> step1 -> check
+check -> done: "Yes"
+check -> error: "No"
+error -> step1
+```
+{% else %}
+```mermaid
+flowchart TD
+    start(["Actor starts the flow (TODO)"]) --> step1["TODO: first step"]
+    step1 --> check{"TODO: condition?"}
+    check -- "Yes" --> done(["TODO: success outcome"])
+    check -- "No" --> error["TODO: message shown to the user"]
+    error --> step1
+```
+{% endif %}
+
+- **Actors:** _TODO: who starts each flow (see the plan's C4 Context diagram)._
+- **Entry points:** _TODO: screen, command, API call or event that starts the flow._
+
+## Edge cases
+
+| Situation | Expected behavior |
+|---|---|
+| Empty, invalid or too large input | _TODO_ |
+| The same action twice, or at the same time by two users | _TODO_ |
+| A dependency is slow or unavailable halfway through | _TODO_ |
+| The user cancels, goes back, or retries | _TODO_ |
+| _TODO: feature-specific situation_ | _TODO_ |
+
+## Business rules
+
+Number rules so tests and the verification doc can refer to them.
+
+- **BR-1:** _TODO: a rule the feature must always follow (source: who decided it)._
+- **BR-2:** _TODO_
+
+## Permissions and roles
+
+| Role | Can | Cannot |
+|---|---|---|
+| _TODO: e.g. anonymous visitor_ | _TODO_ | _TODO_ |
+| _TODO: e.g. signed-in user_ | _TODO_ | _TODO_ |
+| _TODO: e.g. administrator_ | _TODO_ | _TODO_ |
+
+- _TODO: what happens when someone without permission tries (hidden, disabled, or an
+  error), and whether the attempt is logged._

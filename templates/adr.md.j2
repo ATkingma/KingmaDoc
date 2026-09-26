@@ -1,0 +1,26 @@
+# {{ number }}. {{ title }}
+
+Date: {{ date }}
+
+## Status
+
+{{ status | capitalize }}
+
+<!--
+Status is one of: {{ statuses | join(", ") }}.
+When superseded, link the replacement, e.g. "Superseded by [0007](0007-new-decision.md)".
+-->
+
+## Context
+
+_TODO: the situation and forces at play (technical, business, team). Why is a decision
+needed now? Which options were considered?_
+
+## Decision
+
+_TODO: the decision, in full sentences and active voice: "We will …"._
+
+## Consequences
+
+_TODO: what becomes easier or harder because of this decision, including risks,
+follow-up work, and what would make us revisit it._

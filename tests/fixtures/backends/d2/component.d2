@@ -1,0 +1,12 @@
+```d2
+title: "Components: API" {
+  shape: text
+  near: top-center
+  style.font-size: 24
+}
+api_boundary: "API" {
+  orderrouter: "OrderRouter\n[FastAPI]\nHTTP routes"
+  orderrepo: "OrderRepo\n[SQLAlchemy]\nPersistence"
+}
+api_boundary.orderrouter -> api_boundary.orderrepo: "Reads/writes"
+```

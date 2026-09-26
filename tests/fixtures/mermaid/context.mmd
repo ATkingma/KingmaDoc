@@ -1,0 +1,15 @@
+```mermaid
+C4Context
+    title System Context: Web "Shop"
+
+    Person(customer, "Customer", "Buys #quot;things#quot; online")
+    Person(admin, "Admin")
+    System(web_shop, "Web #quot;Shop#quot;")
+    System_Ext(stripe, "Stripe", "Card payments")
+    System_Ext(postgresql, "PostgreSQL")
+
+    Rel(customer, web_shop, "Uses")
+    Rel(admin, web_shop, "Uses")
+    Rel(web_shop, stripe, "Uses")
+    Rel(web_shop, postgresql, "Uses")
+```

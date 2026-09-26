@@ -15,7 +15,7 @@ project:
   description: ""
 
 analyzer:
-  max_files: 2000
+  max_files: 5000  # maximum
   tree_depth: 3
   exclude_dirs:
     - ".git"
@@ -34,7 +34,24 @@ analyzer:
     - "build"
     - "*.egg-info"
 
-# Diagrams included in the Feature Design Doc.
+# Diagrams included in the plan doc.
 diagrams:
   - c4_context
   - c4_container
+
+# Diagram language: mermaid, plantuml (C4-PlantUML) or d2.
+diagram_format: mermaid
+
+# Optional extra documents.
+extra_designs:
+  functional_design:
+    # <slug>-functional-design.md: user flows, edge cases, business rules,
+    # permissions and roles.
+    enabled: false
+  technical_design:
+    # <slug>-technical-design.md: database schema, API contracts, error handling,
+    # performance and security considerations.
+    enabled: false
+  adr:
+    # `kingmadoc adr "<title>"` writes docs/adr/<NNNN>-<slug>.md.
+    enabled: false

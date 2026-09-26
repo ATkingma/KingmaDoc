@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/checking-conventions/scripts/check_conventions.py\" --hook",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

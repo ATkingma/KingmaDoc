@@ -33,3 +33,9 @@ def test_unknown_key_raises(tmp_path: Path) -> None:
     (tmp_path / ".featuredoc.yml").write_text("output_dri: x\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="output_dri"):
         load_config(tmp_path)
+
+
+def test_max_files_above_limit_raises(tmp_path: Path) -> None:
+    (tmp_path / ".featuredoc.yml").write_text("analyzer:\n  max_files: 5001\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="max_files"):
+        load_config(tmp_path)

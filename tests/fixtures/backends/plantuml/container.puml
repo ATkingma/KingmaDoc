@@ -1,0 +1,17 @@
+```plantuml
+@startuml
+!include <C4/C4_Container>
+title Containers: Shop
+
+Person(customer, "Customer")
+System_Boundary(shop_boundary, "Shop") {
+    Container(web, "Web", "React", "Storefront, a <U+0022>SPA<U+0022>")
+    Container(api, "API", "FastAPI", "Orders; ${id}")
+    Container(shop, "Shop", "Python", "")
+}
+
+Rel(customer, web, "Visits")
+Rel(web, api, "Calls <U+0022>/orders<U+0022>")
+Rel(api, shop, "Delegates")
+@enduml
+```

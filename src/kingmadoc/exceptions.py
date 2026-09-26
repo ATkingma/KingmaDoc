@@ -15,3 +15,15 @@ class AnalysisError(KingmaDocError):
 
 class GenerationError(KingmaDocError):
     """Raised when a document cannot be rendered or written."""
+
+
+class DiagramError(KingmaDocError):
+    """Raised when diagram input is invalid (missing names, unknown relationship ends)."""
+
+
+class VerificationError(KingmaDocError):
+    """Raised when verify mode cannot run (e.g. the plan doc does not exist)."""
+
+
+class AdrError(KingmaDocError):
+    """Raised when an Architecture Decision Record cannot be created."""

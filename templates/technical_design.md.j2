@@ -1,0 +1,101 @@
+{% set report = codebase_report %}
+# Technical design: {{ feature_summary }}
+
+| | |
+|---|---|
+| **Project** | {{ project_name }} |
+| **Plan** | [`{{ plan_file }}`]({{ plan_file }}) |
+| **Status** | Draft |
+| **Generated** | {{ generated_at.isoformat(timespec="minutes") }} by KingmaDoc {{ version }} |
+
+> Optional companion to the plan doc (`extra_designs.technical_design` in `.featuredoc.yml`).
+> Fill in every _TODO_ and review everything marked _(inferred)_. Delete a section only
+> when it truly does not apply, and say why.
+
+## Database schema
+
+{% if data_stores %}
+- _(inferred)_ Data stores detected in the codebase: {{ data_stores | join(", ") }}.
+{% else %}
+- _(inferred)_ No database detected in the codebase. If this feature stores no data,
+  replace this section with one line saying so.
+{% endif %}
+- _TODO: tables or collections this feature adds or changes, with keys, indexes and
+  migrations (including how to roll them back)._
+
+Entity-relationship diagram (_TODO: replace the example entities with the real ones_):
+
+{% if diagram_format == "plantuml" %}
+```plantuml
+@startuml
+entity "ENTITY_A" as entity_a {
+  * id : string <<PK>>
+  --
+  name : string
+}
+entity "ENTITY_B" as entity_b {
+  * id : string <<PK>>
+  --
+  entity_a_id : string <<FK>>
+}
+entity_a ||--o{ entity_b : has
+@enduml
+```
+{% elif diagram_format == "d2" %}
+```d2
+entity_a: "ENTITY_A" {
+  shape: sql_table
+  id: string {constraint: primary_key}
+  name: string
+}
+entity_b: "ENTITY_B" {
+  shape: sql_table
+  id: string {constraint: primary_key}
+  entity_a_id: string {constraint: foreign_key}
+}
+entity_b.entity_a_id -> entity_a.id: "belongs to"
+```
+{% else %}
+```mermaid
+erDiagram
+    ENTITY_A ||--o{ ENTITY_B : "has"
+    ENTITY_A {
+        string id PK
+        string name
+    }
+    ENTITY_B {
+        string id PK
+        string entity_a_id FK
+    }
+```
+{% endif %}
+
+## API contracts
+
+_TODO: every endpoint, command, event or function this feature exposes or changes._
+
+| Method / type | Path / name | Request | Response | Errors |
+|---|---|---|---|---|
+| _TODO_ | _TODO_ | _TODO_ | _TODO_ | _TODO_ |
+
+- _TODO: versioning and backwards compatibility for existing callers._
+
+## Error handling
+
+- _TODO: expected failures (invalid input, missing data, unavailable dependencies) and
+  how each is reported to the caller or user._
+- _TODO: retries, timeouts and fallbacks._
+- _TODO: what is logged, and at which level._
+
+## Performance considerations
+
+- _TODO: expected load (requests, data volume) and the latency or throughput target._
+- _TODO: hot paths, queries or loops that could become slow, and how to measure them._
+- _TODO: caching, pagination or batching, if needed._
+
+## Security considerations
+
+- _TODO: who may use this feature (authentication and authorization)._
+- _TODO: input validation and output encoding for every external input._
+- _TODO: secrets, personal data and logging of sensitive values._
+- _TODO: abuse cases (rate limiting, enumeration, injection)._

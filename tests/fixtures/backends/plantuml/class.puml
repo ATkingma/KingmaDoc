@@ -1,0 +1,21 @@
+```plantuml
+@startuml
+title Domain
+class "User" as user {
+  +id: int
+  -email: str
+  +login(password: str): bool
+  +logout()
+}
+class "Admin" as admin
+class "Session" as session {
+  +token: str
+}
+class "Mailer" as mailer
+user <|-- admin
+user *-- session : owns
+user ..> mailer : uses
+session --> mailer
+admin o-- session : audits
+@enduml
+```

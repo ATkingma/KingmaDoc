@@ -1,0 +1,18 @@
+```d2
+title: "Containers: Shop" {
+  shape: text
+  near: top-center
+  style.font-size: 24
+}
+customer: "Customer" {
+  shape: person
+}
+shop_boundary: "Shop" {
+  web: "Web\n[React]\nStorefront, a \"SPA\""
+  api: "API\n[FastAPI]\nOrders; \${id}"
+  shop: "Shop\n[Python]"
+}
+customer -> shop_boundary.web: "Visits"
+shop_boundary.web -> shop_boundary.api: "Calls \"/orders\""
+shop_boundary.api -> shop_boundary.shop: "Delegates"
+```

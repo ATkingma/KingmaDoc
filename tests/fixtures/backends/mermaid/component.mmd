@@ -1,0 +1,11 @@
+```mermaid
+C4Component
+    title Components: API
+
+    Container_Boundary(api_boundary, "API") {
+        Component(orderrouter, "OrderRouter", "FastAPI", "HTTP routes")
+        Component(orderrepo, "OrderRepo", "SQLAlchemy", "Persistence")
+    }
+
+    Rel(orderrouter, orderrepo, "Reads/writes")
+```

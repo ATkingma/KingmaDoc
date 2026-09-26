@@ -1,0 +1,20 @@
+```d2
+title: "System Context: Web \"Shop\"" {
+  shape: text
+  near: top-center
+  style.font-size: 24
+}
+customer: "Customer\nBuys \"things\" for \$5; 100% #1" {
+  shape: person
+}
+web_shop: "Web \"Shop\"\nSells C:\\stuff"
+stripe: "Stripe\nCard payments" {
+  style.stroke-dash: 3
+}
+label_: "Label" {
+  style.stroke-dash: 3
+}
+customer -> web_shop: "Uses"
+web_shop -> stripe: "Uses"
+web_shop -> label_: "Uses"
+```

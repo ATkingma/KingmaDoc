@@ -1,0 +1,11 @@
+```d2
+diagram: "Login \"flow\"" {
+  shape: sequence_diagram
+  web_app: "Web App"
+  api: "API"
+  label_: "Label"
+  web_app -> api: "POST /login; body {\"user\": \"a\"} #1"
+  api -> label_: "Check \$user"
+  api -> web_app: "200 OK"
+}
+```

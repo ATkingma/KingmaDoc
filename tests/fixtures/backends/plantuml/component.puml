@@ -1,0 +1,13 @@
+```plantuml
+@startuml
+!include <C4/C4_Component>
+title Components: API
+
+Container_Boundary(api_boundary, "API") {
+    Component(orderrouter, "OrderRouter", "FastAPI", "HTTP routes")
+    Component(orderrepo, "OrderRepo", "SQLAlchemy", "Persistence")
+}
+
+Rel(orderrouter, orderrepo, "Reads/writes")
+@enduml
+```

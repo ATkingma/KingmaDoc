@@ -1,0 +1,22 @@
+```mermaid
+---
+title: "Domain"
+---
+classDiagram
+    class user["User"] {
+        +id: int
+        -email: str
+        +login(password: str) bool
+        +logout()
+    }
+    class admin["Admin"]
+    class session["Session"] {
+        +token: str
+    }
+    class mailer["Mailer"]
+    user <|-- admin
+    user *-- session : owns
+    user ..> mailer : uses
+    session --> mailer
+    admin o-- session : audits
+```

@@ -1,0 +1,40 @@
+```d2
+title: "Domain" {
+  shape: text
+  near: top-center
+  style.font-size: 24
+}
+user: "User" {
+  shape: class
+  "+id": "int"
+  "-email": "str"
+  "+login(password: str)": "bool"
+  "+logout()"
+}
+admin: "Admin" {
+  shape: class
+}
+session: "Session" {
+  shape: class
+  "+token": "str"
+}
+mailer: "Mailer" {
+  shape: class
+}
+admin -> user {
+  target-arrowhead.shape: triangle
+  target-arrowhead.style.filled: false
+}
+user -> session: "owns" {
+  source-arrowhead.shape: diamond
+  source-arrowhead.style.filled: true
+}
+user -> mailer: "uses" {
+  style.stroke-dash: 3
+}
+session -> mailer
+admin -> session: "audits" {
+  source-arrowhead.shape: diamond
+  source-arrowhead.style.filled: false
+}
+```

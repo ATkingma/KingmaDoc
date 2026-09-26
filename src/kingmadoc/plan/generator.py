@@ -1,30 +1,35 @@
-"""Renders the Feature Design Doc from analysis results and user answers."""
+"""Builds the plan context and renders the plan doc (Feature Design Doc)."""
 
 from __future__ import annotations
 
 import re
 from collections import Counter
-from dataclasses import dataclass, field
-from datetime import date
-from importlib.resources import files as package_files
+from collections.abc import Sequence
+from dataclasses import dataclass, fields
+from datetime import datetime
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateError
+from jinja2 import TemplateError
 
 from kingmadoc import __version__
 from kingmadoc.config import FeatureDocConfig
-from kingmadoc.diagrams.c4 import (
-    Container,
-    Person,
-    Relationship,
-    build_container_diagram,
-    build_context_diagram,
-    make_alias,
-)
+from kingmadoc.diagrams import get_backend
 from kingmadoc.exceptions import GenerationError
-from kingmadoc.plan.analyzer import EXTENSION_LANGUAGES, AnalysisResult
+from kingmadoc.naming import slugify
+from kingmadoc.plan.analyzer import EXTENSION_LANGUAGES, SOURCE_LANGUAGES, CodebaseReport
+from kingmadoc.templating import environment
 
+# More containers than this makes the inferred diagram unreadable.
 MAX_INFERRED_CONTAINERS = 6
+# The summary is the doc title; longer titles wrap badly in editors and PR views.
+MAX_SUMMARY_LENGTH = 120
+
+PLAN_SUFFIX = "-plan.md"
+
+# Detected technologies that count as data stores in the technical design doc.
+DATA_STORES = frozenset({
+    "PostgreSQL", "MySQL", "MariaDB", "MongoDB", "Redis", "Elasticsearch", "SQLite",
+})
 
 BASE_QUESTIONS: tuple[str, ...] = (
     "What problem does this feature solve, and for whom?",
@@ -36,15 +41,59 @@ BASE_QUESTIONS: tuple[str, ...] = (
 
 
 @dataclass(frozen=True)
-class FeatureRequest:
-    """What the developer wants to build, plus their answers to clarifying questions."""
+class ExtraDesign:
+    """An optional design doc that ``plan`` can write next to the plan doc.
+
+    Attributes:
+        name: Key under ``extra_designs`` in ``.featuredoc.yml``.
+        template: Jinja2 template file name.
+        suffix: File name suffix after the slug.
+    """
 
     name: str
-    description: str = ""
-    answers: list[tuple[str, str]] = field(default_factory=list)
+    template: str
+    suffix: str
 
 
-def build_questions(analysis: AnalysisResult, config: FeatureDocConfig) -> list[str]:
+# Order in which extra docs are written and printed: what (functional), then how (technical).
+EXTRA_DESIGNS: tuple[ExtraDesign, ...] = (
+    ExtraDesign("functional_design", "functional_design.md.j2", "-functional-design.md"),
+    ExtraDesign("technical_design", "technical_design.md.j2", "-technical-design.md"),
+)
+
+
+@dataclass(frozen=True)
+class PlanContext:
+    """Everything the plan template renders; built by :func:`build_plan_context`.
+
+    Attributes:
+        feature_description: The description as given on the command line.
+        feature_summary: Its first sentence, at most ``MAX_SUMMARY_LENGTH`` characters.
+        codebase_report: Result of analyzing the codebase.
+        c4_context: Fenced C4 Context block ("" if disabled in the config).
+        c4_container: Fenced C4 Container block ("" if disabled in the config).
+        generated_at: When the doc was generated.
+        version: KingmaDoc version that generated it.
+        project_name: Project name (config, or the root directory name).
+        answers: ``(question, answer)`` pairs; empty answers are still-open questions.
+        diagram_format: ``diagram_format`` from the config (``mermaid``, ``plantuml``, ``d2``).
+        diagram_label: Its display name for headings, e.g. ``"Mermaid"``.
+    """
+
+    feature_description: str
+    feature_summary: str
+    codebase_report: CodebaseReport
+    c4_context: str
+    c4_container: str
+    generated_at: datetime
+    version: str
+    project_name: str
+    answers: tuple[tuple[str, str], ...] = ()
+    diagram_format: str = "mermaid"
+    diagram_label: str = "Mermaid"
+
+
+def build_questions(analysis: CodebaseReport, config: FeatureDocConfig) -> list[str]:
     """Return up to ``config.max_questions`` clarifying questions for this codebase.
 
     Args:
@@ -60,15 +109,73 @@ def build_questions(analysis: AnalysisResult, config: FeatureDocConfig) -> list[
     return questions[: config.max_questions]
 
 
-def render_plan(
-    feature: FeatureRequest, analysis: AnalysisResult, config: FeatureDocConfig
-) -> str:
-    """Render the Feature Design Doc as Markdown.
+def build_plan_context(
+    description: str,
+    report: CodebaseReport,
+    config: FeatureDocConfig,
+    *,
+    now: datetime,
+    answers: Sequence[tuple[str, str]] = (),
+) -> PlanContext:
+    """Assemble the template context for a plan doc (pure: the caller passes the clock).
 
     Args:
-        feature: The feature request and answers.
-        analysis: Result of analyzing the codebase.
+        description: What the developer wants to build.
+        report: Result of analyzing the codebase.
         config: KingmaDoc configuration.
+        now: Generation timestamp.
+        answers: ``(question, answer)`` pairs from the clarifying questions.
+
+    Returns:
+        A :class:`PlanContext`.
+
+    Raises:
+        GenerationError: If ``description`` is blank.
+    """
+    if not description.strip():
+        raise GenerationError("The feature description must not be empty")
+    project_name = config.project.name or report.root.name
+    backend = get_backend(config.diagram_format)
+    user = {"name": "User", "description": "Person who uses the feature"}
+    containers = infer_containers(report, project_name)
+    c4_context = c4_container = ""
+    if "c4_context" in config.diagrams:
+        c4_context = backend.render_context(
+            project_name,
+            external_actors=[user],
+            external_systems=[],
+            system_description=config.project.description,
+        )
+    if "c4_container" in config.diagrams:
+        c4_container = backend.render_container(
+            project_name,
+            containers,
+            relationships=[(user["name"], containers[0]["name"], "Uses")],
+            external_actors=[user],
+        )
+    return PlanContext(
+        feature_description=" ".join(description.split()),
+        feature_summary=summarize(description),
+        codebase_report=report,
+        c4_context=c4_context,
+        c4_container=c4_container,
+        generated_at=now,
+        version=__version__,
+        project_name=project_name,
+        answers=tuple(answers),
+        diagram_format=config.diagram_format,
+        diagram_label=backend.LABEL,
+    )
+
+
+def render_plan(context: PlanContext, config: FeatureDocConfig) -> str:
+    """Render the plan doc as Markdown.
+
+    Every :class:`PlanContext` field is a top-level template variable.
+
+    Args:
+        context: Result of :func:`build_plan_context`.
+        config: KingmaDoc configuration (selects the template).
 
     Returns:
         The rendered Markdown document.
@@ -76,50 +183,101 @@ def render_plan(
     Raises:
         GenerationError: If the template cannot be found or rendered.
     """
-    project_name = config.project.name or analysis.root.name
-    system_alias = make_alias(project_name)
-    user = Person("user", "User", "Person who uses the feature")
-    containers = infer_containers(analysis, project_name)
-
-    diagrams: dict[str, str] = {}
-    if "c4_context" in config.diagrams:
-        diagrams["c4_context"] = build_context_diagram(
-            system_alias=system_alias,
-            system_label=project_name,
-            system_description=config.project.description or feature.description,
-            people=[user],
-            external_systems=[],
-            relationships=[Relationship(user.alias, system_alias, f"Uses {feature.name}")],
-        )
-    if "c4_container" in config.diagrams:
-        diagrams["c4_container"] = build_container_diagram(
-            system_alias=system_alias,
-            system_label=project_name,
-            people=[user],
-            containers=containers,
-            external_systems=[],
-            relationships=(
-                [Relationship(user.alias, containers[0].alias, "Uses")] if containers else []
-            ),
-        )
-
-    env = _environment(analysis.root)
+    env = environment(context.codebase_report.root)
+    variables = {f.name: getattr(context, f.name) for f in fields(context)}
     try:
-        template = env.get_template(config.template)
-        return template.render(
-            feature=feature,
-            project_name=project_name,
-            project_description=config.project.description,
-            analysis=analysis,
-            diagrams=diagrams,
-            generated_on=date.today().isoformat(),
-            version=__version__,
-        )
+        return env.get_template(config.template).render(**variables)
     except TemplateError as exc:
         raise GenerationError(f"Cannot render template {config.template!r}: {exc}") from exc
 
 
-def infer_containers(analysis: AnalysisResult, project_name: str) -> list[Container]:
+def enabled_extra_designs(config: FeatureDocConfig) -> tuple[ExtraDesign, ...]:
+    """Return the extra design docs switched on under ``extra_designs`` in the config.
+
+    Args:
+        config: KingmaDoc configuration.
+
+    Returns:
+        Enabled entries of :data:`EXTRA_DESIGNS`, in that order.
+    """
+    return tuple(d for d in EXTRA_DESIGNS if getattr(config.extra_designs, d.name).enabled)
+
+
+def render_extra_design(design: ExtraDesign, context: PlanContext, plan_path: Path) -> str:
+    """Render an optional design doc that accompanies a plan doc.
+
+    Every :class:`PlanContext` field is a template variable, plus ``plan_file`` (the
+    plan's file name, for a relative link) and ``data_stores`` (detected databases).
+
+    Args:
+        design: Which extra doc to render (from :data:`EXTRA_DESIGNS`).
+        context: Result of :func:`build_plan_context`.
+        plan_path: Where the plan doc is written.
+
+    Returns:
+        The rendered Markdown document.
+
+    Raises:
+        GenerationError: If the template cannot be found or rendered.
+    """
+    variables = {f.name: getattr(context, f.name) for f in fields(context)}
+    variables["plan_file"] = plan_path.name
+    variables["data_stores"] = [
+        tech for tech in context.codebase_report.detected_stack if tech in DATA_STORES
+    ]
+    env = environment(context.codebase_report.root)
+    try:
+        return env.get_template(design.template).render(**variables)
+    except TemplateError as exc:
+        raise GenerationError(f"Cannot render template {design.template!r}: {exc}") from exc
+
+
+def extra_design_path(design: ExtraDesign, plan_path: Path) -> Path:
+    """Return the path of an extra design doc: next to the plan, same slug.
+
+    Args:
+        design: Which extra doc (from :data:`EXTRA_DESIGNS`).
+        plan_path: ``.../<slug>-plan.md`` (or any custom ``--output`` path).
+
+    Returns:
+        ``.../<slug><design.suffix>`` in the same directory.
+
+    Example:
+        >>> plan = Path("docs/features/add-login-plan.md")
+        >>> extra_design_path(EXTRA_DESIGNS[0], plan).as_posix()
+        'docs/features/add-login-functional-design.md'
+    """
+    stem = plan_path.name.removesuffix(PLAN_SUFFIX)
+    if stem == plan_path.name:
+        stem = plan_path.stem
+    return plan_path.with_name(stem + design.suffix)
+
+
+def summarize(description: str, max_length: int = MAX_SUMMARY_LENGTH) -> str:
+    """Return the first sentence of ``description``, shortened to ``max_length``.
+
+    Args:
+        description: Free text.
+        max_length: Maximum length of the result, including a trailing ``…``.
+
+    Returns:
+        The first sentence with whitespace collapsed; cut at a word boundary if too long.
+
+    Example:
+        >>> summarize("Add login. Also add logout.")
+        'Add login.'
+    """
+    text = " ".join(description.split())
+    sentence = re.split(r"(?<=[.!?])\s", text, maxsplit=1)[0]
+    if len(sentence) <= max_length:
+        return sentence
+    cut = sentence[: max_length - 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(" ,;:") + "…"
+
+
+def infer_containers(analysis: CodebaseReport, project_name: str) -> list[dict[str, str]]:
     """Guess C4 containers from detected source directories.
 
     This is a heuristic starting point; the generated doc asks the reader to review it.
@@ -129,104 +287,58 @@ def infer_containers(analysis: AnalysisResult, project_name: str) -> list[Contai
         project_name: Fallback label when no source directories are found.
 
     Returns:
-        One container per source directory (capped), or a single project container.
+        Container specs (``name``, ``tech``, ``description``) for
+        :func:`kingmadoc.diagrams.c4.render_container`: one per source directory (capped),
+        or a single project container.
     """
     technology = analysis.primary_language or "Unknown"
     if not analysis.source_dirs:
-        return [Container("app", project_name, technology, "Main application")]
+        return [{"name": project_name, "tech": technology, "description": "Main application"}]
     return [
-        Container(
-            alias=make_alias(d.as_posix()),
-            label=d.name,
-            technology=_dir_language(analysis, d) or technology,
-            description=f"Source module {d.as_posix()}/",
-        )
+        {
+            "name": d.name,
+            "tech": _dir_language(analysis, d) or technology,
+            "description": f"Source module {d.as_posix()}/",
+        }
         for d in analysis.source_dirs[:MAX_INFERRED_CONTAINERS]
     ]
 
 
-def default_output_path(root: Path, config: FeatureDocConfig, feature_name: str) -> Path:
-    """Return where the plan doc for ``feature_name`` is written by default.
+def default_output_path(root: Path, config: FeatureDocConfig, description: str) -> Path:
+    """Return where the plan doc for ``description`` is written by default.
 
     Args:
         root: Project root.
         config: KingmaDoc configuration.
-        feature_name: Human-readable feature name.
+        description: Feature description (the slug is derived from it).
 
     Returns:
-        ``<root>/<output_dir>/<slug>/design.md``.
+        ``<root>/<output_dir>/<slug>-plan.md``, see :func:`feature_slug`.
     """
-    return root / config.output_dir / slugify(feature_name) / "design.md"
+    return root / config.output_dir / f"{feature_slug(description)}{PLAN_SUFFIX}"
 
 
-def write_document(content: str, path: Path, overwrite: bool = False) -> Path:
-    """Write ``content`` to ``path``, creating parent directories.
+def feature_slug(description: str) -> str:
+    """Derive the file slug for a feature from the first sentence of its description.
 
     Args:
-        content: Document text.
-        path: Destination file.
-        overwrite: Replace an existing file if True.
+        description: Feature description.
 
     Returns:
-        The written path.
+        Kebab-case slug of at most :data:`kingmadoc.naming.MAX_SLUG_LENGTH` characters.
 
-    Raises:
-        GenerationError: If the file exists (and ``overwrite`` is False) or cannot be written.
+    Example:
+        >>> feature_slug("Add password reset via email. Links expire after 30 minutes.")
+        'add-password-reset-via-email'
     """
-    if path.exists() and not overwrite:
-        raise GenerationError(f"{path} already exists (use --force to overwrite)")
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
-    except OSError as exc:
-        raise GenerationError(f"Cannot write {path}: {exc}") from exc
-    return path
+    return slugify(summarize(description))
 
 
-def slugify(text: str) -> str:
-    """Convert text to a filesystem-friendly slug.
-
-    Args:
-        text: Any string.
-
-    Returns:
-        Lowercase, hyphen-separated slug (``"feature"`` if nothing remains).
-    """
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "feature"
-
-
-def template_dirs(root: Path) -> list[Path]:
-    """Template search path: project root, bundled templates, repo checkout.
-
-    Args:
-        root: Project root (for project-local templates referenced by relative path).
-
-    Returns:
-        Existing directories, highest priority first.
-    """
-    candidates = [
-        root,
-        Path(str(package_files("kingmadoc") / "templates")),  # installed wheel
-        Path(__file__).resolve().parents[3] / "templates",  # editable/source checkout
-    ]
-    return [d for d in candidates if d.is_dir()]
-
-
-def _environment(root: Path) -> Environment:
-    return Environment(
-        loader=FileSystemLoader([str(d) for d in template_dirs(root)]),
-        undefined=StrictUndefined,
-        trim_blocks=True,
-        lstrip_blocks=True,
-        keep_trailing_newline=True,
-        autoescape=False,  # Markdown output, not HTML.
-    )
-
-
-def _dir_language(analysis: AnalysisResult, directory: Path) -> str | None:
+def _dir_language(analysis: CodebaseReport, directory: Path) -> str | None:
     counts = Counter(
-        EXTENSION_LANGUAGES[f.suffix]
+        SOURCE_LANGUAGES[language]
         for f in analysis.files
-        if f.suffix in EXTENSION_LANGUAGES and f.is_relative_to(directory)
+        if (language := EXTENSION_LANGUAGES.get(f.suffix.lower())) in SOURCE_LANGUAGES
+        and f.is_relative_to(directory)
     )
     return counts.most_common(1)[0][0] if counts else None

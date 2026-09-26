@@ -1,0 +1,10 @@
+```mermaid
+sequenceDiagram
+    title Login #quot;flow#quot;
+    participant web_app as Web App
+    participant api as API
+    participant label as Label
+    web_app->>api: POST /login#59; body {#quot;user#quot;: #quot;a#quot;} #35;1
+    api->>label: Check $user
+    api->>web_app: 200 OK
+```

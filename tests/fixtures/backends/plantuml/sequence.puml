@@ -1,0 +1,11 @@
+```plantuml
+@startuml
+title Login "flow"
+participant "Web App" as web_app
+participant "API" as api
+participant "Label" as label
+web_app -> api : POST /login; body {"user": "a"} #1
+api -> label : Check $user
+api -> web_app : 200 OK
+@enduml
+```
