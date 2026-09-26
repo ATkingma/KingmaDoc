@@ -9,7 +9,7 @@ implementation, `verify` compares the code with that plan and lists the deviatio
 validation results. Use it as a Python CLI, or with no install at all as a Markdown skill
 for Claude Code, Cursor, Codex or GitHub Copilot.
 
-> **Status: 0.1.0, first release.** `plan` is complete. The CLI's `verify` is a
+> **Status: 0.1.1, first release.** `plan` is complete. The CLI's `verify` is a
 > work-in-progress stub that writes a placeholder; the Markdown skill performs the full
 > verification. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -73,7 +73,7 @@ kingmadoc plan "Add password reset via email. Links expire after 30 minutes."
 #   → docs/features/add-password-reset-via-email-plan.md
 # review the plan, fill in the TODOs, then let your agent implement it
 kingmadoc verify add-password-reset-via-email
-#   → docs/features/add-password-reset-via-email-verify.md (placeholder in 0.1.0)
+#   → docs/features/add-password-reset-via-email-verify.md (placeholder in 0.1.x)
 kingmadoc analyze --json            # just the codebase analysis, as JSON
 ```
 
@@ -124,7 +124,7 @@ the feature is absent.
 | **Focus**                 | Design doc before, verification doc after                                                            | Implementation plan before coding                                                      | Project setup and quality workflows for Claude Code                            | Visual proof that a UI change works                                              |
 | **Before implementation** | Plan doc per feature (`<slug>-plan.md`) with scope, assumptions, risks, open questions               | `implementation_plan.md` in the project root, plus a task with trackable steps         | `brainstorm` skill writes specifications                                       | —                                                                                |
 | **Architecture diagrams** | C4 Context and Container, inferred from the code; Mermaid, PlantUML or D2                            | Not documented                                                                         | Not documented                                                                 | —                                                                                |
-| **After implementation**  | Verify doc: deviations from the plan, build/test/lint results (full in the skill; CLI stub in 0.1.0) | Not documented                                                                         | Code review, refactoring, TDD and repeated quality passes                      | Browser session recording, screenshots, error report                             |
+| **After implementation**  | Verify doc: deviations from the plan, build/test/lint results (full in the skill; CLI stub in 0.1.x) | Not documented                                                                         | Code review, refactoring, TDD and repeated quality passes                      | Browser session recording, screenshots, error report                             |
 | **Agents**                | Claude Code, Cursor, Codex, GitHub Copilot; the CLI works with any agent                             | Cline                                                                                  | Claude Code (Codex experimental)                                               | Claude Code, Cursor, Codex, Gemini CLI, Windsurf, others that run shell commands |
 | **Install**               | None (Markdown skill), or a Python CLI                                                               | Part of Cline                                                                          | Claude Code plugin                                                             | npm package                                                                      |
 
