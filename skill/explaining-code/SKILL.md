@@ -1,15 +1,15 @@
 ---
 name: explaining-code
-description: Explains existing code with pictures, so a developer understands what is there and how it works (fixes code blindness, e.g. after an agent wrote it). Works on any scope the user wants insight into - a feature, a branch (what did this branch or task change), a whole project, or a part of one. Writes a short explainer in docs/explain/ with rendered D2 diagrams - the big picture, how each main action flows, the building blocks, the data - and a where-to-find-what table. Use when the user asks to explain, document, map or visualise existing code, a feature, a branch or a project.
-version: 2.0.0
+description: Explains existing code with numbered pictures and short tables, so a developer sees at a glance what is there and how it works (fixes code blindness, e.g. after an agent wrote it). Works on any scope - a feature, a branch (what did this branch or task change), a whole project, or a part of one. Zooms in step by step - context, containers (what runs where), components, main flows, data - each as a rendered diagram with a table that decodes it. Use when the user asks to explain, document, map or visualise existing code, a feature, a branch or a project.
+version: 3.0.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
 # Explaining code (KingmaDoc)
 
 Code blindness: the code works, but the developer can no longer say what is there or how
-it fits together, often because an agent wrote it. This skill gives that insight back
-with **pictures first and short explanations**, for whatever the user points at.
+it fits together, often because an agent wrote it. This skill gives that insight back:
+**numbered pictures, each decoded by a small table, and almost no prose.**
 
 ## When to use this skill
 
@@ -22,68 +22,91 @@ with **pictures first and short explanations**, for whatever the user points at.
 
 For a feature that is not built yet, use the `kingmadoc` skill (plan mode) instead.
 
-Ground rules:
+Rules:
 
 - **Do not change source code.** Only read code and write the explainer and its images.
-- **Explain, don't audit.** Describe what the code does and how the parts fit together.
-  No risk lists, no code review, no improvement suggestions, unless the user asks.
-  Mention a limitation only when it is needed to understand the behaviour, stated as a
-  plain fact ("the database is recreated on every deploy").
-- **Pictures carry the explanation.** Text explains the picture next to it; it does not
-  repeat it. Aim for about 150 lines of text in total, diagram sources excluded.
-- **Point to code sparingly:** in the where-to-find-what table and where a reader needs
-  it, not after every sentence.
-- Never invent anything the code does not show. If something essential cannot be worked
-  out, ask at most three questions (Step 6).
+- **Explain, don't audit.** No risk lists, no code review, no suggestions, unless asked.
+  State a limitation only as a plain fact when it explains behaviour.
+- **Picture, caption, table. No stories.** Every figure gets a numbered caption
+  (`**Figure 3.** …`) and at most three sentences. Tables decode the picture; never
+  repeat a table as bullets, and never describe a diagram in prose.
+- **Zoom in step by step,** one small diagram per level (at most about twelve boxes):
+  context, containers, components, flows, data. Never one giant diagram.
+- **Text must match the pictures.** Counts, names and arrows come from the code, not from
+  memory ("2 tables" only if the data figure shows 2).
+- Point to code in the tables (`path`), not after every sentence.
+- Never invent. If something essential cannot be worked out, ask at most three
+  questions (Step 6).
 
 ## Step 1. Pin down the scope
 
-Decide which scope the request is (table above). If it is unclear which feature, branch
-or folder is meant, search first and ask one question with the candidates you found.
+Decide the scope (table above). If it is unclear what is meant, search first and ask one
+question with the candidates you found.
 
-- **Branch:** find the base (`git merge-base <base> <branch>`, base usually `main`), then
+- **Branch:** `git merge-base <base> <branch>` (base usually `main`), then
   `git log --oneline <base>..<branch>` and `git diff --stat <base>...<branch>`.
-- **Project:** list the main parts (apps, services, packages) and the user-visible
-  features. If the `kingmadoc` CLI is installed, `kingmadoc analyze --json` gives the
-  stack, entry points and Python module dependencies.
+- **Project:** if `kingmadoc` is installed, `kingmadoc analyze --json` gives the stack,
+  entry points and Python module dependencies.
 
 ## Step 2. Read the code
 
-Follow the code from the entry points (routes, pages, CLI commands, jobs, handlers)
-through the calls to the data and the external systems. For each scope, collect:
+Follow the code from the entry points (routes, pages, commands, jobs) to the data and the
+outside world. Collect:
 
-- the **parts** (containers, services, modules, components) and how they talk;
-- the **main actions**: what a user or system does, and the path it takes through the
-  parts (pick the three to five that matter most);
-- the **data** that is stored, and where;
-- the files a developer would open first for each part and action.
-
-For a branch, also collect what is new, changed and removed, grouped by part.
+- **Context:** who uses it, and which external systems it talks to.
+- **Containers:** what runs where (apps, services, databases; the deploy setup such as
+  Dockerfiles, compose or CI shows it), and how they talk.
+- **Components:** the main modules inside each container that matters.
+- **Flows:** the three to five main actions and the path each takes.
+- **Data:** stored records, keys and relations (models, migrations, schema).
+- **Design choices** the code or history states a reason for (ADRs, README, commit
+  messages); leave out choices whose reason you would have to guess.
+- For a branch: what is new, changed and removed, per part.
 
 ## Step 3. Draw it
 
-Write the diagrams in **D2** (they are rendered to images in Step 5). One idea per
-picture, at most about twelve boxes, labels in plain words, arrows labelled with what
-flows. The four kinds you need:
+Write every diagram in **D2** (Step 5 turns them into images). Labels in plain words,
+arrows labelled with what flows.
 
-The **big picture**: people, the system's parts, the outside world.
+**Context**: people, the system as one box, external systems.
 
 ```d2
 direction: right
-visitor: Visitor {shape: person}
-system: <System> {
+user: <User> {shape: person}
+system: <System>
+external: <External service>
+user -> system: <uses>
+system -> external: <sends data to>
+```
+
+**Containers**: what runs where; put deployed units inside the host or cloud they run on.
+
+```d2
+direction: right
+user: <User> {shape: person}
+host: <Server or cloud> {
   web: <Web app>
   api: <API>
   db: <Database> {shape: cylinder}
 }
-external: <External service>
-visitor -> system.web: <uses>
-system.web -> system.api: <calls>
-system.api -> system.db: <stores>
-system.api -> external: <notifies>
+user -> host.web: <HTTPS>
+host.web -> host.api: <REST>
+host.api -> host.db: <SQL>
 ```
 
-**How it works**: one sequence diagram per main action.
+**Components** of one container (one figure per container worth zooming into).
+
+```d2
+direction: down
+api: <API container> {
+  routes: <Routes>
+  service: <Service>
+  repo: <Repository>
+}
+api.routes -> api.service -> api.repo
+```
+
+**A flow**: one sequence diagram per main action.
 
 ```d2
 shape: sequence_diagram
@@ -98,34 +121,38 @@ api -> web: <200 OK>
 web -> user: <shows a thank-you message>
 ```
 
-**Building blocks**: the modules or components and their dependencies.
+**Important classes** (optional, only the members that matter; never getters/setters).
 
 ```d2
-direction: down
-ui: <Pages> {
-  home: <Home page>
-  form: <Contact form>
+controller: <Controller> {
+  shape: class
+  "+send(request)": <Response>
+  "-minFillTime": int
 }
-server: <Server> {
-  route: <API route>
-  service: <Mail service>
+store: <Store> {
+  shape: class
+  "+save(message)": void
 }
-ui.form -> server.route: <submit>
-server.route -> server.service
+controller -> store: <uses>
 ```
 
-**Data**: the stored records and their relations.
+**Data**: tables with keys; the relations as arrows.
 
 ```d2
-message: <Message> {
+user: <User> {
   shape: sql_table
   id: int {constraint: primary_key}
   email: string
-  created_at: datetime
 }
+order: <Order> {
+  shape: sql_table
+  id: int {constraint: primary_key}
+  user_id: int {constraint: foreign_key}
+}
+order.user_id -> user.id
 ```
 
-For a **branch**, mark what changed: new parts green, changed parts orange.
+For a **branch**, colour the changes: new parts green, changed parts orange.
 
 ```d2
 api: <API>
@@ -137,91 +164,110 @@ api -> changed
 
 ## Step 4. Write the explainer
 
-Write the file from the table in "When to use" in the [output format](#output-format):
-
-- **In short:** three to five plain sentences a newcomer understands.
-- **The big picture** and **Building blocks:** one diagram each, one line per part.
-- **How it works:** one `###` per main action: its diagram and two to four sentences.
-- **Data:** the data diagram, or "Stores no data."
-- **What changed:** only for a branch: the change diagram and the changes per part.
-- **Where to find what:** about ten rows, "If you want to…" → "Look at".
-- **Couldn't work out:** only if needed, at most three items; otherwise leave it out.
-
-For a **project**, "How it works" gets one `###` per feature, each with a one-line
-explanation and its main flow; point to per-feature explainers when they exist.
+Write the file from the scope table in the [output format](#output-format). Number the
+figures in order (`**Figure 1.**` …). After a context, containers or components figure,
+add the **parts table** (Part / Role / Technology) and the **arrows table** (From / To /
+What / How). After a flow figure, at most three sentences for what the picture cannot
+show (error paths, timing). For a **project**, "How it works" has one flow per main
+feature; for a **branch**, fill in "What changed". Leave out optional sections that do
+not apply.
 
 ## Step 5. Render the pictures
 
-An explainer is not finished until its diagrams are pictures: the user must see images,
-not D2 source. Run:
+An explainer is not finished until its diagrams are pictures. Run:
 
 ```bash
 kingmadoc render docs/explain/<file>.md
 ```
 
 It writes `docs/explain/img/*.svg`, puts each image above its diagram and folds the
-source. The first time it downloads D2 by itself (once, checksum-verified); the user
-does not install anything.
+source; the first time it downloads D2 by itself (checksum-verified).
 
-- If it fails because a diagram is invalid, fix that diagram and run it again.
-- If `kingmadoc` says there is no `render` command, it is outdated: ask the user to update
-  it (`pipx install --force git+https://github.com/ATkingma/KingmaDoc`), then render.
-- Only if `kingmadoc` is not installed at all: render each diagram with `d2` if it is
-  available (`d2 --pad 20 <n>.d2 docs/explain/img/<file>-<n>.svg`, then
-  `![<section title>](img/<file>-<n>.svg)` above the block); otherwise tell the user
-  that `pip install` of KingmaDoc gives them the pictures.
+- A diagram D2 rejects: fix it and run again.
+- `kingmadoc` has no `render` command: it is outdated; ask the user to update it
+  (`pipx install --force git+https://github.com/ATkingma/KingmaDoc`), then render.
+- `kingmadoc` is not installed at all: render with `d2` if available
+  (`d2 --pad 20 <n>.d2 docs/explain/img/<file>-<n>.svg`, then
+  `![<caption>](img/<file>-<n>.svg)` above the block); otherwise say that installing
+  KingmaDoc gives the pictures.
 
 ## Step 6. Hand it over
 
-Show the path, the "In short" text and the images you rendered (check that the
-document embeds them). If there are
-"Couldn't work out" questions, ask them (at most three) and update the explainer with
-the answers. Offer to explain another scope or to go deeper into one action.
+Show the path, "In short" and the figures (check the document embeds the images). In VS
+Code, `kingmadoc skills install` makes explainers open as a rendered preview. Ask the
+"Couldn't work out" questions, at most three, and update the explainer with the answers.
 
 ## Output format
 
-Text in `<angle brackets>` is filled in; leave out sections marked optional when they
-do not apply.
+Text in `<angle brackets>` is filled in.
 
 ````markdown
 # <Name>: <what it is, in a few words>
 
-|               |                                                                                |
-| ------------- | ------------------------------------------------------------------------------ |
-| **Scope**     | <feature / branch `<branch>` compared with `<base>` / project / part `<path>`> |
-| **Based on**  | <commit hash (and branch)>                                                     |
-| **Generated** | <ISO date and time> by KingmaDoc skill explaining-code 2.0.0                   |
-
-> What is there and how it works, explained from the code. Pictures first; the diagram
-> sources are folded below each picture.
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Scope**        | <feature / branch `<branch>` vs `<base>` / project / part `<path>`>         |
+| **Stack**        | <languages, frameworks, data stores>                                        |
+| **Entry points** | <`path`, …>                                                                 |
+| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 3.0.0 |
 
 ## In short
 
-<three to five plain sentences>
+<at most three plain sentences>
 
-## The big picture
+## Context
 
 ```d2
-<big-picture diagram>
+<context diagram>
 ```
 
-- **<Part>:** <what it does, one line>
+**Figure 1.** <Who uses it and what it talks to.>
+
+| Part                     | Role       | Technology |
+| ------------------------ | ---------- | ---------- |
+| <User / external system> | <one line> | <tech>     |
+
+## Containers
+
+```d2
+<containers diagram>
+```
+
+**Figure 2.** <What runs where.>
+
+| Part        | Role       | Technology   |
+| ----------- | ---------- | ------------ |
+| <container> | <one line> | <tech, port> |
+
+| From        | To          | What         | How        |
+| ----------- | ----------- | ------------ | ---------- |
+| <container> | <container> | <what flows> | <protocol> |
+
+## Components
+
+### <Container name>
+
+```d2
+<components diagram>
+```
+
+**Figure 3.** <The parts inside <container>.>
+
+| Part        | Role       | Technology |
+| ----------- | ---------- | ---------- |
+| <component> | <one line> | `<path>`   |
 
 ## How it works
 
-### <Main action, e.g. "Sending the contact form">
+### <Main action>
 
 ```d2
-<sequence diagram of this action>
+<sequence diagram>
 ```
 
-<two to four sentences>
+**Figure 4.** <What happens when <action>.>
 
-## Building blocks
-
-```d2
-<building-blocks diagram>
-```
+<at most three sentences: what the picture cannot show>
 
 ## Data (optional)
 
@@ -229,19 +275,31 @@ do not apply.
 <data diagram>
 ```
 
+**Figure 5.** <The stored data: <n> tables.>
+
 ## What changed (branch only)
 
 ```d2
 <change diagram: new green, changed orange>
 ```
 
-- **<Part>:** <what changed and why it matters>
+**Figure 6.** <What this branch added and changed.>
+
+| Part   | Change                              | Where    |
+| ------ | ----------------------------------- | -------- |
+| <part> | <new / changed / removed: one line> | `<path>` |
+
+## Design choices (optional)
+
+| Chosen               | Instead of               | Why                                      |
+| -------------------- | ------------------------ | ---------------------------------------- |
+| <what the code uses> | <alternative, if stated> | <reason stated in code, docs or history> |
 
 ## Where to find what
 
-| If you want to…            | Look at             |
-| -------------------------- | ------------------- |
-| <change the form's fields> | `<path>` (<symbol>) |
+| If you want to…            | Look at  |
+| -------------------------- | -------- |
+| <change the form's fields> | `<path>` |
 
 ## Couldn't work out (optional, at most three)
 

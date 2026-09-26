@@ -14,12 +14,15 @@ SKILL = Path(__file__).resolve().parents[1] / "skill" / "explaining-code" / "SKI
 EXPLAINER_HEADINGS = [
     "#",
     "## In short",
-    "## The big picture",
+    "## Context",
+    "## Containers",
+    "## Components",
+    "###",
     "## How it works",
     "###",
-    "## Building blocks",
     "## Data",
     "## What changed",
+    "## Design choices",
     "## Where to find what",
     "## Couldn't work out",
 ]
@@ -75,16 +78,21 @@ def test_workflow_sections_in_order_and_short() -> None:
 
     assert -1 not in positions, [s for s, p in zip(sections, positions, strict=True) if p == -1]
     assert positions == sorted(positions)
-    assert len(text.splitlines()) < 300
+    assert len(text.splitlines()) < 350
 
 
 def test_explainer_format_is_about_understanding_not_auditing() -> None:
     """Pictures and flows, no risk list, at most three questions."""
-    block = _output_block()
+    block = re.sub(r"[ \t]+", " ", _output_block())  # the formatter pads table cells
 
     assert _headings(block) == EXPLAINER_HEADINGS
     assert "Risks" not in block and "Scope (in / out)" not in block
-    assert block.count("```d2") >= 4  # big picture, a flow, building blocks, data
+    assert block.count("```d2") >= 5  # context, containers, a component, a flow, data
+    # Every figure is numbered and decoded by tables (lessons from design-doc reviews).
+    assert "**Figure 1.**" in block and "**Figure 2.**" in block
+    assert "| Part | Role | Technology |" in block
+    assert "| From | To | What | How |" in block
+    assert "| Chosen | Instead of | Why |" in block
     text = _text()
     assert "Do not change source code" in text
     assert "at most three" in text
@@ -104,13 +112,14 @@ D2 = os.environ.get("D2_BIN") or shutil.which("d2")
 
 
 @pytest.mark.skipif(D2 is None, reason="d2 not available")
-@pytest.mark.parametrize("index", range(8))
+@pytest.mark.parametrize("index", range(12))
 def test_d2_examples_compile(tmp_path: Path, index: int) -> None:
     """Agents copy these examples, so every one must compile with the real d2."""
     examples = _d2_examples()
     if index >= len(examples):
         pytest.skip("fewer examples")
-    source = examples[index].replace("<", "").replace(">", "")  # placeholders → plain text
+    # Placeholders like <User> become plain text; arrows (->) must stay intact.
+    source = re.sub(r"<([^<>\n]*)>", r"\1", examples[index])
     (tmp_path / "x.d2").write_text(source, encoding="utf-8")
 
     result = subprocess.run(
