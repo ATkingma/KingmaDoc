@@ -17,6 +17,7 @@ from kingmadoc.diagrams import get_backend
 from kingmadoc.exceptions import GenerationError
 from kingmadoc.naming import slugify
 from kingmadoc.plan.analyzer import EXTENSION_LANGUAGES, SOURCE_LANGUAGES, CodebaseReport
+from kingmadoc.plan.models import render_model_sections
 from kingmadoc.templating import load_template
 
 # More containers than this makes the inferred diagram unreadable.
@@ -253,9 +254,13 @@ def render_extra_design(
         ConfigError: If the configured template path does not exist or is not a file.
         GenerationError: If the template cannot be found or rendered.
     """
-    template_name = getattr(config.extra_designs, design.name).template
+    design_config = getattr(config.extra_designs, design.name)
+    template_name = design_config.template
     variables = {f.name: getattr(context, f.name) for f in fields(context)}
     variables["plan_file"] = plan_path.name
+    variables["model_sections"] = render_model_sections(
+        design.name, design_config.models, context, get_backend(config.diagram_format)
+    )
     variables["data_stores"] = [
         tech for tech in context.codebase_report.detected_stack if tech in DATA_STORES
     ]

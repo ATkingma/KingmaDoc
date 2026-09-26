@@ -47,17 +47,20 @@ diagram_format: mermaid
 
 # Optional extra documents written by `plan` next to the plan doc. `template` is a
 # bundled name or an explicit path (e.g. ./my_design.md.j2); templates run sandboxed.
+# `models` selects the design models (sections) of a document; default: all of them.
 extra_designs:
   functional_design:
     # <slug>-functional-design.md: user flows, edge cases, business rules,
     # permissions and roles.
     enabled: false
     template: functional_design.md.j2
+    models: []
   technical_design:
     # <slug>-technical-design.md: database schema, API contracts, error handling,
     # performance and security considerations.
     enabled: false
     template: technical_design.md.j2
+    models: []
 
 # Architecture Decision Records: `kingmadoc adr "<title>"` writes docs/adr/<NNNN>-<slug>.md.
 adr:

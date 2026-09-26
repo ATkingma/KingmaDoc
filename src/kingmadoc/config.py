@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 import yaml
@@ -34,6 +36,13 @@ DEFAULT_EXCLUDE_DIRS: tuple[str, ...] = (
 MAX_FILES_LIMIT = 5000
 
 SUPPORTED_DIAGRAMS: frozenset[str] = frozenset({"c4_context", "c4_container"})
+# Models each extra design document can contain, in document order. Must match the
+# renderers in kingmadoc.plan.models (checked when that module is imported).
+DOCUMENT_MODELS: Mapping[str, tuple[str, ...]] = MappingProxyType({
+    "functional_design": (),
+    "technical_design": (),
+})
+
 # Must match kingmadoc.diagrams.BACKENDS (a test enforces it); config imports no diagrams.
 DIAGRAM_FORMATS: tuple[str, ...] = ("mermaid", "plantuml", "d2")
 
@@ -63,10 +72,12 @@ class ExtraDesignConfig:
     Attributes:
         enabled: Write this document on ``plan``.
         template: Bundled template name, or an explicit path relative to the project root.
+        models: Design models to include, in order (see :data:`DOCUMENT_MODELS`).
     """
 
     enabled: bool = False
     template: str = ""
+    models: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -78,11 +89,16 @@ class ExtraDesignsConfig:
     """
 
     functional_design: ExtraDesignConfig = field(
-        default_factory=lambda: ExtraDesignConfig(template="functional_design.md.j2")
+        default_factory=lambda: _design("functional_design")
     )
     technical_design: ExtraDesignConfig = field(
-        default_factory=lambda: ExtraDesignConfig(template="technical_design.md.j2")
+        default_factory=lambda: _design("technical_design")
     )
+
+
+def _design(name: str) -> ExtraDesignConfig:
+    """Defaults for one extra design: its bundled template and all of its models."""
+    return ExtraDesignConfig(template=f"{name}.md.j2", models=DOCUMENT_MODELS[name])
 
 
 @dataclass(frozen=True)
@@ -270,17 +286,20 @@ diagram_format: mermaid
 
 # Optional extra documents written by `plan` next to the plan doc. `template` is a
 # bundled name or an explicit path (e.g. ./my_design.md.j2); templates run sandboxed.
+# `models` selects the design models (sections) of a document; default: all of them.
 extra_designs:
   functional_design:
     # <slug>-functional-design.md: user flows, edge cases, business rules,
     # permissions and roles.
     enabled: false
     template: functional_design.md.j2
+    models: [{", ".join(DOCUMENT_MODELS["functional_design"])}]
   technical_design:
     # <slug>-technical-design.md: database schema, API contracts, error handling,
     # performance and security considerations.
     enabled: false
     template: technical_design.md.j2
+    models: [{", ".join(DOCUMENT_MODELS["technical_design"])}]
 
 # Architecture Decision Records: `kingmadoc adr "<title>"` writes docs/adr/<NNNN>-<slug>.md.
 adr:
@@ -344,10 +363,18 @@ def _parse_extra_designs(data: Any) -> ExtraDesignsConfig:
         where = f"extra_designs.{name}"
         default: ExtraDesignConfig = getattr(defaults, name)
         entry = _require_mapping({} if data[name] is None else data[name], where)
-        _reject_unknown(entry, {"enabled", "template"}, where)
+        _reject_unknown(entry, {"enabled", "template", "models"}, where)
+        models = tuple(_get_str_list(entry, "models", default.models, f"{where}."))
+        unknown = [m for m in models if m not in DOCUMENT_MODELS[name]]
+        if unknown:
+            supported = ", ".join(DOCUMENT_MODELS[name]) or "none yet"
+            raise ConfigError(
+                f"Unknown model {unknown[0]!r} in {where}.models; supported: {supported}"
+            )
         designs[name] = ExtraDesignConfig(
             enabled=_get(entry, "enabled", bool, default.enabled, f"{where}."),
             template=_get(entry, "template", str, default.template, f"{where}."),
+            models=models,
         )
     return ExtraDesignsConfig(**designs)
 
