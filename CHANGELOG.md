@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.1] - 2026-09-26
 
-Fixes from the pre-release review. Upgrading from 0.1.0: move `extra_designs.adr` to a
+First public release, including all fixes from the pre-release review. Upgrading from
+the unpublished 0.1.0: move `extra_designs.adr` to a
 top-level `adr:` block, and use `kingmadoc analyze --json` instead of `plan --json`.
 
 ### Security
@@ -20,6 +21,8 @@ top-level `adr:` block, and use `kingmadoc analyze --json` instead of `plan --js
   `template:` names an explicit path (`ConfigError` if it is missing or not a file).
 - Config: `output_dir` must resolve inside the project root (symlinks resolved first);
   a repository's config can no longer make `plan` write outside the project.
+- Analyzer: import scanning no longer takes quadratic time on long runs of blank lines;
+  a crafted file could stall `plan` for minutes (50k blank lines: 75 s → 0.04 s).
 
 ### Fixed
 
@@ -38,6 +41,13 @@ top-level `adr:` block, and use `kingmadoc analyze --json` instead of `plan --js
   `cf.` or `approx.`, and only ends before a capital letter.
 - Slugs: accented letters are transliterated (`café` → `cafe`); descriptions without
   Latin letters get a short hash instead of all sharing the slug `feature`.
+- Diagrams: test directories (`__tests__`, `spec`, `src/tests`, ...) are no longer
+  inferred as C4 containers, and loose `src/*.py` files no longer add a `src` container
+  next to `src/<pkg>`.
+- Diagrams: elements with the same name no longer produce wrong arrows
+  (`Rel(user, user)`); duplicate names are rejected, and generated names are unique.
+- ADRs: date-named files such as `docs/adr/2024-q3-review.md` no longer set the next
+  ADR number.
 
 ### Changed
 
@@ -51,11 +61,16 @@ top-level `adr:` block, and use `kingmadoc analyze --json` instead of `plan --js
   `default_relationships: bool = True`; explicit relationships are drawn in addition to
   the default arrows.
 - API: `write_document` takes `(path, content)`, like `write_documents`.
-- Packaging: bundled templates live in `src/kingmadoc/templates/`.
+- Packaging: bundled templates live in `src/kingmadoc/templates/`; the sdist no longer
+  contains the repository's Claude Code dev tooling (`.claude/`).
+- Development: Ruff and `mypy --strict` are enforced in CI (new `lint` job), and
+  GitHub Actions are pinned to commit SHAs.
 
 ### Added
 
 - CLI: `kingmadoc analyze [--json]` prints the codebase analysis.
+- Config: `analyzer.max_lines_per_file` (default 2000) limits how many lines per source
+  file are read when detecting frameworks; manifests are always read in full.
 - Analyzer: Cargo `[workspace.dependencies]` and `[target.*.dependencies]`, PEP 735
   `[dependency-groups]`, Poetry `[tool.poetry.group.*.dependencies]` and npm
   `optionalDependencies` are read.
@@ -66,7 +81,7 @@ top-level `adr:` block, and use `kingmadoc analyze --json` instead of `plan --js
 
 ## [0.1.0] - 2026-09-26
 
-First public release.
+Internal milestone; never published. Its contents first shipped in 0.1.1.
 
 ### Added
 
