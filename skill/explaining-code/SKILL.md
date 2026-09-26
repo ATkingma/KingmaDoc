@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: "Explains existing code with rendered diagrams (C4 in Simon Brown's notation; UML sequence, state, class, activity, use case; ER; data flow) and short tables, as an arc42 or compact C4 document, one file or split into functional and technical. Fixes code blindness, e.g. after an agent wrote the code. Scope: a feature, a branch or PR, a whole project, or a folder, service or module. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
-version: 5.2.0
+version: 5.3.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -84,7 +84,18 @@ Read the chosen files before Step 4.
 
 ## Step 2. Read the code
 
-Follow the code from the entry points (routes, pages, commands, jobs) to the data and the
+Start from the facts KingmaDoc reads from the code without guessing:
+
+```bash
+kingmadoc explain facts                 # stack, project references, data model (ORM)
+kingmadoc explain facts --base main     # a branch: plus its commits and changed files
+```
+
+Draw from them and never contradict them: the project references are the dependencies
+between projects, the data model is the ER diagram's source, the changed files are what
+a branch explains. (No `explain` command: update KingmaDoc, see Step 5.)
+
+Then follow the code from the entry points (routes, pages, commands, jobs) to the data and the
 outside world. Collect:
 
 - **Context:** who uses it, and which external systems it talks to.

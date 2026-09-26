@@ -9,12 +9,12 @@ folder, so the ID and links stay stable.
 from __future__ import annotations
 
 import re
-import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from kingmadoc.exceptions import ExplainError
+from kingmadoc.git import run_git
 from kingmadoc.naming import slugify
 
 EXPLAIN_DIR = Path("docs/explain")
@@ -29,7 +29,6 @@ INDEX_TITLE = "# Explained code"
 _BASED_ON_ROW = re.compile(r"^\|\s*\*\*Based on\*\*\s*\|(.*)$", re.M)
 _COMMIT = re.compile(r"\b[0-9a-f]{7,40}\b")
 _CODE_SPAN = re.compile(r"`([^`\n]+)`")
-GIT_TIMEOUT = 30
 INDEX_MARKER = "<!-- kingmadoc:explain-index -->"
 
 
@@ -241,27 +240,15 @@ def freshness(root: Path, folder: Path) -> Freshness:
 
     if commit is None:
         return result(problem="no commit in its **Based on** row")
-    if _git(root, "rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}") is None:
+    if run_git(root, "rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}") is None:
         return result(problem=f"commit {commit} is not in this repository")
-    output = _git(
+    output = run_git(
         root, "diff", "--relative", "--name-only", commit, "--",
         *(paths or ["."]), f":(exclude){EXPLAIN_DIR.as_posix()}",
     )
     if output is None:
         return result(problem="git could not compare it")
     return result(changed=tuple(sorted(line for line in output.splitlines() if line)))
-
-
-def _git(root: Path, *args: str) -> str | None:
-    """Run git in ``root``; None when git is missing or fails."""
-    try:
-        done = subprocess.run(  # noqa: S603 - fixed program, no shell
-            ["git", "-C", str(root), *args],  # noqa: S607 - git from PATH, like a user would
-            capture_output=True, text=True, timeout=GIT_TIMEOUT, check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    return done.stdout if done.returncode == 0 else None
 
 
 def _entry(number: str, link: str, fallback: str, doc: Path) -> Entry:

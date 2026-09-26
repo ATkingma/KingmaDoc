@@ -227,3 +227,12 @@ def test_explaining_again_starts_from_explain_status() -> None:
     assert "code spans" in text
     for reference in (ARC42, C4):
         assert "| **Based on** | <commit hash" in re.sub(r"[ \t]+", " ", _read(reference))
+
+
+def test_reading_the_code_starts_from_the_facts() -> None:
+    """Step 2 runs `kingmadoc explain facts` (with --base for a branch) before reading."""
+    step = _read(SKILL).split("## Step 2.", 1)[1].split("## Step 3.", 1)[0]
+
+    assert "kingmadoc explain facts" in step
+    assert "--base" in step
+    assert "never contradict" in step

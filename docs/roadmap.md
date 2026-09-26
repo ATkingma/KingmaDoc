@@ -254,7 +254,9 @@ is always kept, and nothing is sent anywhere without explicit configuration.
 
 **Status:** agent skill `explaining-code` done (unreleased), after the first test run
 showed that an as-built document in the plan format read like an audit (risks, open
-questions) instead of giving insight. CLI support (task 3) open.
+questions) instead of giving insight. CLI support (task 3) done
+(unreleased): `kingmadoc explain facts` (data model, project references, branch diff)
+and `kingmadoc explain status`.
 
 **Goal.** Cure code blindness for code that already exists: show with pictures what is
 there and how it works, for a feature, a branch (what it changed), a whole project or a

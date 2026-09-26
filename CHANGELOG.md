@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `kingmadoc explain facts [--base REF] [--json]` (roadmap WP12 task 3): what can be read
+  from the code without guessing, for the agent to draw from: the stack, the references
+  between .NET projects (`.csproj`), the Python module dependencies, the data model from
+  ORM code (EF Core, Prisma, Django, SQLAlchemy, TypeORM; tests are left out) and, with
+  `--base`, the branch's commits and changed files with line counts (uncommitted work
+  included). `explaining-code` 5.3 starts from it.
 - `kingmadoc explain status`: per explainer, the files changed since the commit in its
   **Based on** row (committed or not), limited to the files it names in code spans (or
   the whole project); `--check` exits with 1 when one is outdated, for CI.

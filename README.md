@@ -133,6 +133,7 @@ kingmadoc plan "…" --no-input --stdout   # no questions, print instead of writ
 kingmadoc explain new "Checkout"         # folder for a subject: docs/explain/0001-checkout/
 kingmadoc render docs/explain/0001-checkout/README.md   # D2 diagrams -> SVG images
 kingmadoc explain status [--check]      # which explainers the code changed under
+kingmadoc explain facts --base main      # facts to explain from: data model, branch diff
 kingmadoc adr "Use PostgreSQL" --status accepted   # needs adr.enabled
 ```
 

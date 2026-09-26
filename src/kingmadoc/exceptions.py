@@ -35,3 +35,7 @@ class RenderError(KingmaDocError):
 
 class ExplainError(KingmaDocError):
     """Raised when an explainer folder cannot be picked or created."""
+
+
+class FactsError(KingmaDocError):
+    """Raised when facts about the code cannot be collected (e.g. an unknown git base)."""

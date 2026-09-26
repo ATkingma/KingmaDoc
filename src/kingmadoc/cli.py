@@ -27,6 +27,9 @@ from kingmadoc.explain import (
     is_generated_index,
     read_entries,
 )
+from kingmadoc.facts.branch import branch_changes
+from kingmadoc.facts.collect import collect_facts, facts_markdown, facts_to_dict
+from kingmadoc.git import short_head
 from kingmadoc.plan.analyzer import CodebaseReport, analyze, format_report, report_to_dict
 from kingmadoc.plan.generator import (
     build_plan_context,
@@ -333,6 +336,39 @@ def explain_new(name: str, root: Path) -> None:
     if not created:
         click.echo(f"Reusing {folder.name} (explained before).", err=True)
     click.echo(folder / EXPLAINER_FILE)
+
+
+@explain_group.command("facts")
+@ROOT_OPTION
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
+)
+@click.option("--base", default=None, help="Also show what this branch changed since BASE.")
+@click.option("--json", "as_json", is_flag=True, help="Print the facts as JSON.")
+def explain_facts(root: Path, config_path: Path | None, base: str | None, as_json: bool) -> None:
+    """Print what can be read from the code without guessing, to explain it from.
+
+    The stack, the project references (.NET), the Python module dependencies, the data
+    model from ORM code (EF Core, Prisma, Django, SQLAlchemy, TypeORM) and, with --base,
+    the branch's commits and changed files.
+    """
+    try:
+        config = load_config(root, config_path)
+        report = analyze(root, config.analyzer, with_dependencies=True)
+        branch = branch_changes(root, base) if base else None
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _warn_if_truncated(report)
+    facts = collect_facts(report, short_head(root), branch)
+    if as_json:
+        click.echo(json.dumps(facts_to_dict(facts), indent=2, ensure_ascii=False))
+    else:
+        click.echo(facts_markdown(facts), nl=False)
 
 
 @explain_group.command("status")
