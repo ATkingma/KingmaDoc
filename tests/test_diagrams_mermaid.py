@@ -67,8 +67,8 @@ def test_render_component_snapshot() -> None:
 
 
 def test_render_context_explicit_relationships_replace_defaults() -> None:
-    """Passing relationships (even empty) disables the default ones."""
-    output = render_context("Shop", [{"name": "Customer"}], [], relationships=[])
+    """default_relationships=False disables the default arrows."""
+    output = render_context("Shop", [{"name": "Customer"}], [], default_relationships=False)
 
     assert "Rel(" not in output
 

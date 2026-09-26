@@ -19,7 +19,7 @@ NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
     ("text", "expected"),
     [
         ("Add login", "add-login"),
-        ("  Café -- OAuth2 / SSO!  ", "caf-oauth2-sso"),
+        ("  Café -- OAuth2 / SSO!  ", "cafe-oauth2-sso"),
         ("!!!", "feature"),
         ("a" * 50, "a" * 40),
         ("support exporting reports as csv and excel files", "support-exporting-reports-as-csv-and"),

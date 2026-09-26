@@ -111,8 +111,10 @@ class DiagramBackend(Protocol):
         system_name: str,
         external_actors: Sequence[Element],
         external_systems: Sequence[Element],
-        relationships: Sequence[Rel] | None = None,
+        relationships: Sequence[Rel] = (),
         system_description: str = "",
+        *,
+        default_relationships: bool = True,
     ) -> str:
         """C4 Context: the system, the people who use it, and external systems."""
         ...
@@ -153,8 +155,10 @@ def build_context(
     system_name: str,
     external_actors: Sequence[Element],
     external_systems: Sequence[Element],
-    relationships: Sequence[Rel] | None = None,
+    relationships: Sequence[Rel] = (),
     system_description: str = "",
+    *,
+    default_relationships: bool = True,
 ) -> Diagram:
     """Model a C4 Context diagram (see :meth:`DiagramBackend.render_context`).
 
@@ -162,9 +166,10 @@ def build_context(
         system_name: The system being documented.
         external_actors: People who use the system (``name``, ``description``).
         external_systems: Systems it depends on (``name``, ``description``).
-        relationships: ``(source, target, label)`` by name. ``None`` means every actor
-            ``"Uses"`` the system and the system ``"Uses"`` every external system.
+        relationships: ``(source, target, label)`` by name, drawn after the defaults.
         system_description: Optional description on the system box.
+        default_relationships: Also draw every actor ``"Uses"`` the system and the
+            system ``"Uses"`` every external system.
 
     Returns:
         The diagram model.
@@ -176,15 +181,16 @@ def build_context(
     system = Node(register(aliases, system_name), system_name, "system", "", system_description)
     actors = [_node(aliases, a, "person") for a in external_actors]
     externals = [_node(aliases, s, "system_ext") for s in external_systems]
-    if relationships is None:
-        relationships = [(a["name"], system_name, "Uses") for a in external_actors] + [
+    defaults: list[Rel] = []
+    if default_relationships:
+        defaults = [(a["name"], system_name, "Uses") for a in external_actors] + [
             (system_name, s["name"], "Uses") for s in external_systems
         ]
     return Diagram(
         kind="context",
         title=f"System Context: {system_name}",
         nodes=(*actors, system, *externals),
-        edges=_edges(relationships, aliases),
+        edges=_edges([*defaults, *relationships], aliases),
     )
 
 

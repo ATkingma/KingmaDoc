@@ -23,6 +23,8 @@ from kingmadoc.templating import load_template
 MAX_INFERRED_CONTAINERS = 6
 # The summary is the doc title; longer titles wrap badly in editors and PR views.
 MAX_SUMMARY_LENGTH = 120
+# Words ending in "." that do not end a sentence (compared lowercased, with the dot).
+ABBREVIATIONS: frozenset[str] = frozenset({"e.g.", "i.e.", "etc.", "vs.", "cf.", "approx."})
 
 PLAN_SUFFIX = "-plan.md"
 
@@ -285,21 +287,35 @@ def summarize(description: str, max_length: int = MAX_SUMMARY_LENGTH) -> str:
         description: Free text.
         max_length: Maximum length of the result, including a trailing ``…``.
 
+    A sentence ends at ``.``, ``!`` or ``?`` followed by whitespace and a capital
+    letter, unless the word before it is a known abbreviation (:data:`ABBREVIATIONS`).
+
     Returns:
         The first sentence with whitespace collapsed; cut at a word boundary if too long.
 
     Example:
-        >>> summarize("Add login. Also add logout.")
-        'Add login.'
+        >>> summarize("Add export, e.g. CSV. Also add logout.")
+        'Add export, e.g. CSV.'
     """
     text = " ".join(description.split())
-    sentence = re.split(r"(?<=[.!?])\s", text, maxsplit=1)[0]
+    sentence = _first_sentence(text)
     if len(sentence) <= max_length:
         return sentence
     cut = sentence[: max_length - 1]
     if " " in cut:
         cut = cut.rsplit(" ", 1)[0]
     return cut.rstrip(" ,;:") + "…"
+
+
+def _first_sentence(text: str) -> str:
+    for match in re.finditer(r"[.!?] (?=\S)", text):
+        end = match.start() + 1
+        if not text[match.end()].isupper():
+            continue
+        if text[:end].rsplit(" ", 1)[-1].lower() in ABBREVIATIONS:
+            continue
+        return text[:end]
+    return text
 
 
 def infer_containers(analysis: CodebaseReport, project_name: str) -> list[dict[str, str]]:

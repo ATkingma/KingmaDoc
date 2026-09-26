@@ -106,10 +106,10 @@ the diagrams, but never beyond what the user said or the code shows.
 
 ### Step 4. Generate the Feature Design Doc
 
-- **Summary**: the first sentence of the feature description, whitespace collapsed,
-  at most 120 characters (cut at a word boundary and end with `…`).
-- **Slug**: the summary in lowercase kebab-case (`[a-z0-9]` runs joined by `-`), at
-  most 40 characters, cut at a word boundary; `feature` if empty.
+- **Summary**: the first sentence (ends at `.`/`!`/`?` + capital letter, never at e.g./i.e./etc./vs./cf./approx.),
+  whitespace collapsed, at most 120 characters (cut at a word boundary and end with `…`).
+- **Slug**: the summary transliterated to ASCII (é→e), lowercase kebab-case, at most 40 characters at a word
+  boundary; if non-Latin text leaves nothing, `feature-` + first 8 hex of its SHA-256.
   Example: "Add password reset via email. Links expire…" → `add-password-reset-via-email`.
 - Fill every section of the [plan format](#plan-doc-docsfeaturesslug-planmd) in order.
   Scope, assumptions and risks come from the user's answers; anything not covered stays

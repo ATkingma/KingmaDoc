@@ -66,8 +66,10 @@ def render_context(
     system_name: str,
     external_actors: Sequence[Element],
     external_systems: Sequence[Element],
-    relationships: Sequence[Rel] | None = None,
+    relationships: Sequence[Rel] = (),
     system_description: str = "",
+    *,
+    default_relationships: bool = True,
 ) -> str:
     """Render a C4 Context diagram in D2; see :func:`kingmadoc.diagrams.base.build_context`.
 
@@ -75,14 +77,20 @@ def render_context(
         system_name: The system being documented.
         external_actors: People who use the system.
         external_systems: Systems it depends on.
-        relationships: ``(source, target, label)``; ``None`` derives the defaults.
+        relationships: ``(source, target, label)``, drawn after the defaults.
         system_description: Optional description on the system box.
+        default_relationships: Also draw actor -> system and system -> external arrows.
 
     Returns:
         A fenced ``d2`` block.
     """
     return _c4(build_context(
-        system_name, external_actors, external_systems, relationships, system_description
+        system_name,
+        external_actors,
+        external_systems,
+        relationships,
+        system_description,
+        default_relationships=default_relationships,
     ))
 
 
