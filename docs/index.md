@@ -13,6 +13,7 @@ Feature Verification Doc afterwards.
 | [CLAUDE.md](../CLAUDE.md)     | Guidance for AI agents working on this repository: commands, architecture, key rules  |
 | [CONTRIBUTING](../CONTRIBUTING.md) | Dev setup, running tests, adding a diagram backend or a template |
 | [CHANGELOG](../CHANGELOG.md)  | Release history (Keep a Changelog)                                                    |
+| [Roadmap](roadmap.md)         | Open functional gaps after 0.1.1, split into work packages                            |
 
 ## By task
 
