@@ -152,21 +152,29 @@ explanation and its main flow; point to per-feature explainers when they exist.
 
 ## Step 5. Render the pictures
 
-Turn the D2 blocks into images that every Markdown viewer shows:
+An explainer is not finished until its diagrams are pictures: the user must see images,
+not D2 source. Run:
 
-- If `kingmadoc` is installed: `kingmadoc render docs/explain/<file>.md`. It writes
-  `docs/explain/img/*.svg`, puts each image above its diagram and folds the source.
-- Otherwise, if `d2` is installed: for each diagram, save it as
-  `docs/explain/img/<file>-<n>.d2`, run `d2 --pad 20 <that>.d2 <that>.svg`, and put
-  `![<section title>](img/<file>-<n>.svg)` above the diagram block.
-- If neither is installed: keep the D2 blocks and tell the user to install D2
-  (https://d2lang.com/tour/install) and run `kingmadoc render` later.
+```bash
+kingmadoc render docs/explain/<file>.md
+```
 
-Fix any diagram D2 rejects before handing over.
+It writes `docs/explain/img/*.svg`, puts each image above its diagram and folds the
+source. The first time it downloads D2 by itself (once, checksum-verified); the user
+does not install anything.
+
+- If it fails because a diagram is invalid, fix that diagram and run it again.
+- If `kingmadoc` says there is no `render` command, it is outdated: ask the user to update
+  it (`pipx install --force git+https://github.com/ATkingma/KingmaDoc`), then render.
+- Only if `kingmadoc` is not installed at all: render each diagram with `d2` if it is
+  available (`d2 --pad 20 <n>.d2 docs/explain/img/<file>-<n>.svg`, then
+  `![<section title>](img/<file>-<n>.svg)` above the block); otherwise tell the user
+  that `pip install` of KingmaDoc gives them the pictures.
 
 ## Step 6. Hand it over
 
-Show the path, the "In short" text and the images you rendered. If there are
+Show the path, the "In short" text and the images you rendered (check that the
+document embeds them). If there are
 "Couldn't work out" questions, ask them (at most three) and update the explainer with
 the answers. Offer to explain another scope or to go deeper into one action.
 
