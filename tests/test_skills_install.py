@@ -93,6 +93,7 @@ def test_skill_folders_are_installed_completely(tmp_path: Path) -> None:
     assert _install(tmp_path).exit_code == 0
 
     installed = tmp_path / ".claude" / "skills" / "explaining-code"
-    assert sorted(p.relative_to(installed) for p in installed.rglob("*") if p.is_file()) == expected
+    files = [p for p in installed.rglob("*") if p.is_file()]
+    assert sorted(p.relative_to(installed) for p in files) == expected
     for rel in expected:
         assert (installed / rel).read_bytes() == (folder / rel).read_bytes()

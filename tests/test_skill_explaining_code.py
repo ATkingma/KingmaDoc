@@ -9,9 +9,35 @@ from pathlib import Path
 import pytest
 import yaml
 
-SKILL = Path(__file__).resolve().parents[1] / "skill" / "explaining-code" / "SKILL.md"
+FOLDER = Path(__file__).resolve().parents[1] / "skill" / "explaining-code"
+SKILL = FOLDER / "SKILL.md"
+ARC42 = FOLDER / "reference" / "arc42.md"
+C4 = FOLDER / "reference" / "c4.md"
 
-EXPLAINER_HEADINGS = [
+ARC42_HEADINGS = [
+    "#",
+    "## What changed",
+    "## 1. Introduction and goals",
+    "## 2. Constraints",
+    "## 3. Context and scope",
+    "## 4. Solution strategy",
+    "## 5. Building block view",
+    "### Level 1: containers",
+    "### Level 2: components of",
+    "### Level 3: code of",
+    "## 6. Runtime view",
+    "###",
+    "## 7. Deployment view",
+    "## 8. Cross-cutting concepts",
+    "## 9. Architecture decisions",
+    "## 10. Quality requirements",
+    "## 11. Risks and technical debt",
+    "## 12. Glossary",
+    "## Appendix: where to find what",
+    "## Couldn't work out",
+]
+
+C4_HEADINGS = [
     "#",
     "## In short",
     "## Terms",
@@ -31,14 +57,14 @@ EXPLAINER_HEADINGS = [
 ]
 
 
-def _text() -> str:
-    return SKILL.read_text(encoding="utf-8")
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
 
 
-def _output_block() -> str:
-    block = re.search(r"^(`{4,})markdown\n(.*?)\n\1$", _text(), re.S | re.M)
-    assert block, "no ````markdown output format block"
-    return block.group(2)
+def _output_block(path: Path) -> str:
+    block = re.search(r"^(`{4,})markdown\n(.*?)\n\1$", _read(path), re.S | re.M)
+    assert block, f"no ````markdown output format block in {path.name}"
+    return re.sub(r"[ \t]+", " ", block.group(2))  # the formatter pads table cells
 
 
 def _headings(markdown: str) -> list[str]:
@@ -54,68 +80,93 @@ def _headings(markdown: str) -> list[str]:
 
 def test_frontmatter_follows_the_agent_skills_standard() -> None:
     """Name matches the folder (required by Cursor); description says when to use it."""
-    meta = yaml.safe_load(_text().split("---", 2)[1])
+    meta = yaml.safe_load(_read(SKILL).split("---", 2)[1])
 
-    assert meta["name"] == SKILL.parent.name == "explaining-code"
+    assert meta["name"] == FOLDER.name == "explaining-code"
     assert re.fullmatch(r"[a-z0-9-]{1,64}", meta["name"])
     assert 0 < len(meta["description"]) <= 1024
     assert "Use when" in meta["description"]
-    for scope in ("feature", "branch", "project"):
-        assert scope in meta["description"]
+    for word in ("feature", "branch", "project", "arc42"):
+        assert word in meta["description"]
 
 
 def test_workflow_sections_in_order_and_short() -> None:
-    """The workflow is complete, in order, and the skill stays compact."""
-    text = _text()
+    """The workflow is complete, in order; details live in reference files (one level)."""
+    text = _read(SKILL)
     sections = [
         "## When to use this skill",
-        "## Step 1. Pin down the scope",
+        "## Step 1. Pin down the scope and the format",
         "## Step 2. Read the code",
         "## Step 3. Draw it",
         "## Step 4. Write the explainer",
         "## Step 5. Render the pictures",
         "## Step 6. Hand it over",
-        "## Output format",
     ]
     positions = [text.find(f"\n{s}\n") for s in sections]
 
     assert -1 not in positions, [s for s, p in zip(sections, positions, strict=True) if p == -1]
     assert positions == sorted(positions)
-    assert len(text.splitlines()) < 350
+    assert "reference/arc42.md" in text and "reference/c4.md" in text
+    assert len(text.splitlines()) < 300
+    for reference in (ARC42, C4):
+        assert len(_read(reference).splitlines()) < 300, reference.name
 
 
-def test_explainer_format_is_about_understanding_not_auditing() -> None:
-    """Pictures and flows, no risk list, at most three questions."""
-    block = re.sub(r"[ \t]+", " ", _output_block())  # the formatter pads table cells
+def test_skill_rules() -> None:
+    """Explain, don't audit; pictures; at most three questions."""
+    text = _read(SKILL)
 
-    assert _headings(block) == EXPLAINER_HEADINGS
+    assert "Do not change source code" in text
+    assert "at most three" in text
+    assert "kingmadoc render" in text
+    assert "explain.format" in text
+
+
+def test_arc42_format() -> None:
+    """The default format has the 12 arc42 sections, in order, with numbered figures."""
+    block = _output_block(ARC42)
+
+    assert _headings(block) == ARC42_HEADINGS
+    assert block.count("```d2") >= 6  # context, containers, components, code, flow, deployment
+    assert "**Figure 1.**" in block and "**Figure 2.**" in block
+    assert "| Part | Role | Technology |" in block
+    assert "| From | To | What | How |" in block
+    # arc42 sections 10 and 11 only report what is documented: no risk hunting.
+    assert "only what is documented" in _read(ARC42)
+    assert "C4 level 4" in _read(ARC42)
+
+
+def test_c4_format() -> None:
+    """The compact format zooms in and decodes every figure with tables."""
+    block = _output_block(C4)
+
+    assert _headings(block) == C4_HEADINGS
     assert "Risks" not in block and "Scope (in / out)" not in block
-    assert block.count("```d2") >= 5  # context, containers, a component, a flow, data
-    # Every figure is numbered and decoded by tables (lessons from design-doc reviews).
+    assert block.count("```d2") >= 5
     assert "**Figure 1.**" in block and "**Figure 2.**" in block
     assert "| Part | Role | Technology |" in block
     assert "| From | To | What | How |" in block
     assert "| Chosen | Instead of | Why |" in block
-    text = _text()
-    assert "Do not change source code" in text
-    assert "at most three" in text
-    assert "kingmadoc render" in text
 
 
 def _d2_examples() -> list[str]:
-    return [m.group(1) for m in re.finditer(r"^```d2\n(.*?)\n```$", _text(), re.S | re.M)]
+    return [
+        m.group(1)
+        for path in (SKILL, ARC42, C4)
+        for m in re.finditer(r"^```d2\n(.*?)\n```$", _read(path), re.S | re.M)
+    ]
 
 
 def test_skill_has_d2_examples() -> None:
     """The skill shows D2 for each kind of picture it asks for."""
-    assert len(_d2_examples()) >= 4
+    assert len(_d2_examples()) >= 8
 
 
 D2 = os.environ.get("D2_BIN") or shutil.which("d2")
 
 
 @pytest.mark.skipif(D2 is None, reason="d2 not available")
-@pytest.mark.parametrize("index", range(12))
+@pytest.mark.parametrize("index", range(30))
 def test_d2_examples_compile(tmp_path: Path, index: int) -> None:
     """Agents copy these examples, so every one must compile with the real d2."""
     examples = _d2_examples()
