@@ -1,0 +1,102 @@
+# Feature Design Doc: {{ feature.name }}
+
+| | |
+|---|---|
+| **Project** | {{ project_name }} |
+| **Status** | Draft |
+| **Generated** | {{ generated_on }} by KingmaDoc {{ version }} |
+
+> Generated before implementation. Review every section: diagrams and module
+> lists are inferred from the codebase and are a starting point, not the truth.
+
+## 1. Summary
+
+{{ feature.description or "_TODO: describe the feature in one or two sentences._" }}
+{% if project_description %}
+
+**System context:** {{ project_description }}
+{% endif %}
+
+## 2. Clarifying questions
+
+{% if feature.answers %}
+{% for question, answer in feature.answers %}
+**Q{{ loop.index }}. {{ question }}**
+{{ answer or "_Not answered._" }}
+
+{% endfor %}
+{% else %}
+_No questions were asked (`--no-input`). Consider answering:_ who triggers the
+feature, which systems it touches, which modules change, and how success is measured.
+
+{% endif %}
+## 3. Codebase context
+
+**Tech stack:** {{ analysis.tech_stack | join(", ") if analysis.tech_stack else "_not detected_" }}
+
+{% if analysis.languages %}
+| Language | Files |
+|---|---|
+{% for language, count in analysis.languages.items() %}
+| {{ language }} | {{ count }} |
+{% endfor %}
+
+{% endif %}
+<details>
+<summary>File tree ({{ analysis.files | length }} files{% if analysis.truncated %}, truncated{% endif %})</summary>
+
+```text
+{{ analysis.tree }}
+```
+
+</details>
+
+{% if "c4_context" in diagrams %}
+## 4. C4 Context
+
+Who uses the system and which external systems it depends on.
+
+```mermaid
+{{ diagrams.c4_context }}
+```
+
+{% endif %}
+{% if "c4_container" in diagrams %}
+## 5. C4 Container
+
+The runnable units inside the system (inferred from source directories).
+
+```mermaid
+{{ diagrams.c4_container }}
+```
+
+{% endif %}
+## 6. C4 Component
+
+_TODO: components inside the container this feature changes._
+
+## 7. Sequence
+
+_TODO: the main flow of the feature, step by step._
+
+## 8. Class model
+
+_TODO: new or changed classes and their relationships._
+
+## 9. Implementation plan
+
+- [ ] _TODO: step 1_
+- [ ] _TODO: step 2_
+
+## 10. Validation plan
+
+How the developer can check the result without reading every line of code.
+
+- [ ] Build succeeds
+- [ ] Tests pass (list new tests here)
+- [ ] Lint is clean
+- [ ] Manual check: _TODO_
+
+## 11. Risks and open questions
+
+- _TODO_

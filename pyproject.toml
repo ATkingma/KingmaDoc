@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kingmadoc"
+dynamic = ["version"]
+description = "Feature documentation skill for AI coding agents: design docs before, verification docs after."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "KingmaDoc contributors" }]
+keywords = ["documentation", "c4", "mermaid", "ai-agents", "claude-code"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Environment :: Console",
+    "Topic :: Software Development :: Documentation",
+]
+dependencies = [
+    "click>=8.1",
+    "jinja2>=3.1",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+kingmadoc = "kingmadoc.cli:main"
+
+[tool.hatch.version]
+path = "src/kingmadoc/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kingmadoc"]
+
+# Templates live at the repo root for easy editing; ship them inside the package.
+[tool.hatch.build.targets.wheel.force-include]
+"templates" = "kingmadoc/templates"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

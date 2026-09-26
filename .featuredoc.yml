@@ -1,0 +1,40 @@
+# KingmaDoc configuration. All keys are optional; shown values are the defaults.
+
+# Where generated feature docs are written (relative to the project root).
+output_dir: docs/features
+
+# Template name (bundled) or path relative to the project root.
+template: plan_default.md.j2
+
+# Number of clarifying questions asked in `plan` mode (0-5).
+max_questions: 5
+
+project:
+  # Defaults to the project directory name.
+  name: null
+  description: ""
+
+analyzer:
+  max_files: 2000
+  tree_depth: 3
+  exclude_dirs:
+    - ".git"
+    - ".hg"
+    - ".svn"
+    - ".venv"
+    - "venv"
+    - "env"
+    - "node_modules"
+    - "__pycache__"
+    - ".mypy_cache"
+    - ".pytest_cache"
+    - ".ruff_cache"
+    - ".tox"
+    - "dist"
+    - "build"
+    - "*.egg-info"
+
+# Diagrams included in the Feature Design Doc.
+diagrams:
+  - c4_context
+  - c4_container
