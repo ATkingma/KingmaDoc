@@ -40,7 +40,9 @@ SUPPORTED_DIAGRAMS: frozenset[str] = frozenset({"c4_context", "c4_container"})
 # renderers in kingmadoc.plan.models (checked when that module is imported).
 DOCUMENT_MODELS: Mapping[str, tuple[str, ...]] = MappingProxyType({
     "functional_design": (),
+    "domain_design": ("domain_model", "event_storming"),
     "technical_design": (),
+    "security_design": ("threat_model", "permissions"),
 })
 
 # Must match kingmadoc.diagrams.BACKENDS (a test enforces it); config imports no diagrams.
@@ -91,8 +93,12 @@ class ExtraDesignsConfig:
     functional_design: ExtraDesignConfig = field(
         default_factory=lambda: _design("functional_design")
     )
+    domain_design: ExtraDesignConfig = field(default_factory=lambda: _design("domain_design"))
     technical_design: ExtraDesignConfig = field(
         default_factory=lambda: _design("technical_design")
+    )
+    security_design: ExtraDesignConfig = field(
+        default_factory=lambda: _design("security_design")
     )
 
 
@@ -300,6 +306,16 @@ extra_designs:
     enabled: false
     template: technical_design.md.j2
     models: [{", ".join(DOCUMENT_MODELS["technical_design"])}]
+  domain_design:
+    # <slug>-domain-design.md: domain model and event storming.
+    enabled: false
+    template: domain_design.md.j2
+    models: [{", ".join(DOCUMENT_MODELS["domain_design"])}]
+  security_design:
+    # <slug>-security-design.md: threat model (STRIDE) and who may do what.
+    enabled: false
+    template: security_design.md.j2
+    models: [{", ".join(DOCUMENT_MODELS["security_design"])}]
 
 # Architecture Decision Records: `kingmadoc adr "<title>"` writes docs/adr/<NNNN>-<slug>.md.
 adr:

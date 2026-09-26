@@ -61,6 +61,16 @@ extra_designs:
     enabled: false
     template: technical_design.md.j2
     models: []
+  domain_design:
+    # <slug>-domain-design.md: domain model and event storming.
+    enabled: false
+    template: domain_design.md.j2
+    models: [domain_model, event_storming]
+  security_design:
+    # <slug>-security-design.md: threat model (STRIDE) and who may do what.
+    enabled: false
+    template: security_design.md.j2
+    models: [threat_model, permissions]
 
 # Architecture Decision Records: `kingmadoc adr "<title>"` writes docs/adr/<NNNN>-<slug>.md.
 adr:

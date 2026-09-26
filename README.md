@@ -110,6 +110,9 @@ file with all defaults and comments; [this repository's
 | `diagram_format`                          | `mermaid`                          | `mermaid`, `plantuml` (C4-PlantUML) or `d2`                                                                    |
 | `extra_designs.functional_design.enabled` | `false`                            | Also write `<slug>-functional-design.md`: user flows, edge cases, business rules, permissions                  |
 | `extra_designs.technical_design.enabled`  | `false`                            | Also write `<slug>-technical-design.md`: database schema, API contracts, error handling, performance, security |
+| `extra_designs.domain_design.enabled` | `false` | Also write `<slug>-domain-design.md`: domain model, event storming |
+| `extra_designs.security_design.enabled` | `false` | Also write `<slug>-security-design.md`: STRIDE threat model (with the inferred elements), who may do what |
+| `extra_designs.<name>.models` | all models of that document | Which design models (sections) the document contains, e.g. `[threat_model]` |
 | `extra_designs.<name>.template`          | bundled template                   | Template for that document: bundled name or explicit path (runs sandboxed)                                     |
 | `adr.enabled`                             | `false`                            | Enable `kingmadoc adr "<title>"`, which writes numbered Architecture Decision Records to `docs/adr/`           |
 | `adr.template`                            | `adr.md.j2`                        | ADR template: bundled name or explicit path (runs sandboxed)                                                   |

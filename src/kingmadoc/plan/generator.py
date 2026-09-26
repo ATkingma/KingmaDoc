@@ -61,10 +61,13 @@ class ExtraDesign:
     suffix: str
 
 
-# Order in which extra docs are written and printed: what (functional), then how (technical).
+# Order in which extra docs are written and printed: what (functional, domain), then how
+# (technical, security).
 EXTRA_DESIGNS: tuple[ExtraDesign, ...] = (
     ExtraDesign("functional_design", "-functional-design.md"),
+    ExtraDesign("domain_design", "-domain-design.md"),
     ExtraDesign("technical_design", "-technical-design.md"),
+    ExtraDesign("security_design", "-security-design.md"),
 )
 
 

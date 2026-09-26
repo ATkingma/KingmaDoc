@@ -1,0 +1,18 @@
+# Security design: {{ feature_summary }}
+
+| | |
+|---|---|
+| **Project** | {{ project_name }} |
+| **Plan** | [`{{ plan_file }}`]({{ plan_file }}) |
+| **Status** | Draft |
+| **Generated** | {{ generated_at.isoformat(timespec="minutes") }} by KingmaDoc {{ version }} |
+
+> Optional companion to the plan doc (`extra_designs.security_design` in `.featuredoc.yml`).
+> Describes what could go wrong for security, and who may do what.
+> Fill in every _TODO_ and review everything marked _(inferred)_.
+{% for section in model_sections %}
+
+{{ section }}{% else %}
+
+_No models selected (`extra_designs.security_design.models` in `.featuredoc.yml`)._
+{% endfor %}

@@ -39,6 +39,8 @@ Feature Verification Doc afterwards.
 | [`templates/plan_default.md.j2`](../src/kingmadoc/templates/plan_default.md.j2)     | Jinja2 template for the plan doc                      |
 | [`templates/functional_design.md.j2`](../src/kingmadoc/templates/functional_design.md.j2) | Template for the optional functional design doc |
 | [`templates/technical_design.md.j2`](../src/kingmadoc/templates/technical_design.md.j2) | Template for the optional technical design doc  |
+| [`templates/domain_design.md.j2`](../src/kingmadoc/templates/domain_design.md.j2) | Template for the optional domain design doc |
+| [`templates/security_design.md.j2`](../src/kingmadoc/templates/security_design.md.j2) | Template for the optional security design doc |
 | [`templates/adr.md.j2`](../src/kingmadoc/templates/adr.md.j2)                       | Template for `kingmadoc adr` decision records          |
 | [`examples/verify-mode-plan.md`](../examples/verify-mode-plan.md)     | Output of `kingmadoc plan` run on this repository     |
 | [LICENSE](../LICENSE)                                                 | MIT license                                           |
