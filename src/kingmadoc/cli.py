@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import sys
 from datetime import date, datetime
@@ -226,7 +227,22 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
 
 def main() -> None:
     """Console-script entry point."""
+    _utf8_stdout()
     cli()
+
+
+def _utf8_stdout() -> None:
+    """Make stdout UTF-8 whatever the locale, so piped output never crashes.
+
+    On Windows, a piped stdout uses the ANSI code page (e.g. cp1252), which cannot
+    encode the tree characters or most non-Latin text. Documents are UTF-8 files, so
+    stdout gets the same encoding. stderr keeps the locale encoding (it is shown to a
+    human) but replaces what it cannot encode instead of crashing.
+    """
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if isinstance(sys.stderr, io.TextIOWrapper):
+        sys.stderr.reconfigure(errors="replace")
 
 
 if __name__ == "__main__":
