@@ -119,6 +119,33 @@ def load_config(root: Path, config_path: Path | None = None) -> FeatureDocConfig
     return parse_config(raw if raw is not None else {})
 
 
+def resolve_output_dir(root: Path, config: FeatureDocConfig) -> Path:
+    """Return ``output_dir`` as an absolute path, refusing anything outside ``root``.
+
+    A repository's own ``.featuredoc.yml`` must not make KingmaDoc write elsewhere
+    (``../..``, absolute paths, or symlinks pointing out of the project). Symlinks are
+    resolved before the check.
+
+    Args:
+        root: Project root.
+        config: KingmaDoc configuration.
+
+    Returns:
+        The resolved output directory (it may not exist yet).
+
+    Raises:
+        ConfigError: If ``output_dir`` resolves outside the project root.
+    """
+    project = root.resolve()
+    target = (project / config.output_dir).resolve()
+    if not target.is_relative_to(project):
+        raise ConfigError(
+            f"output_dir {config.output_dir.as_posix()!r} resolves to {target}, which is "
+            f"outside the project root {project}"
+        )
+    return target
+
+
 def parse_config(data: Any) -> FeatureDocConfig:
     """Build a :class:`FeatureDocConfig` from parsed YAML data.
 

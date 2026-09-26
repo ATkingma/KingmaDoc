@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from kingmadoc import __version__
-from kingmadoc.config import FeatureDocConfig
+from kingmadoc.config import FeatureDocConfig, resolve_output_dir
 from kingmadoc.exceptions import VerificationError
 
 PLAN_SUFFIX = "-plan.md"
@@ -29,6 +29,7 @@ def find_plan(root: Path, config: FeatureDocConfig, slug: str) -> Path:
         Path of the existing ``<root>/<output_dir>/<slug>-plan.md``.
 
     Raises:
+        ConfigError: If ``output_dir`` resolves outside the project root.
         VerificationError: If the slug is malformed or the plan doc does not exist.
     """
     if not SLUG_PATTERN.fullmatch(slug):
@@ -36,7 +37,7 @@ def find_plan(root: Path, config: FeatureDocConfig, slug: str) -> Path:
             f"Invalid feature slug {slug!r}: use lowercase letters, digits and hyphens "
             f"(the part before {PLAN_SUFFIX!r})"
         )
-    plan_dir = root / config.output_dir
+    plan_dir = resolve_output_dir(root, config)
     path = plan_dir / f"{slug}{PLAN_SUFFIX}"
     if path.is_file():
         return path

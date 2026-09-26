@@ -12,7 +12,7 @@ from pathlib import Path
 from jinja2 import TemplateError
 
 from kingmadoc import __version__
-from kingmadoc.config import FeatureDocConfig
+from kingmadoc.config import FeatureDocConfig, resolve_output_dir
 from kingmadoc.diagrams import get_backend
 from kingmadoc.exceptions import GenerationError
 from kingmadoc.naming import slugify
@@ -314,9 +314,12 @@ def default_output_path(root: Path, config: FeatureDocConfig, description: str) 
         description: Feature description (the slug is derived from it).
 
     Returns:
-        ``<root>/<output_dir>/<slug>-plan.md``, see :func:`feature_slug`.
+        ``<root>/<output_dir>/<slug>-plan.md`` (resolved), see :func:`feature_slug`.
+
+    Raises:
+        ConfigError: If ``output_dir`` resolves outside the project root.
     """
-    return root / config.output_dir / f"{feature_slug(description)}{PLAN_SUFFIX}"
+    return resolve_output_dir(root, config) / f"{feature_slug(description)}{PLAN_SUFFIX}"
 
 
 def feature_slug(description: str) -> str:
