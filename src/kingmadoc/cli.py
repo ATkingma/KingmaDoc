@@ -140,7 +140,7 @@ def analyze_command(root: Path, config_path: Path | None, as_json: bool) -> None
     """Analyze the codebase and print the report (languages, entry points, stack, ...)."""
     try:
         config = load_config(root, config_path)
-        report = analyze(root, config.analyzer)
+        report = analyze(root, config.analyzer, with_dependencies=True)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
     _warn_if_truncated(report)

@@ -18,6 +18,7 @@ import yaml
 
 from kingmadoc.config import MAX_FILES_LIMIT, AnalyzerConfig
 from kingmadoc.exceptions import AnalysisError
+from kingmadoc.plan.dependencies import Edge, module_dependencies
 
 # Always skipped, even if the config's exclude_dirs leaves them out.
 ALWAYS_EXCLUDED_DIRS: tuple[str, ...] = (
@@ -224,6 +225,9 @@ class CodebaseReport:
         tree: Text rendering of the file tree (depth-limited).
         source_dirs: Directories that look like source modules (relative paths).
         truncated: True if the file limit was reached and the walk stopped early.
+        module_dependencies: ``(importer, imported)`` edges between the project's own
+            Python modules in the source directories, sorted; ``None`` if not computed
+            (see ``with_dependencies``).
     """
 
     root: Path
@@ -238,6 +242,7 @@ class CodebaseReport:
     tree: str
     source_dirs: tuple[Path, ...]
     truncated: bool
+    module_dependencies: tuple[Edge, ...] | None = None
 
     @property
     def primary_language(self) -> str | None:
@@ -248,12 +253,16 @@ class CodebaseReport:
         )
 
 
-def analyze(root: Path, config: AnalyzerConfig) -> CodebaseReport:
+def analyze(
+    root: Path, config: AnalyzerConfig, *, with_dependencies: bool = False
+) -> CodebaseReport:
     """Walk ``root`` and summarize its structure and technology.
 
     Args:
         root: Project root directory.
         config: Analyzer settings (excludes, limits).
+        with_dependencies: Also build the Python module dependency graph. It parses every
+            source file completely, so it is only done when asked for.
 
     Returns:
         A :class:`CodebaseReport`.
@@ -286,6 +295,7 @@ def analyze(root: Path, config: AnalyzerConfig) -> CodebaseReport:
         | _grep_frameworks(root, files, config.max_lines_per_file)
     )
 
+    source_dirs = _find_source_dirs(files)
     return CodebaseReport(
         root=root,
         file_count=len(files),
@@ -299,8 +309,11 @@ def analyze(root: Path, config: AnalyzerConfig) -> CodebaseReport:
         detected_stack=tuple(sorted(stack)),
         files=tuple(files),
         tree=render_tree(root.name, files, config.tree_depth),
-        source_dirs=_find_source_dirs(files),
+        source_dirs=source_dirs,
         truncated=truncated,
+        module_dependencies=(
+            _python_dependencies(root, files, source_dirs) if with_dependencies else None
+        ),
     )
 
 
@@ -323,6 +336,11 @@ def report_to_dict(report: CodebaseReport) -> dict[str, Any]:
         "test_dirs": list(report.test_dirs),
         "detected_stack": list(report.detected_stack),
         "truncated": report.truncated,
+        "module_dependencies": (
+            None
+            if report.module_dependencies is None
+            else [list(edge) for edge in report.module_dependencies]
+        ),
     }
 
 
@@ -340,6 +358,11 @@ def format_report(report: CodebaseReport) -> str:
         return ", ".join(values) or "none"
 
     files = f"{report.file_count}" + (" (truncated)" if report.truncated else "")
+    dependencies = (
+        "not computed"
+        if report.module_dependencies is None
+        else f"{len(report.module_dependencies)} (Python imports)"
+    )
     languages = (f"{name} {count}" for name, count in report.language_breakdown.items())
     return "\n".join([
         f"Root: {report.root}",
@@ -350,6 +373,7 @@ def format_report(report: CodebaseReport) -> str:
         f"Config files: {items(report.config_files)}",
         f"Test directories: {items(report.test_dirs)}",
         f"Detected stack: {items(report.detected_stack)}",
+        f"Module dependencies: {dependencies}",
     ])
 
 
@@ -606,3 +630,23 @@ def _find_source_dirs(files: list[Path]) -> tuple[Path, ...]:
     if loose_src and not any(d.parts[0] == "src" for d in dirs):
         dirs.add(Path("src"))
     return tuple(sorted(dirs))
+
+
+def _python_dependencies(
+    root: Path, files: list[Path], source_dirs: tuple[Path, ...]
+) -> tuple[Edge, ...]:
+    """Read the Python files of the source directories and return their import edges."""
+    sources: dict[Path, str] = {}
+    for f in files:
+        if f.suffix != ".py" or _in_test_dir(f):
+            continue
+        if not any(f.is_relative_to(d) for d in source_dirs):
+            continue
+        path = root / f
+        try:
+            if path.stat().st_size > MAX_GREP_BYTES:
+                continue
+        except OSError:
+            continue
+        sources[f] = _read_text(path)
+    return module_dependencies(sources)

@@ -133,6 +133,6 @@ def test_plan_json_outputs_report(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
-    assert data == report_to_dict(analyze(tmp_path, AnalyzerConfig()))
+    assert data == report_to_dict(analyze(tmp_path, AnalyzerConfig(), with_dependencies=True))
     assert data["entry_points"] == ["main.py"]
     assert not (tmp_path / "docs").exists()
