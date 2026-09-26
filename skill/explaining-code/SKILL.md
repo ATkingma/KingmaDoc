@@ -34,6 +34,10 @@ Rules:
   context, containers, components, flows, data. Never one giant diagram.
 - **Text must match the pictures.** Counts, names and arrows come from the code, not from
   memory ("2 tables" only if the data figure shows 2).
+- **Number without gaps** (Figure 1, 2, 3… in document order). No introductions or
+  filler: a section starts with its figure. Never paste code as an image.
+- **Mark what is not used** as a plain fact in its table row (an endpoint nothing
+  calls, a table nothing reads): that is insight, not an audit.
 - Point to code in the tables (`path`), not after every sentence.
 - Never invent. If something essential cannot be worked out, ask at most three
   questions (Step 6).
@@ -58,7 +62,12 @@ outside world. Collect:
   Dockerfiles, compose or CI shows it), and how they talk.
 - **Components:** the main modules inside each container that matters.
 - **Flows:** the three to five main actions and the path each takes.
-- **Data:** stored records, keys and relations (models, migrations, schema).
+- **Data:** stored records, keys and relations (models, migrations, schema), limited to
+  what the scope touches.
+- **Routes and permissions** (web apps and APIs): each endpoint, its handler, and who may
+  call it (auth guards, roles, middleware).
+- **Configuration:** settings, environment variables and important constants.
+- **Terms:** domain words and the names the code uses for them, when they differ.
 - **Design choices** the code or history states a reason for (ADRs, README, commit
   messages); leave out choices whose reason you would have to guess.
 - For a branch: what is new, changed and removed, per part.
@@ -136,7 +145,8 @@ store: <Store> {
 controller -> store: <uses>
 ```
 
-**Data**: tables with keys; the relations as arrows.
+**Data**: only the tables the scope touches (say which ones you left out); arrows and
+their direction follow the real foreign keys.
 
 ```d2
 user: <User> {
@@ -169,8 +179,9 @@ figures in order (`**Figure 1.**` …). After a context, containers or component
 add the **parts table** (Part / Role / Technology) and the **arrows table** (From / To /
 What / How). After a flow figure, at most three sentences for what the picture cannot
 show (error paths, timing). For a **project**, "How it works" has one flow per main
-feature; for a **branch**, fill in "What changed". Leave out optional sections that do
-not apply.
+feature; for a **branch**, fill in "What changed". Add "Terms", "Routes and permissions"
+and "Configuration" when the code has them. Leave out optional sections that do not
+apply.
 
 ## Step 5. Render the pictures
 
@@ -180,16 +191,19 @@ An explainer is not finished until its diagrams are pictures. Run:
 kingmadoc render docs/explain/<file>.md
 ```
 
-It writes `docs/explain/img/*.svg`, puts each image above its diagram and folds the
-source; the first time it downloads D2 by itself (checksum-verified).
+It replaces each diagram block with its image (`docs/explain/img/*.svg`) and moves the
+D2 source to `docs/explain/img/*.d2`, so the document shows only pictures. To change a
+diagram later, edit its `.d2` file and render again. The first time it downloads D2 by
+itself (checksum-verified).
 
 - A diagram D2 rejects: fix it and run again.
 - `kingmadoc` has no `render` command: it is outdated; ask the user to update it
   (`pipx install --force git+https://github.com/ATkingma/KingmaDoc`), then render.
 - `kingmadoc` is not installed at all: render with `d2` if available
-  (`d2 --pad 20 <n>.d2 docs/explain/img/<file>-<n>.svg`, then
-  `![<caption>](img/<file>-<n>.svg)` above the block); otherwise say that installing
-  KingmaDoc gives the pictures.
+  (save each diagram as `docs/explain/img/<file>-<n>.d2`, run
+  `d2 --pad 20 <that>.d2 <that>.svg`, and replace the block with
+  `![<caption>](img/<file>-<n>.svg)`); otherwise say that installing KingmaDoc gives
+  the pictures.
 
 ## Step 6. Hand it over
 
@@ -214,6 +228,12 @@ Text in `<angle brackets>` is filled in.
 ## In short
 
 <at most three plain sentences>
+
+## Terms (optional)
+
+| Term | In the code |
+|---|---|
+| <domain word> | `<class, table or module>` |
 
 ## Context
 
@@ -269,13 +289,25 @@ Text in `<angle brackets>` is filled in.
 
 <at most three sentences: what the picture cannot show>
 
+## Routes and permissions (optional)
+
+| Method | Path | Handler | Who may call it |
+|---|---|---|---|
+| <GET / POST …> | `<path>` | `<handler>` | <anyone / signed-in / role> |
+
 ## Data (optional)
 
 ```d2
 <data diagram>
 ```
 
-**Figure 5.** <The stored data: <n> tables.>
+**Figure 5.** <The stored data: <n> tables (left out: <tables outside the scope>).>
+
+## Configuration (optional)
+
+| Name | Value | Where |
+|---|---|---|
+| <setting or env var> | <default or value> | `<path>` |
 
 ## What changed (branch only)
 
