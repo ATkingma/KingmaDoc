@@ -30,6 +30,7 @@ from kingmadoc.plan.generator import (
 from kingmadoc.render import render_file
 from kingmadoc.skills import AGENT_DIRS, install_skills
 from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
+from kingmadoc.vscode import enable_markdown_preview
 
 ROOT_OPTION = click.option(
     "--root",
@@ -294,16 +295,25 @@ def skills_group() -> None:
     help="Agent whose skills directory to install into.",
 )
 @click.option("--force", is_flag=True, help="Replace installed skills that differ.")
-def skills_install(root: Path, agent: str, force: bool) -> None:
-    """Install the KingmaDoc skills into the project for AGENT (Agent Skills standard)."""
+@click.option(
+    "--no-vscode", is_flag=True, help="Don't make VS Code open explainers as a preview."
+)
+def skills_install(root: Path, agent: str, force: bool, no_vscode: bool) -> None:
+    """Install the KingmaDoc skills into the project for AGENT (Agent Skills standard).
+
+    Also makes VS Code open docs/explain/*.md as a rendered preview (--no-vscode skips).
+    """
     try:
         written, current = install_skills(root, agent, force)
+        vscode = None if no_vscode else enable_markdown_preview(root)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
     for path in written:
         click.echo(path)
     if current:
         click.echo(f"{len(current)} skill(s) already up to date.", err=True)
+    if vscode:
+        click.echo(vscode, err=True)
 
 
 def main() -> None:
