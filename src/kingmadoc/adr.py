@@ -22,6 +22,9 @@ STATUSES: tuple[str, ...] = ("proposed", "accepted", "rejected", "superseded")
 # correctly up to 9999 and still parse beyond it.
 NUMBER_WIDTH = 4
 ADR_FILE = re.compile(r"(\d+)-.+\.md")
+# Numbers in this range look like years ("2024-q3-review.md"); such files only count as
+# ADRs when their first line is an ADR heading with that number ("# 2024. ...").
+YEAR_LIKE = range(1900, 2101)
 
 
 def next_number(existing_names: Iterable[str]) -> int:
@@ -123,6 +126,22 @@ def adr_path(root: Path, config: FeatureDocConfig, title: str) -> tuple[int, Pat
             "ADRs are disabled. Enable them in .featuredoc.yml:\n  adr:\n    enabled: true"
         )
     directory = root / ADR_DIR
-    names = [p.name for p in directory.iterdir()] if directory.is_dir() else []
+    names = [p.name for p in directory.iterdir() if _is_adr(p)] if directory.is_dir() else []
     number = next_number(names)
     return number, directory / adr_filename(number, title)
+
+
+def _is_adr(path: Path) -> bool:
+    """Whether ``path`` is an ADR (see :data:`YEAR_LIKE` for date-named files)."""
+    match = ADR_FILE.fullmatch(path.name)
+    if not match or not path.is_file():
+        return False
+    number = int(match.group(1))
+    if number not in YEAR_LIKE:
+        return True
+    try:
+        with path.open(encoding="utf-8", errors="ignore") as handle:
+            first_line = handle.readline()
+    except OSError:
+        return False
+    return re.match(rf"#\s*0*{number}\b", first_line) is not None
