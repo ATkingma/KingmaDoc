@@ -182,17 +182,18 @@ DEPENDENCY_TECH: Mapping[str, str] = MappingProxyType({
     "cp-kafka": "Kafka",
 })
 
-# Framework -> (file suffixes to scan, import pattern).
+# Framework -> (file suffixes to scan, import pattern). Python patterns use `[ \t]`, not
+# `\s`: `^\s*` also matches newlines and backtracks quadratically over blank-line runs.
 GREP_PATTERNS: Mapping[str, tuple[frozenset[str], re.Pattern[str]]] = MappingProxyType({
     name: (frozenset(suffixes), re.compile(pattern, re.MULTILINE))
     for name, suffixes, pattern in (
-        ("Django", {".py"}, r"^\s*(from|import)\s+django\b"),
-        ("Flask", {".py"}, r"^\s*(from|import)\s+flask\b"),
-        ("FastAPI", {".py"}, r"^\s*(from|import)\s+fastapi\b"),
-        ("Click", {".py"}, r"^\s*(from|import)\s+click\b"),
-        ("SQLAlchemy", {".py"}, r"^\s*(from|import)\s+sqlalchemy\b"),
-        ("Jinja2", {".py"}, r"^\s*(from|import)\s+jinja2\b"),
-        ("PostgreSQL", {".py"}, r"^\s*(from|import)\s+(psycopg2?|asyncpg)\b"),
+        ("Django", {".py"}, r"^[ \t]*(from|import)[ \t]+django\b"),
+        ("Flask", {".py"}, r"^[ \t]*(from|import)[ \t]+flask\b"),
+        ("FastAPI", {".py"}, r"^[ \t]*(from|import)[ \t]+fastapi\b"),
+        ("Click", {".py"}, r"^[ \t]*(from|import)[ \t]+click\b"),
+        ("SQLAlchemy", {".py"}, r"^[ \t]*(from|import)[ \t]+sqlalchemy\b"),
+        ("Jinja2", {".py"}, r"^[ \t]*(from|import)[ \t]+jinja2\b"),
+        ("PostgreSQL", {".py"}, r"^[ \t]*(from|import)[ \t]+(psycopg2?|asyncpg)\b"),
         ("React", {".js", ".jsx", ".ts", ".tsx"}, r"""from\s+['"]react['"]"""),
         ("Express", {".js", ".ts"}, r"""(require\(|from\s+)['"]express['"]"""),
     )
