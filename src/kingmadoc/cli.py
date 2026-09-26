@@ -312,16 +312,18 @@ def skills_group() -> None:
     "--force", is_flag=True, help="Also replace skill files you edited locally."
 )
 @click.option(
-    "--no-vscode", is_flag=True, help="Don't make VS Code open explainers as a preview."
+    "--vscode",
+    is_flag=True,
+    help="Also make VS Code open explainers as a rendered preview (.vscode/settings.json).",
 )
-def skills_install(root: Path, agent: str, force: bool, no_vscode: bool) -> None:
+def skills_install(root: Path, agent: str, force: bool, vscode: bool) -> None:
     """Install the KingmaDoc skills into the project for AGENT (Agent Skills standard).
 
-    Also makes VS Code open docs/explain/*.md as a rendered preview (--no-vscode skips).
+    With --vscode, also makes VS Code open docs/explain/ as a rendered preview.
     """
     try:
         result = install_skills(root, agent, force)
-        vscode = None if no_vscode else enable_markdown_preview(root)
+        preview = enable_markdown_preview(root) if vscode else None
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
     for path in result.written:
@@ -330,8 +332,13 @@ def skills_install(root: Path, agent: str, force: bool, no_vscode: bool) -> None
         click.echo(f"Removed {path} (no longer part of the skill).", err=True)
     if result.up_to_date:
         click.echo(f"{len(result.up_to_date)} skill file(s) already up to date.", err=True)
-    if vscode:
-        click.echo(vscode, err=True)
+    if preview:
+        click.echo(preview, err=True)
+    else:
+        click.echo(
+            "Tip: --vscode makes VS Code open explainers (docs/explain/) as a rendered preview.",
+            err=True,
+        )
 
 
 def main() -> None:

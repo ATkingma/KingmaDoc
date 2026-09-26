@@ -230,6 +230,6 @@ itself (checksum-verified).
 ## Step 6. Hand it over
 
 Show the path, the one-paragraph summary and the figures (check the document embeds the
-images). In VS Code, `kingmadoc skills install` makes explainers open as a rendered
-preview. Ask the "Couldn't work out" questions, at most three, and update the explainer
-with the answers.
+images). Ask the "Couldn't work out" questions, at most three, and update the explainer
+with the answers. In VS Code, mention that `kingmadoc skills install --vscode` makes
+explainers open as a rendered preview; do not run it without the user's consent.

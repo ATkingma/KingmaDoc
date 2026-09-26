@@ -34,8 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   downloaded automatically on first use (pinned, SHA-256-verified; opt out with
   `KINGMADOC_D2_DOWNLOAD=0`), so nothing has to be installed besides KingmaDoc.
 - `kingmadoc skills install [--agent claude|cursor|codex|copilot]`: installs the bundled
-  agent skills into the project, and makes VS Code open `docs/explain/*.md` as a
-  rendered preview (`--no-vscode` skips that).
+  agent skills into the project; with `--vscode` it also makes VS Code open
+  `docs/explain/*.md` as a rendered preview (never without asking).
 - `explaining-code` 4.0: writes an arc42 document by default (C4 levels 1-4, runtime
   and deployment views, decisions, glossary; quality and risks only as documented), or
   the compact C4 format with `explain.format: c4`. Every figure is numbered and

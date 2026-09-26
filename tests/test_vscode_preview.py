@@ -77,16 +77,17 @@ def test_does_not_override_a_different_choice(tmp_path: Path) -> None:
     }
 
 
-def test_skills_install_sets_it_up_unless_disabled(tmp_path: Path) -> None:
-    """`skills install` configures the preview; --no-vscode skips it."""
+def test_skills_install_only_touches_vscode_when_asked(tmp_path: Path) -> None:
+    """`skills install` leaves .vscode/ alone (with a tip); --vscode sets up the preview."""
     other = tmp_path / "other"
     other.mkdir()
     runner = CliRunner()
 
-    done = runner.invoke(cli, ["skills", "install", "--root", str(tmp_path)])
-    skipped = runner.invoke(cli, ["skills", "install", "--root", str(other), "--no-vscode"])
+    plain = runner.invoke(cli, ["skills", "install", "--root", str(tmp_path)])
+    asked = runner.invoke(cli, ["skills", "install", "--root", str(other), "--vscode"])
 
-    assert done.exit_code == 0, done.output
-    assert _settings(tmp_path).is_file()
-    assert skipped.exit_code == 0, skipped.output
-    assert not _settings(other).exists()
+    assert plain.exit_code == 0, plain.output
+    assert not _settings(tmp_path).exists()
+    assert "--vscode" in plain.output
+    assert asked.exit_code == 0, asked.output
+    assert _settings(other).is_file()
