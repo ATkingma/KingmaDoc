@@ -100,7 +100,7 @@ def test_both_extra_designs(tmp_path: Path) -> None:
     "data",
     [
         {"extra_designs": {"functional_design": {"enabled": 1}}},
-        {"extra_designs": {"functional_design": {"enabled": True, "template": "x"}}},
+        {"extra_designs": {"functional_design": {"enabled": True, "templates": "x"}}},
         {"extra_designs": {"functional": {"enabled": True}}},
         {"extra_designs": {"functional_design": True}},
     ],

@@ -61,7 +61,13 @@ def adr_filename(number: int, title: str) -> str:
 
 
 def render_adr(
-    root: Path, number: int, title: str, *, status: str = "proposed", today: date
+    root: Path,
+    number: int,
+    title: str,
+    *,
+    status: str = "proposed",
+    today: date,
+    template: str = ADR_TEMPLATE,
 ) -> str:
     """Render an ADR in the standard format (title, date, status, context, decision,
     consequences). Pure apart from reading the template; the caller passes the date.
@@ -72,11 +78,13 @@ def render_adr(
         title: Decision title.
         status: One of :data:`STATUSES`.
         today: Date of the decision record.
+        template: Bundled template name or explicit path (``adr.template`` in the config).
 
     Returns:
         The rendered Markdown document.
 
     Raises:
+        ConfigError: If the configured template path does not exist or is not a file.
         AdrError: If the title is blank, the status unknown, or the template fails.
     """
     title = " ".join(title.split())
@@ -85,7 +93,7 @@ def render_adr(
     if status not in STATUSES:
         raise AdrError(f"Unknown ADR status {status!r}; use one of {', '.join(STATUSES)}")
     try:
-        return load_template(ADR_TEMPLATE, root).render(
+        return load_template(template, root).render(
             number=f"{number:0{NUMBER_WIDTH}d}",
             title=title,
             status=status,
@@ -93,7 +101,7 @@ def render_adr(
             date=today.isoformat(),
         )
     except TemplateError as exc:
-        raise AdrError(f"Cannot render template {ADR_TEMPLATE!r}: {exc}") from exc
+        raise AdrError(f"Cannot render template {template!r}: {exc}") from exc
 
 
 def adr_path(root: Path, config: FeatureDocConfig, title: str) -> tuple[int, Path]:
@@ -110,10 +118,9 @@ def adr_path(root: Path, config: FeatureDocConfig, title: str) -> tuple[int, Pat
     Raises:
         AdrError: If ADRs are not enabled in the config.
     """
-    if not config.extra_designs.adr.enabled:
+    if not config.adr.enabled:
         raise AdrError(
-            "ADRs are disabled. Enable them in .featuredoc.yml:\n"
-            "  extra_designs:\n    adr:\n      enabled: true"
+            "ADRs are disabled. Enable them in .featuredoc.yml:\n  adr:\n    enabled: true"
         )
     directory = root / ADR_DIR
     names = [p.name for p in directory.iterdir()] if directory.is_dir() else []

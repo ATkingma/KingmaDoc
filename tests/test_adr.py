@@ -12,7 +12,7 @@ from kingmadoc.adr import adr_filename, next_number, render_adr
 from kingmadoc.cli import cli
 from kingmadoc.exceptions import AdrError
 
-ENABLED = "extra_designs:\n  adr:\n    enabled: true\n"
+ENABLED = "adr:\n  enabled: true\n"
 TODAY = date(2026, 9, 26)
 
 
@@ -116,11 +116,11 @@ def test_cli_status_option(project: Path) -> None:
 
 
 def test_disabled_by_default(tmp_path: Path) -> None:
-    """Without extra_designs.adr.enabled, the command explains how to enable it."""
+    """Without adr.enabled, the command explains how to enable it."""
     result = _adr(tmp_path, "Use PostgreSQL")
 
     assert result.exit_code == 1
-    assert "extra_designs" in result.output
+    assert "adr:" in result.output
     assert not (tmp_path / "docs").exists()
 
 

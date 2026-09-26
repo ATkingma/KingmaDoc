@@ -12,7 +12,7 @@ from pathlib import Path
 from jinja2 import TemplateError
 
 from kingmadoc import __version__
-from kingmadoc.config import FeatureDocConfig, resolve_output_dir
+from kingmadoc.config import ExtraDesignsConfig, FeatureDocConfig, resolve_output_dir
 from kingmadoc.diagrams import get_backend
 from kingmadoc.exceptions import GenerationError
 from kingmadoc.naming import slugify
@@ -44,22 +44,41 @@ BASE_QUESTIONS: tuple[str, ...] = (
 class ExtraDesign:
     """An optional design doc that ``plan`` can write next to the plan doc.
 
+    Its template (and whether it is enabled) comes from the field of the same name on
+    :class:`~kingmadoc.config.ExtraDesignsConfig`.
+
     Attributes:
         name: Key under ``extra_designs`` in ``.featuredoc.yml``.
-        template: Jinja2 template file name.
         suffix: File name suffix after the slug.
     """
 
     name: str
-    template: str
     suffix: str
 
 
 # Order in which extra docs are written and printed: what (functional), then how (technical).
 EXTRA_DESIGNS: tuple[ExtraDesign, ...] = (
-    ExtraDesign("functional_design", "functional_design.md.j2", "-functional-design.md"),
-    ExtraDesign("technical_design", "technical_design.md.j2", "-technical-design.md"),
+    ExtraDesign("functional_design", "-functional-design.md"),
+    ExtraDesign("technical_design", "-technical-design.md"),
 )
+
+
+def _check_extra_designs() -> None:
+    """Fail at import time if EXTRA_DESIGNS and ExtraDesignsConfig disagree.
+
+    Otherwise a mismatch would only surface as an AttributeError (or a silently
+    ignored setting) when a user runs ``plan``.
+    """
+    registered = [d.name for d in EXTRA_DESIGNS]
+    configured = [f.name for f in fields(ExtraDesignsConfig)]
+    if sorted(registered) != sorted(configured):
+        raise GenerationError(
+            f"EXTRA_DESIGNS {registered} does not match the fields of "
+            f"ExtraDesignsConfig {configured}"
+        )
+
+
+_check_extra_designs()
 
 
 @dataclass(frozen=True)
@@ -204,7 +223,9 @@ def enabled_extra_designs(config: FeatureDocConfig) -> tuple[ExtraDesign, ...]:
     return tuple(d for d in EXTRA_DESIGNS if getattr(config.extra_designs, d.name).enabled)
 
 
-def render_extra_design(design: ExtraDesign, context: PlanContext, plan_path: Path) -> str:
+def render_extra_design(
+    design: ExtraDesign, context: PlanContext, config: FeatureDocConfig, plan_path: Path
+) -> str:
     """Render an optional design doc that accompanies a plan doc.
 
     Every :class:`PlanContext` field is a template variable, plus ``plan_file`` (the
@@ -213,24 +234,27 @@ def render_extra_design(design: ExtraDesign, context: PlanContext, plan_path: Pa
     Args:
         design: Which extra doc to render (from :data:`EXTRA_DESIGNS`).
         context: Result of :func:`build_plan_context`.
+        config: KingmaDoc configuration (selects the template).
         plan_path: Where the plan doc is written.
 
     Returns:
         The rendered Markdown document.
 
     Raises:
+        ConfigError: If the configured template path does not exist or is not a file.
         GenerationError: If the template cannot be found or rendered.
     """
+    template_name = getattr(config.extra_designs, design.name).template
     variables = {f.name: getattr(context, f.name) for f in fields(context)}
     variables["plan_file"] = plan_path.name
     variables["data_stores"] = [
         tech for tech in context.codebase_report.detected_stack if tech in DATA_STORES
     ]
     try:
-        template = load_template(design.template, context.codebase_report.root)
+        template = load_template(template_name, context.codebase_report.root)
         return template.render(**variables)
     except TemplateError as exc:
-        raise GenerationError(f"Cannot render template {design.template!r}: {exc}") from exc
+        raise GenerationError(f"Cannot render template {template_name!r}: {exc}") from exc
 
 
 def extra_design_path(design: ExtraDesign, plan_path: Path) -> Path:

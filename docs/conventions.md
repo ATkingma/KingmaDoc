@@ -77,7 +77,7 @@ can be copied into a project on its own. Split into `reference/` once it nears 5
 
 ### A3. Execute, don't read — adopted (partly)
 
-The skill runs `kingmadoc plan --json` for the analysis when the CLI is installed and
+The skill runs `kingmadoc analyze --json` for the analysis when the CLI is installed and
 falls back to Glob/Grep otherwise (the no-install use case).
 
 `SKILL.md` tells the agent to _run_ `kingmadoc plan …` / `kingmadoc verify …`, not to

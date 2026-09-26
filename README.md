@@ -74,7 +74,7 @@ kingmadoc plan "Add password reset via email. Links expire after 30 minutes."
 # review the plan, fill in the TODOs, then let your agent implement it
 kingmadoc verify add-password-reset-via-email
 #   → docs/features/add-password-reset-via-email-verify.md (placeholder in 0.1.0)
-kingmadoc plan --json               # just the codebase analysis, as JSON
+kingmadoc analyze --json            # just the codebase analysis, as JSON
 ```
 
 The plan doc has: one-sentence summary, scope (in/out), assumptions, risks, C4 Context
@@ -86,7 +86,7 @@ More commands:
 
 ```bash
 kingmadoc plan "…" --no-input --stdout   # no questions, print instead of writing
-kingmadoc adr "Use PostgreSQL" --status accepted   # needs extra_designs.adr.enabled
+kingmadoc adr "Use PostgreSQL" --status accepted   # needs adr.enabled
 ```
 
 ## Configuration
@@ -109,7 +109,9 @@ file with all defaults and comments; [this repository's
 | `diagram_format`                          | `mermaid`                          | `mermaid`, `plantuml` (C4-PlantUML) or `d2`                                                                    |
 | `extra_designs.functional_design.enabled` | `false`                            | Also write `<slug>-functional-design.md`: user flows, edge cases, business rules, permissions                  |
 | `extra_designs.technical_design.enabled`  | `false`                            | Also write `<slug>-technical-design.md`: database schema, API contracts, error handling, performance, security |
-| `extra_designs.adr.enabled`               | `false`                            | Enable `kingmadoc adr "<title>"`, which writes numbered Architecture Decision Records to `docs/adr/`           |
+| `extra_designs.<name>.template`          | bundled template                   | Template for that document: bundled name or explicit path (runs sandboxed)                                     |
+| `adr.enabled`                             | `false`                            | Enable `kingmadoc adr "<title>"`, which writes numbered Architecture Decision Records to `docs/adr/`           |
+| `adr.template`                            | `adr.md.j2`                        | ADR template: bundled name or explicit path (runs sandboxed)                                                   |
 
 ## Comparison
 

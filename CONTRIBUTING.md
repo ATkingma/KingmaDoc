@@ -92,11 +92,12 @@ every template runs in Jinja's sandbox, so custom templates cannot call into Pyt
 
 **Adding a new optional document** (like the functional design):
 
-1. Add a field to `ExtraDesignsConfig` in `src/kingmadoc/config.py` (parsing is generic)
-   and to the `extra_designs:` block in `default_config_yaml()`.
-2. Add an `ExtraDesign(name, template, suffix)` entry to `EXTRA_DESIGNS` in
+1. Add a field to `ExtraDesignsConfig` in `src/kingmadoc/config.py`, whose default names
+   the bundled template (parsing is generic), and add it to the `extra_designs:` block in
+   `default_config_yaml()`.
+2. Add an `ExtraDesign(name, suffix)` entry to `EXTRA_DESIGNS` in
    `src/kingmadoc/plan/generator.py`; `plan` then writes it next to the plan doc when
-   it is enabled.
+   it is enabled. Importing the generator fails if the two lists don't match.
 3. Create the template in `src/kingmadoc/templates/`.
 4. Add tests (see `tests/test_functional_design.py`), a format block to
    `skill/SKILL.md` (and rebuild the variants), and a row in the README's configuration

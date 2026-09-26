@@ -58,7 +58,7 @@ brackets); ignore the file if it is absent:
 
 ### Step 2. Analyze the codebase
 
-If `kingmadoc` is installed, run `kingmadoc plan --json` and use its output for this
+If `kingmadoc` is installed, run `kingmadoc analyze --json` and use its output for this
 step. Otherwise use file search and text search (never read the whole codebase):
 
 1. **Files.** List files matching `**/*`, skipping the excluded directories. Stop at `max_files`

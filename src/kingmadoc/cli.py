@@ -1,4 +1,4 @@
-"""Command-line interface: ``kingmadoc init | plan | verify | adr``."""
+"""Command-line interface: ``kingmadoc init | analyze | plan | verify | adr``."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from kingmadoc.adr import STATUSES, adr_path, render_adr
 from kingmadoc.config import CONFIG_FILENAME, MAX_FILES_LIMIT, default_config_yaml, load_config
 from kingmadoc.documents import write_document, write_documents
 from kingmadoc.exceptions import KingmaDocError
-from kingmadoc.plan.analyzer import analyze, report_to_dict
+from kingmadoc.plan.analyzer import CodebaseReport, analyze, format_report, report_to_dict
 from kingmadoc.plan.generator import (
     build_plan_context,
     build_questions,
@@ -55,7 +55,7 @@ def init(root: Path, force: bool) -> None:
 
 
 @cli.command()
-@click.argument("description", required=False)
+@click.argument("description")
 @ROOT_OPTION
 @click.option(
     "-c",
@@ -77,41 +77,26 @@ def init(root: Path, force: bool) -> None:
 )
 @click.option("--stdout", "to_stdout", is_flag=True, help="Print the doc instead of writing it.")
 @click.option("--force", is_flag=True, help="Overwrite an existing output file.")
-@click.option(
-    "--json", "as_json", is_flag=True, help="Print the codebase analysis as JSON and exit."
-)
 def plan(
-    description: str | None,
+    description: str,
     root: Path,
     config_path: Path | None,
     output: Path | None,
     no_input: bool,
     to_stdout: bool,
     force: bool,
-    as_json: bool,
 ) -> None:
     """Analyze the codebase and write a plan doc for the feature in DESCRIPTION.
 
     The doc goes to <output_dir>/<slug>-plan.md (slug derived from DESCRIPTION) and its
     path is printed. Extra docs enabled under extra_designs in the config
     (<slug>-functional-design.md, <slug>-technical-design.md) are written next to it,
-    one printed path per line. With --json, DESCRIPTION is optional and only the analysis
-    is printed.
+    one printed path per line. To see only the codebase analysis, use `kingmadoc analyze`.
     """
-    if description is None and not as_json:
-        raise click.UsageError("Missing argument 'DESCRIPTION'.")
     try:
         config = load_config(root, config_path)
         report = analyze(root, config.analyzer)
-        if report.truncated:
-            click.echo(
-                f"Warning: stopped after {report.file_count} files; the analysis is "
-                f"incomplete (analyzer.max_files, at most {MAX_FILES_LIMIT}).",
-                err=True,
-            )
-        if as_json or description is None:
-            click.echo(json.dumps(report_to_dict(report), indent=2))
-            return
+        _warn_if_truncated(report)
 
         questions = build_questions(report, config)
         answers = [(q, "") for q in questions] if no_input else _ask(questions)
@@ -121,7 +106,10 @@ def plan(
         path = output or default_output_path(report.root, config, description)
         documents = [(path, render_plan(context, config))]
         documents += [
-            (extra_design_path(design, path), render_extra_design(design, context, path))
+            (
+                extra_design_path(design, path),
+                render_extra_design(design, context, config, path),
+            )
             for design in enabled_extra_designs(config)
         ]
 
@@ -135,6 +123,40 @@ def plan(
 
     for written_path in written:
         click.echo(written_path)
+
+
+@cli.command("analyze")
+@ROOT_OPTION
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
+)
+@click.option("--json", "as_json", is_flag=True, help="Print the report as JSON.")
+def analyze_command(root: Path, config_path: Path | None, as_json: bool) -> None:
+    """Analyze the codebase and print the report (languages, entry points, stack, ...)."""
+    try:
+        config = load_config(root, config_path)
+        report = analyze(root, config.analyzer)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _warn_if_truncated(report)
+    if as_json:
+        click.echo(json.dumps(report_to_dict(report), indent=2))
+    else:
+        click.echo(format_report(report))
+
+
+def _warn_if_truncated(report: CodebaseReport) -> None:
+    if report.truncated:
+        click.echo(
+            f"Warning: stopped after {report.file_count} files; the analysis is "
+            f"incomplete (analyzer.max_files, at most {MAX_FILES_LIMIT}).",
+            err=True,
+        )
 
 
 def _ask(questions: list[str]) -> list[tuple[str, str]]:
@@ -212,12 +234,14 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
     """Write an Architecture Decision Record to docs/adr/<NNNN>-<slug>.md.
 
     NNNN is one above the highest existing ADR number. Requires
-    extra_designs.adr.enabled: true in the config. Prints the path.
+    adr.enabled: true in the config. Prints the path.
     """
     try:
         config = load_config(root, config_path)
         number, path = adr_path(root.resolve(), config, title)
-        content = render_adr(root, number, title, status=status, today=date.today())
+        content = render_adr(
+            root, number, title, status=status, today=date.today(), template=config.adr.template
+        )
         written = write_document(path, content)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc

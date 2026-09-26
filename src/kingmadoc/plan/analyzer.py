@@ -303,7 +303,7 @@ def analyze(root: Path, config: AnalyzerConfig) -> CodebaseReport:
 
 
 def report_to_dict(report: CodebaseReport) -> dict[str, Any]:
-    """Convert a report to JSON-serializable data (the fields of ``plan --json``).
+    """Convert a report to JSON-serializable data (the output of ``analyze --json``).
 
     Args:
         report: Result of :func:`analyze`.
@@ -322,6 +322,33 @@ def report_to_dict(report: CodebaseReport) -> dict[str, Any]:
         "detected_stack": list(report.detected_stack),
         "truncated": report.truncated,
     }
+
+
+def format_report(report: CodebaseReport) -> str:
+    """Render a report as short human-readable text (the output of ``kingmadoc analyze``).
+
+    Args:
+        report: Result of :func:`analyze`.
+
+    Returns:
+        One ``Label: value`` line per field.
+    """
+
+    def items(values: Iterable[str]) -> str:
+        return ", ".join(values) or "none"
+
+    files = f"{report.file_count}" + (" (truncated)" if report.truncated else "")
+    languages = (f"{name} {count}" for name, count in report.language_breakdown.items())
+    return "\n".join([
+        f"Root: {report.root}",
+        f"Files: {files}",
+        f"Languages: {items(languages)}",
+        f"Top-level directories: {items(report.top_level_dirs)}",
+        f"Entry points: {items(report.entry_points)}",
+        f"Config files: {items(report.config_files)}",
+        f"Test directories: {items(report.test_dirs)}",
+        f"Detected stack: {items(report.detected_stack)}",
+    ])
 
 
 def detect_stack_from_manifests(manifests: Mapping[str, str]) -> set[str]:

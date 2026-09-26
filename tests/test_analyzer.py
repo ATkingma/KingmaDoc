@@ -123,10 +123,10 @@ def test_malformed_manifests_are_ignored() -> None:
 
 
 def test_plan_json_outputs_report(tmp_path: Path) -> None:
-    """``plan --json`` prints the report without needing a feature name."""
+    """``analyze --json`` prints the report."""
     _write(tmp_path, {"main.py": ""})
 
-    result = CliRunner().invoke(cli, ["plan", "--json", "--root", str(tmp_path)])
+    result = CliRunner().invoke(cli, ["analyze", "--json", "--root", str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)

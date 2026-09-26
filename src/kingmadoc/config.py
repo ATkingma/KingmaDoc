@@ -57,22 +57,44 @@ class AnalyzerConfig:
 
 @dataclass(frozen=True)
 class ExtraDesignConfig:
-    """One optional design doc written next to the plan doc."""
+    """One optional design doc written next to the plan doc.
+
+    Attributes:
+        enabled: Write this document on ``plan``.
+        template: Bundled template name, or an explicit path relative to the project root.
+    """
 
     enabled: bool = False
+    template: str = ""
 
 
 @dataclass(frozen=True)
 class ExtraDesignsConfig:
-    """Optional extra design documents (one field per doc type).
+    """Optional extra design documents written by ``plan`` (one field per doc type).
 
-    ``functional_design`` and ``technical_design`` are written by ``plan``; ``adr``
-    enables the ``kingmadoc adr`` command.
+    Every field needs a matching entry in ``kingmadoc.plan.generator.EXTRA_DESIGNS``;
+    the generator checks this when it is imported.
     """
 
-    functional_design: ExtraDesignConfig = field(default_factory=ExtraDesignConfig)
-    technical_design: ExtraDesignConfig = field(default_factory=ExtraDesignConfig)
-    adr: ExtraDesignConfig = field(default_factory=ExtraDesignConfig)
+    functional_design: ExtraDesignConfig = field(
+        default_factory=lambda: ExtraDesignConfig(template="functional_design.md.j2")
+    )
+    technical_design: ExtraDesignConfig = field(
+        default_factory=lambda: ExtraDesignConfig(template="technical_design.md.j2")
+    )
+
+
+@dataclass(frozen=True)
+class AdrConfig:
+    """Architecture Decision Records (the ``kingmadoc adr`` command).
+
+    Attributes:
+        enabled: Allow ``kingmadoc adr`` to write ADRs.
+        template: Bundled template name, or an explicit path relative to the project root.
+    """
+
+    enabled: bool = False
+    template: str = "adr.md.j2"
 
 
 @dataclass(frozen=True)
@@ -87,6 +109,7 @@ class FeatureDocConfig:
     diagrams: tuple[str, ...] = ("c4_context", "c4_container")
     diagram_format: str = "mermaid"
     extra_designs: ExtraDesignsConfig = field(default_factory=ExtraDesignsConfig)
+    adr: AdrConfig = field(default_factory=AdrConfig)
 
 
 def load_config(root: Path, config_path: Path | None = None) -> FeatureDocConfig:
@@ -170,6 +193,7 @@ def parse_config(data: Any) -> FeatureDocConfig:
             "diagrams",
             "diagram_format",
             "extra_designs",
+            "adr",
         },
         "config",
     )
@@ -202,6 +226,7 @@ def parse_config(data: Any) -> FeatureDocConfig:
         diagrams=diagrams,
         diagram_format=diagram_format,
         extra_designs=_parse_extra_designs(data.get("extra_designs")),
+        adr=_parse_adr(data.get("adr")),
     )
 
 
@@ -240,19 +265,24 @@ diagrams:
 # Diagram language: mermaid, plantuml (C4-PlantUML) or d2.
 diagram_format: mermaid
 
-# Optional extra documents.
+# Optional extra documents written by `plan` next to the plan doc. `template` is a
+# bundled name or an explicit path (e.g. ./my_design.md.j2); templates run sandboxed.
 extra_designs:
   functional_design:
     # <slug>-functional-design.md: user flows, edge cases, business rules,
     # permissions and roles.
     enabled: false
+    template: functional_design.md.j2
   technical_design:
     # <slug>-technical-design.md: database schema, API contracts, error handling,
     # performance and security considerations.
     enabled: false
-  adr:
-    # `kingmadoc adr "<title>"` writes docs/adr/<NNNN>-<slug>.md.
-    enabled: false
+    template: technical_design.md.j2
+
+# Architecture Decision Records: `kingmadoc adr "<title>"` writes docs/adr/<NNNN>-<slug>.md.
+adr:
+  enabled: false
+  template: adr.md.j2
 """
 
 
@@ -295,15 +325,32 @@ def _parse_extra_designs(data: Any) -> ExtraDesignsConfig:
     if data is None:
         return ExtraDesignsConfig()
     data = _require_mapping(data, "extra_designs")
+    defaults = ExtraDesignsConfig()
     names = {f.name for f in fields(ExtraDesignsConfig)}
     _reject_unknown(data, names, "extra_designs")
     designs: dict[str, ExtraDesignConfig] = {}
     for name in names & set(data):
         where = f"extra_designs.{name}"
+        default: ExtraDesignConfig = getattr(defaults, name)
         entry = _require_mapping({} if data[name] is None else data[name], where)
-        _reject_unknown(entry, {"enabled"}, where)
-        designs[name] = ExtraDesignConfig(enabled=_get(entry, "enabled", bool, False, f"{where}."))
+        _reject_unknown(entry, {"enabled", "template"}, where)
+        designs[name] = ExtraDesignConfig(
+            enabled=_get(entry, "enabled", bool, default.enabled, f"{where}."),
+            template=_get(entry, "template", str, default.template, f"{where}."),
+        )
     return ExtraDesignsConfig(**designs)
+
+
+def _parse_adr(data: Any) -> AdrConfig:
+    defaults = AdrConfig()
+    if data is None:
+        return defaults
+    data = _require_mapping(data, "adr")
+    _reject_unknown(data, {"enabled", "template"}, "adr")
+    return AdrConfig(
+        enabled=_get(data, "enabled", bool, defaults.enabled, "adr."),
+        template=_get(data, "template", str, defaults.template, "adr."),
+    )
 
 
 def _require_mapping(data: Any, where: str) -> dict[str, Any]:
