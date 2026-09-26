@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `kingmadoc render` images follow the viewer's dark mode: each SVG also carries D2's
+  dark theme (`--light` renders light only). `explaining-code` 5.2 gives every filled
+  shape a text colour and black dots a grey border, so they stay readable in dark mode;
+  a test checks every example.
 - `explaining-code` 5.1 triggers on more requests: how something works, what a PR or
   commit changed, onboarding, walkthroughs, architecture or UML diagrams of existing
   code; the request may be in any language.

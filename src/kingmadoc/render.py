@@ -32,6 +32,8 @@ from kingmadoc.explain import EXPLAINER_FILE, index_path
 D2_TIMEOUT = 60
 # Pixels around each image; D2's default of 100 wastes space in a document.
 D2_PAD = 20
+# D2's own dark theme; the SVG switches to it when the viewer uses dark mode.
+D2_DARK_THEME = 200
 
 # A diagram is either a fenced d2 block, or a reference written by an earlier render.
 # References may only point into img/ next to the document (no other paths).
@@ -48,7 +50,7 @@ _LEGACY = re.compile(
 _HEADING = re.compile(r"^#{1,6} +(.+?) *$", re.M)
 
 
-def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
+def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
     """Render every D2 diagram in a Markdown file to an SVG and embed only the images.
 
     All diagrams are rendered before anything is written: if one fails, neither the
@@ -57,6 +59,7 @@ def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
     Args:
         path: The Markdown document.
         d2: Command that runs D2 (see :func:`kingmadoc.d2_binary.ensure_d2`).
+        dark: Also embed a dark theme, used when the viewer is in dark mode.
 
     Returns:
         The written image paths, in document order (empty if there are no diagrams).
@@ -78,7 +81,7 @@ def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
     # across filesystems (EXDEV when /tmp is another disk).
     with tempfile.TemporaryDirectory(dir=path.parent, prefix=".kingmadoc-render-") as tmp:
         rendered = [
-            _render(source, Path(tmp), n, path, d2)
+            _render(source, Path(tmp), n, path, [*d2, *_theme_args(dark)])
             for n, source in enumerate(sources, start=1)
         ]
         image_dir.mkdir(parents=True, exist_ok=True)
@@ -128,6 +131,10 @@ def _render(source: str, tmp: Path, n: int, doc: Path, d2: Sequence[str]) -> Pat
         detail = detail.replace(str(src), f"diagram {n}")
         raise RenderError(f"D2 could not render diagram {n} in {doc}: {detail}")
     return out
+
+
+def _theme_args(dark: bool) -> list[str]:
+    return ["--dark-theme", str(D2_DARK_THEME)] if dark else []
 
 
 def _embed(alt: str, name: str) -> str:

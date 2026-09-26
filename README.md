@@ -93,7 +93,8 @@ agent adds the models the code calls for (UML sequence, state machine, class, ac
 with swimlanes, use case, ER, data flow with trust boundaries, context map), each drawn
 by its own notation rules. No stories, no audit. Install it next to the first one and ask the agent to "explain <feature / branch /
 project>". `kingmadoc skills install` installs it together with the first skill; the
-pictures are rendered with `kingmadoc render`.
+pictures are rendered with `kingmadoc render`; they follow the viewer's light or dark
+theme (`--light` for light only).
 
 - The Codex and Copilot files are loaded in **every** session (about 17 KB). Codex
   stops reading `AGENTS.md` files after 32 KiB in total by default

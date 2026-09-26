@@ -305,3 +305,56 @@ def test_images_under_an_old_name_are_removed(tmp_path: Path, d2: list[str]) -> 
 
     assert sorted(p.name for p in (folder / "img").iterdir()) == ["figure-1.d2", "figure-1.svg"]
     assert (folder / "img" / "figure-1.d2").read_text(encoding="utf-8") == "a -> b\n"
+
+
+def _commands(tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch, **kw: bool) -> list:
+    import subprocess
+
+    from kingmadoc import render
+
+    seen: list[list[str]] = []
+    real_run = subprocess.run
+
+    def run(command: list[str], **kwargs: object):  # type: ignore[no-untyped-def]
+        seen.append(command)
+        return real_run(command, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(render.subprocess, "run", run)
+    render_file(_doc(tmp_path), d2, **kw)
+    return seen
+
+
+def test_images_follow_the_viewers_dark_theme(
+    tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every image gets D2's dark theme too, shown when the viewer uses dark mode."""
+    commands = _commands(tmp_path, d2, monkeypatch)
+
+    assert commands and all("--dark-theme" in c for c in commands)
+
+
+def test_light_renders_without_a_dark_theme(
+    tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """render --light keeps the images light, whatever the viewer's theme."""
+    commands = _commands(tmp_path, d2, monkeypatch, dark=False)
+
+    assert commands and not any("--dark-theme" in c for c in commands)
+
+
+def test_cli_light_option(tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    """`kingmadoc render --light` passes dark=False."""
+    from kingmadoc import cli as cli_module
+
+    calls: list[bool] = []
+    monkeypatch.setattr(
+        cli_module, "render_file", lambda path, cmd, dark=True: calls.append(dark) or []
+    )
+    doc = _doc(tmp_path)
+
+    result = CliRunner().invoke(
+        cli, ["render", "--light", str(doc)], env={"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+    )
+
+    assert result.exit_code == 0, result.output
+    assert calls == [False]

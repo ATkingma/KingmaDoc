@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: "Explains existing code with rendered diagrams (C4 in Simon Brown's notation; UML sequence, state, class, activity, use case; ER; data flow) and short tables, as an arc42 or compact C4 document, one file or split into functional and technical. Fixes code blindness, e.g. after an agent wrote the code. Scope: a feature, a branch or PR, a whole project, or a folder, service or module. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
-version: 5.1.0
+version: 5.2.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -122,6 +122,8 @@ Write every diagram in **D2** (Step 5 turns them into images).
    eight figures in total.
 3. **Place them** where the format (or, when split, [reference/split.md](reference/split.md))
    says: e.g. arc42 section 6 for flows and lifecycles, section 8 for data and domain.
+4. **Readable in dark mode:** the images follow the viewer's light or dark theme. Give
+   every shape you fill (`fill:`) a `font-color` too, and black dots a grey `stroke`.
 
 For a **branch**, mark changes by border, so the C4 colours stay meaningful, and add
 both to the legend:
@@ -173,9 +175,10 @@ kingmadoc render docs/explain/<NNNN>-<slug>/*.md
 
 It replaces each diagram block with its image (`img/figure-<n>.svg` for `README.md`,
 `img/functional-<n>.svg` and `img/technical-<n>.svg` when split) and moves the D2
-source next to it (`.d2`), so the documents show only pictures. To change a diagram
-later, edit its `.d2` file and render again. The first time it downloads D2 by
-itself (checksum-verified). **Never ask the user to install D2**, even when `d2` is not
+source next to it (`.d2`), so the documents show only pictures. Each image has a light
+and a dark theme and follows the viewer's (`--light`: light only). To change a diagram
+later, edit its `.d2` file and render again. The first time it downloads D2 by itself
+(checksum-verified). **Never ask the user to install D2**, even when `d2` is not
 on the PATH: `kingmadoc render` does not need it.
 
 - A diagram D2 rejects: fix it and run again.

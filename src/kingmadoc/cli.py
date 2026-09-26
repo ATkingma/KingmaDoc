@@ -283,7 +283,10 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
     required=True,
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
-def render_command(documents: tuple[Path, ...]) -> None:
+@click.option(
+    "--light", is_flag=True, help="Light images only (by default they follow dark mode too)."
+)
+def render_command(documents: tuple[Path, ...], light: bool) -> None:
     """Render the D2 diagrams in DOCUMENTS to SVG images and embed them.
 
     Images go to img/<document>-<n>.svg next to each document (img/figure-<n>.svg for a
@@ -293,7 +296,7 @@ def render_command(documents: tuple[Path, ...]) -> None:
     try:
         d2 = ensure_d2(lambda message: click.echo(message, err=True))
         for document in documents:
-            images = render_file(document, d2)
+            images = render_file(document, d2, dark=not light)
             index = index_path(document)
             if index is not None:
                 _write_explain_index(index.parent)

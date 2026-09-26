@@ -240,3 +240,50 @@ def test_start_arrowheads_are_only_used_on_two_headed_edges(path: Path) -> None:
                 edge = next((ln for ln in reversed(lines[: number + 1]) if EDGE.match(ln)), "")
                 assert edge, f"{path.name}: source-arrowhead outside a connection: {line}"
                 assert "<->" in edge, f"{path.name}: {edge}"
+
+
+# --- Dark mode ----------------------------------------------------------------------------
+
+
+def _enclosing_map(source: str, position: int) -> tuple[int, int]:
+    """Start and end of the innermost {...} around ``position``."""
+    depth, start = 0, position
+    while start > 0:
+        start -= 1
+        if source[start] == "}":
+            depth += 1
+        elif source[start] == "{":
+            if depth == 0:
+                break
+            depth -= 1
+    depth, end = 0, position
+    while end < len(source):
+        if source[end] == "{":
+            depth += 1
+        elif source[end] == "}":
+            if depth == 0:
+                break
+            depth -= 1
+        end += 1
+    return start, end + 1
+
+
+@pytest.mark.parametrize("path", ALL_FILES, ids=lambda p: p.name)
+def test_filled_shapes_stay_readable_in_dark_mode(path: Path) -> None:
+    """`kingmadoc render` also draws a dark theme; a fixed fill needs a fixed text colour.
+
+    Otherwise the dark theme's light text lands on a light fill. Unlabelled black dots
+    (UML start and end) get a grey stroke so they show on a dark background.
+    """
+    problems = []
+    for source in _examples(_read(path)):
+        for match in re.finditer(r"\bfill: *([^;}\n]+)", source):
+            start, end = _enclosing_map(source, match.start())
+            block = source[start:end]
+            line = source[source.rfind("\n", 0, match.start()) + 1 : match.start()]
+            if re.match(r'\s*[\w.]+: ""', line):
+                if match.group(1).strip() == "black" and "stroke" not in block:
+                    problems.append(f"black dot without stroke: {line.strip()} {block}")
+            elif "font-color" not in block:
+                problems.append(f"fill without font-color: {line.strip()} {block}")
+    assert not problems, "\n".join(problems)

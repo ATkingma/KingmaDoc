@@ -79,8 +79,8 @@ direction: down
 classes: {
   state: {style: {border-radius: 12}}
 }
-start: "" {shape: circle; width: 20; style.fill: black}
-end: "" {shape: circle; width: 20; style: {fill: black; double-border: true}}
+start: "" {shape: circle; width: 20; style: {fill: black; stroke: "#9ca3af"}}
+end: "" {shape: circle; width: 20; style: {fill: black; stroke: "#9ca3af"; double-border: true}}
 draft: Draft {class: state}
 paid: Paid {class: state}
 shipped: Shipped {class: state}
@@ -184,7 +184,7 @@ through.
 title: "[Activity] Contact form - handling a message" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 direction: down
 visitor: Visitor {
-  start: "" {shape: circle; width: 20; style.fill: black}
+  start: "" {shape: circle; width: 20; style: {fill: black; stroke: "#9ca3af"}}
   send: Fill in and send the form {style.border-radius: 12}
 }
 api: API {
@@ -194,7 +194,7 @@ api: API {
 }
 owner: Site owner {
   read: Read it in Discord {style.border-radius: 12}
-  end: "" {shape: circle; width: 20; style: {fill: black; double-border: true}}
+  end: "" {shape: circle; width: 20; style: {fill: black; stroke: "#9ca3af"; double-border: true}}
 }
 visitor.start -> visitor.send -> api.check
 api.check -> api.store: "yes"
@@ -266,16 +266,16 @@ title: "[Event flow] Placing an order" {shape: text; near: top-center; style: {f
 direction: right
 vars: {
   d2-legend: {
-    c: Command {style.fill: "#a7c7e7"}
-    a: Aggregate {style.fill: "#fff59d"}
-    e: Domain event {style.fill: "#ffb74d"}
-    p: Policy {style.fill: "#ce93d8"}
+    c: Command {style: {fill: "#a7c7e7"; font-color: "#1f2937"}}
+    a: Aggregate {style: {fill: "#fff59d"; font-color: "#1f2937"}}
+    e: Domain event {style: {fill: "#ffb74d"; font-color: "#1f2937"}}
+    p: Policy {style: {fill: "#ce93d8"; font-color: "#1f2937"}}
   }
 }
-place: Place order {style.fill: "#a7c7e7"}
-order: Order {style.fill: "#fff59d"}
-placed: Order placed {style.fill: "#ffb74d"}
-reserve: "Whenever an order is placed, reserve the stock" {style.fill: "#ce93d8"}
+place: Place order {style: {fill: "#a7c7e7"; font-color: "#1f2937"}}
+order: Order {style: {fill: "#fff59d"; font-color: "#1f2937"}}
+placed: Order placed {style: {fill: "#ffb74d"; font-color: "#1f2937"}}
+reserve: "Whenever an order is placed, reserve the stock" {style: {fill: "#ce93d8"; font-color: "#1f2937"}}
 place -> order -> placed -> reserve
 ```
 
