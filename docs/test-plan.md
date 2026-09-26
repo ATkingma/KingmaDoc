@@ -110,6 +110,9 @@ For each explainer in `docs/explain/`:
 
 - [ ] Open it in VS Code: it opens as a **rendered preview** with the pictures (SVG images
       from `docs/explain/img/`) and no diagram code; the sources are in `img/*.d2`.
+- [ ] By default it is an arc42 document: sections 1-12, C4 figures in sections 3 and 5,
+      flows in 6, deployment in 7. Set `explain: {format: c4}` and ask again for the
+      compact version.
 - [ ] Figures are numbered and each is followed by a short table, not paragraphs of text.
 - [ ] After reading only "In short" and the pictures, you can say what is there and how
       the main actions flow. This is the real test.

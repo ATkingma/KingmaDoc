@@ -70,9 +70,10 @@ installed, the skill uses it for the codebase analysis.
 [`skill/explaining-code/SKILL.md`](skill/explaining-code/SKILL.md), explains code that
 already exists, with pictures: a feature, a branch (what did this branch or task
 change), a whole project, or a part of one. It writes a short explainer in
-`docs/explain/` that zooms in step by step (context, containers, components, main flows,
-data), each as a numbered, rendered figure decoded by a small table, plus a
-where-to-find-what table. No stories, no audit, no risk list. Install it next to the first one and ask the agent to "explain <feature / branch /
+`docs/explain/`: by default an **arc42** architecture document (the twelve arc42
+sections, with C4 diagrams per level, runtime flows and deployment), or a compact C4
+zoom-in with `explain: {format: c4}` in `.featuredoc.yml`. Every figure is numbered,
+rendered as an image and decoded by a small table. No stories, no audit. Install it next to the first one and ask the agent to "explain <feature / branch /
 project>". `kingmadoc skills install` installs it together with the first skill; the
 pictures are rendered with `kingmadoc render`.
 
