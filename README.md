@@ -109,7 +109,7 @@ file with all defaults and comments; [this repository's
 | `diagrams`                                | `[c4_context, c4_container]`       | Which C4 diagrams the plan contains                                                                            |
 | `diagram_format`                          | `mermaid`                          | `mermaid`, `plantuml` (C4-PlantUML) or `d2`                                                                    |
 | `extra_designs.functional_design.enabled` | `false`                            | Also write `<slug>-functional-design.md`: user flows, edge cases, business rules, permissions                  |
-| `extra_designs.technical_design.enabled`  | `false`                            | Also write `<slug>-technical-design.md`: database schema, API contracts, error handling, performance, security |
+| `extra_designs.technical_design.enabled`  | `false`                            | Also write `<slug>-technical-design.md`: database schema, API contracts, error handling, performance, security, and a module dependency graph derived from the code |
 | `extra_designs.domain_design.enabled` | `false` | Also write `<slug>-domain-design.md`: domain model, event storming |
 | `extra_designs.security_design.enabled` | `false` | Also write `<slug>-security-design.md`: STRIDE threat model (with the inferred elements), who may do what |
 | `extra_designs.<name>.models` | all models of that document | Which design models (sections) the document contains, e.g. `[threat_model]` |

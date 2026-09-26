@@ -18,6 +18,7 @@ few days, **L** ≈ a week or more. Rule IDs (B1, C3, …) refer to
 | [WP9](#wp9-models-derived-from-the-code) | Models derived from the code: dependency graph, ERD, permissions, data flow, threat model, domain model, deployment | WP8 | L |
 | [WP10](#wp10-template-models) | Template models: use case, activity, state, BPMN, event storming, user journey, requirements | WP8 (WP1 for requirements) | M |
 | [WP11](#wp11-rendered-images-optional) | Optional rendered images (SVG) next to the diagram source | WP8 | M |
+| [WP12](#wp12-document-an-existing-feature) | Document an existing feature (as-built docs) | — | M |
 
 ## WP1. Machine-readable plans
 
@@ -147,6 +148,9 @@ Small, independent items; pick them up when touching the related code.
 
 ## WP8. Model framework
 
+**Status:** tasks 1 and 2 done (unreleased); tasks 3 and 4 open. The agent skill does
+not describe the new documents yet (WP4).
+
 **Goal.** Room for many more models without turning the plan into a wall of diagrams.
 Decided in the design session (2026-09-26): models are bundled per document, and each
 model can be switched on or off on its own.
@@ -176,6 +180,8 @@ model can be switched on or off on its own.
 three diagram formats, and the skill describes the same structure.
 
 ## WP9. Models derived from the code
+
+**Status:** a (dependency graph, Python) done (unreleased); JS/TS imports and b–g open.
 
 **Goal.** The models KingmaDoc can fill in from the code itself; they fight code
 blindness best, so they come first. Each item ships on its own, in this order.
@@ -220,7 +226,7 @@ and the parity tests cover the new format blocks.
 **Goal.** Show diagrams as images where Markdown viewers can't render them (older
 Mermaid on GitHub, editors without a Mermaid plugin), while keeping the text source.
 
-**Proposal (to confirm):**
+**Proposal (confirmed 2026-09-26; to be checked in the first test run):**
 
 - Setting `render_images: true`; off by default.
 - For each diagram, write an SVG next to the document (for example
@@ -236,3 +242,22 @@ Mermaid on GitHub, editors without a Mermaid plugin), while keeping the text sou
 
 **Done when** images are generated and embedded with each installed tool, the text source
 is always kept, and nothing is sent anywhere without explicit configuration.
+
+## WP12. Document an existing feature
+
+**Goal.** Document a feature that already exists, as built, instead of only planning new
+ones: for projects that grew without docs, or to review what an earlier agent session
+built.
+
+**Tasks**
+
+1. Agent skill `documenting-existing-features`: find the code of a named feature
+   (search, entry points, git history), then write an as-built document in the plan
+   format with `status: implemented`, filled from the code; open questions for what the
+   code cannot tell.
+2. Same output format as `plan`, so `verify` and every design model work on it.
+3. Later: a CLI command (`kingmadoc document <feature>`) for the deterministic parts
+   (locating files, analysis, diagrams).
+
+**Done when** the skill produces a correct as-built document for a feature in a real
+project, and that document passes the same checks as a generated plan.

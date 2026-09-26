@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Design models (roadmap WP8): each extra design document contains design models
+  (sections), selected per document with `extra_designs.<document>.models`
+  (default: all models of that document).
+- `extra_designs.domain_design`: domain model diagram and event storming.
+- `extra_designs.security_design`: STRIDE threat model with the elements KingmaDoc
+  detected, and a "who may do what" permissions matrix.
+- `technical_design`: a module dependency graph derived from the imports between the
+  project's own Python modules (merged into packages above 25 modules).
+- `kingmadoc analyze` reports `module_dependencies` (also in `--json`).
+
 ## [0.1.1] - 2026-09-26
 
 First public release, including all fixes from the pre-release review. Upgrading from
