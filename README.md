@@ -99,7 +99,7 @@ file with all defaults and comments; [this repository's
 | Key                                       | Default                            | What it does                                                                                                   |
 | ----------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `output_dir`                              | `docs/features`                    | Where feature docs are written                                                                                 |
-| `template`                                | `plan_default.md.j2`               | Plan template: bundled name, or a path relative to the project root                                            |
+| `template`                                | `plan_default.md.j2`               | Plan template: bundled name, or an explicit path like `./my_plan.md.j2` (runs sandboxed)                      |
 | `max_questions`                           | `5`                                | Clarifying questions asked by `plan` (0–5)                                                                     |
 | `project.name` / `.description`           | directory name / empty             | Used in titles and the C4 Context diagram                                                                      |
 | `analyzer.max_files`                      | `5000`                             | Files analyzed (5000 is the maximum)                                                                           |

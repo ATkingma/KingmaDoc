@@ -12,7 +12,7 @@ from jinja2 import TemplateError
 from kingmadoc.config import FeatureDocConfig
 from kingmadoc.exceptions import AdrError
 from kingmadoc.naming import slugify
-from kingmadoc.templating import environment
+from kingmadoc.templating import load_template
 
 ADR_DIR = Path("docs/adr")
 ADR_TEMPLATE = "adr.md.j2"
@@ -85,7 +85,7 @@ def render_adr(
     if status not in STATUSES:
         raise AdrError(f"Unknown ADR status {status!r}; use one of {', '.join(STATUSES)}")
     try:
-        return environment(root).get_template(ADR_TEMPLATE).render(
+        return load_template(ADR_TEMPLATE, root).render(
             number=f"{number:0{NUMBER_WIDTH}d}",
             title=title,
             status=status,

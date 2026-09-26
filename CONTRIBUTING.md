@@ -17,7 +17,7 @@ python -m venv .venv
 
 With [uv](https://docs.astral.sh/uv/): `uv venv -p 3.11 .venv && uv pip install -p .venv -e '.[dev]'`.
 
-Templates live in `templates/` at the repository root and are shipped inside the wheel,
+Templates live in `src/kingmadoc/templates/` and are shipped inside the package,
 so edits are picked up immediately in an editable install.
 
 ## Running the tests
@@ -62,7 +62,7 @@ A backend turns the backend-neutral diagram model into one diagram language. Loo
    and `#`, and must stay on one line. Return one fenced block via `base.fence()`.
 4. **Register it** in `BACKENDS` in `src/kingmadoc/diagrams/__init__.py` and in
    `DIAGRAM_FORMATS` in `src/kingmadoc/config.py` (a test checks they match).
-5. **Placeholder diagrams.** `templates/functional_design.md.j2` and
+5. **Placeholder diagrams.** `src/kingmadoc/templates/functional_design.md.j2` and
    `technical_design.md.j2` contain a flowchart and an ER diagram per format; add a
    `{% elif diagram_format == "<name>" %}` branch to each.
 6. **Tests.** Add the file extension to `EXTENSIONS` in
@@ -74,8 +74,8 @@ A backend turns the backend-neutral diagram model into one diagram language. Loo
 
 ## Adding a template
 
-**Changing a bundled template** (`templates/*.md.j2`): Jinja2 runs with
-`StrictUndefined`, so you can only use variables that are passed in:
+**Changing a bundled template** (`src/kingmadoc/templates/*.md.j2`): Jinja2 runs sandboxed
+(`SandboxedEnvironment`) with `StrictUndefined`, so you can only use variables that are passed in:
 
 - `plan_default.md.j2`, `functional_design.md.j2`, `technical_design.md.j2`: every field
   of `PlanContext` (`src/kingmadoc/plan/generator.py`); the extra designs also get
@@ -86,7 +86,9 @@ Keep the headings of the plan template in sync with the "Output format" section 
 `skill/SKILL.md`; `tests/test_skill.py` compares them.
 
 **Using a custom plan template in a project** needs no code: set `template:` in
-`.featuredoc.yml` to a path relative to the project root.
+`.featuredoc.yml` to an explicit path such as `./docs/my_plan.md.j2` (relative to the
+project root). KingmaDoc never picks up templates from the project root on its own, and
+every template runs in Jinja's sandbox, so custom templates cannot call into Python.
 
 **Adding a new optional document** (like the functional design):
 
@@ -95,7 +97,7 @@ Keep the headings of the plan template in sync with the "Output format" section 
 2. Add an `ExtraDesign(name, template, suffix)` entry to `EXTRA_DESIGNS` in
    `src/kingmadoc/plan/generator.py`; `plan` then writes it next to the plan doc when
    it is enabled.
-3. Create the template in `templates/`.
+3. Create the template in `src/kingmadoc/templates/`.
 4. Add tests (see `tests/test_functional_design.py`), a format block to
    `skill/SKILL.md` (and rebuild the variants), and a row in the README's configuration
    table.

@@ -17,7 +17,7 @@ from kingmadoc.diagrams import get_backend
 from kingmadoc.exceptions import GenerationError
 from kingmadoc.naming import slugify
 from kingmadoc.plan.analyzer import EXTENSION_LANGUAGES, SOURCE_LANGUAGES, CodebaseReport
-from kingmadoc.templating import environment
+from kingmadoc.templating import load_template
 
 # More containers than this makes the inferred diagram unreadable.
 MAX_INFERRED_CONTAINERS = 6
@@ -181,12 +181,13 @@ def render_plan(context: PlanContext, config: FeatureDocConfig) -> str:
         The rendered Markdown document.
 
     Raises:
+        ConfigError: If the configured template path does not exist or is not a file.
         GenerationError: If the template cannot be found or rendered.
     """
-    env = environment(context.codebase_report.root)
     variables = {f.name: getattr(context, f.name) for f in fields(context)}
     try:
-        return env.get_template(config.template).render(**variables)
+        template = load_template(config.template, context.codebase_report.root)
+        return template.render(**variables)
     except TemplateError as exc:
         raise GenerationError(f"Cannot render template {config.template!r}: {exc}") from exc
 
@@ -225,9 +226,9 @@ def render_extra_design(design: ExtraDesign, context: PlanContext, plan_path: Pa
     variables["data_stores"] = [
         tech for tech in context.codebase_report.detected_stack if tech in DATA_STORES
     ]
-    env = environment(context.codebase_report.root)
     try:
-        return env.get_template(design.template).render(**variables)
+        template = load_template(design.template, context.codebase_report.root)
+        return template.render(**variables)
     except TemplateError as exc:
         raise GenerationError(f"Cannot render template {design.template!r}: {exc}") from exc
 
