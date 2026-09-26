@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `kingmadoc --version` shows the installed git commit (`0.2.0.dev0 (git 29244f7)`)
+  or `(editable)`, so an update is visible; the version is now `0.2.0.dev0`.
 - Design models (roadmap WP8): each extra design document contains design models
   (sections), selected per document with `extra_designs.<document>.models`
   (default: all models of that document).

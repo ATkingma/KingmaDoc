@@ -4,7 +4,7 @@
 |---|---|
 | **Project** | KingmaDoc |
 | **Status** | Draft |
-| **Generated** | 2026-09-26T19:41+02:00 by KingmaDoc 0.1.1 |
+| **Generated** | 2026-09-26T19:41+02:00 by KingmaDoc 0.2.0.dev0 |
 
 > Generated before implementation. Fill in every _TODO_ and review everything marked
 > _(inferred)_: it comes from the codebase analysis and is a starting point, not the truth.

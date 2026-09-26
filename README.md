@@ -9,7 +9,8 @@ implementation, `verify` compares the code with that plan and lists the deviatio
 validation results. Use it as a Python CLI, or with no install at all as a Markdown skill
 for Claude Code, Cursor, Codex or GitHub Copilot.
 
-> **Status: 0.1.1, first release.** `plan` is complete. The CLI's `verify` is a
+> **Status: 0.2.0.dev0 (in development; 0.1.1 was the first release).** `plan` is
+> complete. `kingmadoc --version` also shows the installed commit. The CLI's `verify` is a
 > work-in-progress stub that writes a placeholder; the Markdown skill performs the full
 > verification. See [CHANGELOG.md](CHANGELOG.md).
 

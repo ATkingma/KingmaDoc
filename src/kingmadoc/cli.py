@@ -10,7 +10,7 @@ from pathlib import Path
 
 import click
 
-from kingmadoc import __version__
+from kingmadoc.about import version_text
 from kingmadoc.adr import STATUSES, adr_path, render_adr
 from kingmadoc.config import CONFIG_FILENAME, MAX_FILES_LIMIT, default_config_yaml, load_config
 from kingmadoc.d2_binary import ensure_d2
@@ -42,9 +42,23 @@ ROOT_OPTION = click.option(
 
 
 @click.group()
-@click.version_option(__version__, prog_name="kingmadoc")
+@click.option(
+    "--version",
+    is_flag=True,
+    expose_value=False,
+    is_eager=True,
+    callback=lambda ctx, _param, value: _print_version(ctx, value),
+    help="Show the version (and the installed commit) and exit.",
+)
 def cli() -> None:
     """KingmaDoc: feature plan docs before you build, verification docs after."""
+
+
+def _print_version(ctx: click.Context, value: bool) -> None:
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo(f"kingmadoc, version {version_text()}")
+    ctx.exit()
 
 
 @cli.command()
