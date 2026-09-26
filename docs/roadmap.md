@@ -14,7 +14,10 @@ few days, **L** ≈ a week or more. Rule IDs (B1, C3, …) refer to
 | [WP5](#wp5-skill-evaluations)                                 | Evaluations for the skill                                             | WP4           | M    |
 | [WP6](#wp6-publishing-and-supply-chain)                       | Publishing on PyPI and supply-chain checks                            | —             | S    |
 | [WP7](#wp7-quality-backlog)                                   | Quality backlog (formatter, scandir, coverage, …)                     | —             | S–M  |
-| [WP8](#wp8-more-design-models)                                | More design models (UML and others)                                   | to be scoped  | ?    |
+| [WP8](#wp8-model-framework) | Model framework: per-document model lists, `security_design` and `domain_design` | — | L |
+| [WP9](#wp9-models-derived-from-the-code) | Models derived from the code: dependency graph, ERD, permissions, data flow, threat model, domain model, deployment | WP8 | L |
+| [WP10](#wp10-template-models) | Template models: use case, activity, state, BPMN, event storming, user journey, requirements | WP8 (WP1 for requirements) | M |
+| [WP11](#wp11-rendered-images-optional) | Optional rendered images (SVG) next to the diagram source | WP8 | M |
 
 ## WP1. Machine-readable plans
 
@@ -142,11 +145,94 @@ Small, independent items; pick them up when touching the related code.
 - Property-based tests with Hypothesis for the slug, summary and manifest parsers (G3).
 - Architecture contracts in `import-linter` (G5), replacing the hand-written E1/E5 checks.
 
-## WP8. More design models
+## WP8. Model framework
 
-**Goal.** Decide which other models (for example more UML diagram types, data or
-threat models) KingmaDoc should generate, and where they fit: in the plan, as an extra
-design doc, or as a separate command.
+**Goal.** Room for many more models without turning the plan into a wall of diagrams.
+Decided in the design session (2026-09-26): models are bundled per document, and each
+model can be switched on or off on its own.
 
-**Status:** not scoped yet. It is the topic of the next design session and becomes one
-or more WPs afterwards.
+| Document | Models |
+|---|---|
+| `plan` (stays short) | C4 Context, C4 Container |
+| `functional_design` | use case, activity, state, BPMN, user journey |
+| `technical_design` | ERD, data flow, C4 Deployment, dependency graph, requirements |
+| `security_design` (new) | threat model, permission model |
+| `domain_design` (new) | domain model, event storming |
+
+**Tasks**
+
+1. Config: `extra_designs.<document>.models: [...]` (defaults: all models of that
+   document), validated like `diagrams`.
+2. Two new extra designs, `security_design` and `domain_design`, with templates, config
+   and skill format blocks (the registry check from 0.1.1 keeps config and code in sync).
+3. New diagram kinds in the backend protocol where the three formats can express them
+   (flowchart-based data flow, activity, state, ER, deployment); a model a backend cannot
+   draw falls back to a table or to Mermaid, never to nothing.
+4. Notation: use diagram types that render on GitHub and in common editors (flowchart
+   variants) by default. Newer Mermaid types (`usecase`, `eventmodeling`, `swimlane`)
+   only through WP11 or an opt-in, because GitHub's Mermaid lags behind.
+
+**Done when** the five documents can be generated with any subset of models, in all
+three diagram formats, and the skill describes the same structure.
+
+## WP9. Models derived from the code
+
+**Goal.** The models KingmaDoc can fill in from the code itself; they fight code
+blindness best, so they come first. Each item ships on its own, in this order.
+
+| # | Model | Document | Source in the code |
+|---|---|---|---|
+| a | Dependency graph | technical | Imports between modules (Python first, then JS/TS) |
+| b | ERD | technical | ORM models and migrations: SQLAlchemy, Django, Prisma, SQL `CREATE TABLE` |
+| c | Permission model: which role may do what | security | Route guards: FastAPI `Depends`, Django `permission_required`/`@login_required`, Express middleware; shown as a role × resource × action matrix |
+| d | Data flow diagram with trust boundaries | technical | Containers, data stores and external systems from the analyzer |
+| e | Threat model (STRIDE) | security | A STRIDE checklist per element of the data flow diagram (needs d); the human judges each threat |
+| f | Domain model | domain | Entities and relationships from the ORM models (shares the parser with b) |
+| g | C4 Deployment | technical | Dockerfile, Compose and Kubernetes manifests |
+
+Everything derived is marked _(inferred)_ (B4); what cannot be derived stays _TODO_.
+
+**Done when** each model is correct on a fixture repo per supported framework, and
+degrades to a clearly marked placeholder when its source is not found.
+
+## WP10. Template models
+
+**Goal.** Models that depend on intent rather than code: KingmaDoc provides the
+structure, filled from the clarifying answers where possible.
+
+- **Use case:** actors and goals from the plan's actors and scope.
+- **Activity:** the main flow, with decisions and error paths.
+- **State:** states and transitions of the central object; state values from enum or
+  status fields when found.
+- **BPMN:** a process with lanes per role, approximated with swimlane flowcharts (none of
+  the three formats has real BPMN; exporting BPMN XML for bpmn.io is a possible later
+  step).
+- **Event storming:** domain events, commands, actors and policies, colour-coded.
+- **User journey:** the user's steps and experience (Mermaid `journey`).
+- **Requirements:** `REQ-n` from WP1 linked to the tests that cover them, which `verify`
+  (WP2) can then check.
+
+**Done when** each template renders in all three formats (or its documented fallback)
+and the parity tests cover the new format blocks.
+
+## WP11. Rendered images (optional)
+
+**Goal.** Show diagrams as images where Markdown viewers can't render them (older
+Mermaid on GitHub, editors without a Mermaid plugin), while keeping the text source.
+
+**Proposal (to confirm):**
+
+- Setting `render_images: true`; off by default.
+- For each diagram, write an SVG next to the document (for example
+  `docs/features/img/<slug>-<model>.svg`) and embed it. The text source stays in the
+  document in a collapsible block, because agents cannot read images, and code
+  blindness is about agents too.
+- Render with a local tool when installed: `d2` (single binary), PlantUML (Java) or
+  `mmdc` (Node + headless browser). If none is available, warn and keep text only.
+- A rendering service (Kroki) only with an explicitly configured URL: it would send the
+  diagram source of possibly private code to a third party.
+- `kingmadoc render <slug>` regenerates the images after the text was edited.
+- Changes convention B4 ("no rendering step inside KingmaDoc").
+
+**Done when** images are generated and embedded with each installed tool, the text source
+is always kept, and nothing is sent anywhere without explicit configuration.
