@@ -1,8 +1,10 @@
 """Tests for `kingmadoc render`: D2 diagrams in Markdown become SVG images (roadmap WP11)."""
 
+import errno
 import os
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -15,6 +17,7 @@ from kingmadoc.render import render_file
 # Stand-in for the d2 binary: "d2 [--pad N] in.d2 out.svg". Fails on sources containing BAD.
 FAKE_D2 = """\
 import sys
+import tempfile
 source, target = sys.argv[-2], sys.argv[-1]
 text = open(source, encoding="utf-8").read()
 if "BAD" in text:
@@ -244,3 +247,26 @@ def test_rendering_an_explainer_updates_the_index(tmp_path: Path, d2: list[str])
     assert result.exit_code == 0, result.output
     index = (tmp_path / "docs" / "explain" / "README.md").read_text(encoding="utf-8")
     assert "[Explainer](0001-shop/README.md)" in index
+
+
+def test_works_when_the_temp_dir_is_on_another_disk(
+    tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """os.replace cannot cross filesystems (EXDEV), so rendering stays next to the doc."""
+    doc = _doc(tmp_path)
+    other_disk = tmp_path / "other-disk"
+    other_disk.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(other_disk))
+    real_replace = os.replace
+
+    def replace(src: str | Path, dst: str | Path) -> None:
+        if Path(src).is_relative_to(other_disk) != Path(dst).is_relative_to(other_disk):
+            raise OSError(errno.EXDEV, "Invalid cross-device link")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(os, "replace", replace)
+
+    images = render_file(doc, d2)
+
+    assert [p.name for p in images] == ["shop-1.svg", "shop-2.svg"]
+    assert sorted(p.name for p in doc.parent.iterdir()) == ["img", "shop.md"]  # no leftovers

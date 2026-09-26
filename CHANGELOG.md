@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `kingmadoc render` no longer fails with "Invalid cross-device link" (Errno 18) when
+  the system temp dir is on another disk than the project.
 - `explaining-code` never asks the user to install D2 (`kingmadoc render` downloads it)
   and tells an outdated install to update with `pipx reinstall kingmadoc` instead of
   `pipx install --force`, which fails on recent pipx versions.

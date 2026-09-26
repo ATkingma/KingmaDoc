@@ -73,7 +73,9 @@ def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
     sources = [_source(item, path) for item in items]
     stem = _image_stem(path)
     names = [f"{stem}-{n}" for n in range(1, len(items) + 1)]
-    with tempfile.TemporaryDirectory() as tmp:
+    # Next to the document, not in the system temp dir: os.replace cannot move the images
+    # across filesystems (EXDEV when /tmp is another disk).
+    with tempfile.TemporaryDirectory(dir=path.parent, prefix=".kingmadoc-render-") as tmp:
         rendered = [
             _render(source, Path(tmp), n, path, d2)
             for n, source in enumerate(sources, start=1)
