@@ -107,7 +107,9 @@ def test_configured_or_installed_d2_is_preferred(
     own.write_text("", encoding="utf-8")
     own.chmod(0o755)
     monkeypatch.setenv("PATH", str(bin_dir))
-    assert ensure_d2(lambda _m: None) == [str(own)]
+    found = ensure_d2(lambda _m: None)
+    # Windows returns the PATHEXT spelling (d2.EXE); its file names ignore case.
+    assert [os.path.normcase(p) for p in found] == [os.path.normcase(str(own))]
     assert not (tmp_path / "cache").exists()
 
 
