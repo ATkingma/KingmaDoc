@@ -10,11 +10,17 @@ from kingmadoc.plan.generator import feature_slug, summarize
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("Add export, e.g. CSV and Excel, to reports.", "Add export, e.g. CSV and Excel, to reports."),
+        (
+            "Add export, e.g. CSV and Excel, to reports.",
+            "Add export, e.g. CSV and Excel, to reports.",
+        ),
         ("Support files, i.e. PDF only. Later more.", "Support files, i.e. PDF only."),
         ("Import users, groups, etc. Then sync.", "Import users, groups, etc. Then sync."),
         ("Compare A vs. B in the report.", "Compare A vs. B in the report."),
-        ("See the old flow, cf. Section 2, and fix it.", "See the old flow, cf. Section 2, and fix it."),
+        (
+            "See the old flow, cf. Section 2, and fix it.",
+            "See the old flow, cf. Section 2, and fix it.",
+        ),
         ("Cache for approx. Ten minutes per user.", "Cache for approx. Ten minutes per user."),
         ("Add login. then logout", "Add login. then logout"),
         ("Add login. Then logout.", "Add login."),

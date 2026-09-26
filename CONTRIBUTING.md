@@ -27,6 +27,8 @@ so edits are picked up immediately in an editable install.
 .venv/bin/pytest tests/test_config.py                        # one file
 .venv/bin/pytest tests/test_config.py::test_unknown_key_raises   # one test
 python3 .claude/skills/checking-conventions/scripts/check_conventions.py   # convention checks
+.venv/bin/ruff check .                                       # lint (PEP 8, imports, bugbear)
+.venv/bin/mypy                                               # mypy --strict on src/
 ```
 
 - **Snapshots.** Diagram output is compared with files in `tests/fixtures/`. After an
@@ -105,7 +107,8 @@ every template runs in Jinja's sandbox, so custom templates cannot call into Pyt
 
 ## Pull requests
 
-- Keep changes focused, with tests. `pytest` and the convention checker must pass.
+- Keep changes focused, with tests. `pytest`, `ruff check .`, `mypy` and the convention
+  checker must pass (CI runs all of them).
 - Every new Markdown file must be linked from `docs/index.md`.
 - Add a line to the `Unreleased` section of [CHANGELOG.md](CHANGELOG.md).
 - By contributing, you agree that your contribution is licensed under the MIT License.

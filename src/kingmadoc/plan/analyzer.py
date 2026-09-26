@@ -404,7 +404,7 @@ def render_tree(root_name: str, files: list[Path], depth: int) -> str:
     Returns:
         A multi-line tree string.
     """
-    tree: dict[str, dict] = {}
+    tree: dict[str, Any] = {}  # nested: name -> subtree
     for f in files:
         node = tree
         parts = f.parts
@@ -417,7 +417,7 @@ def render_tree(root_name: str, files: list[Path], depth: int) -> str:
 
     lines = [f"{root_name}/"]
 
-    def walk(node: dict[str, dict], prefix: str) -> None:
+    def walk(node: dict[str, Any], prefix: str) -> None:
         # Directories first, then files; "…" marker last.
         keys = sorted(node, key=lambda k: (k == "…", not k.endswith("/"), k.lower()))
         for i, key in enumerate(keys):

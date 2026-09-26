@@ -64,7 +64,10 @@ def main() -> int:
         return 0
 
     out = sys.stderr if args.hook else sys.stdout
-    print(f"Convention check: {len(violations)} violation(s) (rules: docs/conventions.md)", file=out)
+    print(
+        f"Convention check: {len(violations)} violation(s) (rules: docs/conventions.md)",
+        file=out,
+    )
     for line in violations:
         print(line, file=out)
     if args.hook:
@@ -101,7 +104,9 @@ def _python_checks(root: Path) -> Iterator[str]:
 
 def _check_public_api(tree: ast.Module, rel: str) -> Iterator[str]:
     """D3: public functions/methods need a docstring and full annotations."""
-    def funcs(body: list[ast.stmt], in_class: bool) -> Iterator[tuple[ast.FunctionDef | ast.AsyncFunctionDef, bool]]:
+    FuncNode = ast.FunctionDef | ast.AsyncFunctionDef
+
+    def funcs(body: list[ast.stmt], in_class: bool) -> Iterator[tuple[FuncNode, bool]]:
         for node in body:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 yield node, in_class
@@ -130,7 +135,10 @@ def _check_raises(tree: ast.Module, rel: str) -> Iterator[str]:
         if isinstance(node, ast.Raise) and node.exc is not None:
             target = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
             if isinstance(target, ast.Name) and target.id in BUILTIN_EXCEPTIONS:
-                yield f"{rel}:{node.lineno}: D4 raises builtin `{target.id}`; use a KingmaDocError subclass"
+                yield (
+                    f"{rel}:{node.lineno}: D4 raises builtin `{target.id}`; "
+                    "use a KingmaDocError subclass"
+                )
 
 
 def _check_pathlib(tree: ast.Module, rel: str) -> Iterator[str]:
@@ -282,7 +290,8 @@ def _run(root: Path, rule: str, cmd: list[str], required_module: str | None = No
     if result.returncode == 0:
         return
     lines = (result.stdout + result.stderr).strip().splitlines()
-    yield f"-:0: {rule} `{' '.join(Path(cmd[0]).name if i == 0 else c for i, c in enumerate(cmd))}` failed:"
+    shown = " ".join(Path(cmd[0]).name if i == 0 else c for i, c in enumerate(cmd))
+    yield f"-:0: {rule} `{shown}` failed:"
     tail = lines[-MAX_TOOL_LINES:]
     if len(lines) > MAX_TOOL_LINES:
         yield f"    … {len(lines) - MAX_TOOL_LINES} lines omitted"

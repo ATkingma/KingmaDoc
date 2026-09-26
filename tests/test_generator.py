@@ -1,18 +1,18 @@
 """Tests for kingmadoc.plan.generator."""
 
 import doctest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from kingmadoc.config import AnalyzerConfig, FeatureDocConfig
+from kingmadoc.naming import slugify
 from kingmadoc.plan import generator
 from kingmadoc.plan.analyzer import analyze
-from kingmadoc.naming import slugify
 from kingmadoc.plan.generator import build_plan_context, render_plan, summarize
 
-NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 9, 26, 12, 0, tzinfo=UTC)
 
 
 @pytest.mark.parametrize(
@@ -22,8 +22,14 @@ NOW = datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc)
         ("  Café -- OAuth2 / SSO!  ", "cafe-oauth2-sso"),
         ("!!!", "feature"),
         ("a" * 50, "a" * 40),
-        ("support exporting reports as csv and excel files", "support-exporting-reports-as-csv-and"),
-        ("one two three four five six seven eight nine", "one-two-three-four-five-six-seven-eight"),
+        (
+            "support exporting reports as csv and excel files",
+            "support-exporting-reports-as-csv-and",
+        ),
+        (
+            "one two three four five six seven eight nine",
+            "one-two-three-four-five-six-seven-eight",
+        ),
     ],
 )
 def test_slugify(text: str, expected: str) -> None:

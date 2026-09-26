@@ -63,7 +63,7 @@ def write_documents(documents: Sequence[tuple[Path, str]], overwrite: bool = Fal
             temps.append(temp)
             with temp.open("x", encoding="utf-8") as handle:
                 handle.write(content)
-        for (path, _), temp in zip(documents, temps):  # phase 3
+        for (path, _), temp in zip(documents, temps, strict=True):  # phase 3
             backup = None
             if path.exists():
                 backup = _sibling(path, "bak")

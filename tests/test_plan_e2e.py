@@ -39,7 +39,7 @@ def test_plan_writes_doc_with_all_sections(tmp_path: Path) -> None:
     assert result.stdout.strip() == str(path.resolve())
     doc = path.read_text(encoding="utf-8")
     positions = [doc.find(section) for section in SECTIONS]
-    assert -1 not in positions, [s for s, p in zip(SECTIONS, positions) if p == -1]
+    assert -1 not in positions, [s for s, p in zip(SECTIONS, positions, strict=True) if p == -1]
     assert positions == sorted(positions), "sections are out of order"
     assert doc.count("```mermaid") == 2
     assert "FastAPI" in doc and "PostgreSQL" in doc

@@ -33,7 +33,9 @@ def _config(root: Path, functional: bool, technical: bool = False) -> None:
 
 
 def _plan(root: Path, *extra: str) -> Result:
-    return CliRunner().invoke(cli, ["plan", DESCRIPTION, "--root", str(root), "--no-input", *extra])
+    return CliRunner().invoke(
+        cli, ["plan", DESCRIPTION, "--root", str(root), "--no-input", *extra]
+    )
 
 
 def test_disabled_by_default(tmp_path: Path) -> None:
@@ -70,7 +72,7 @@ def test_enabled_writes_functional_design(tmp_path: Path) -> None:
     assert doc.startswith("# Functional design: Add password reset via email.\n")
     assert "[`add-password-reset-via-email-plan.md`](add-password-reset-via-email-plan.md)" in doc
     positions = [doc.find(section) for section in SECTIONS]
-    assert -1 not in positions, [s for s, p in zip(SECTIONS, positions) if p == -1]
+    assert -1 not in positions, [s for s, p in zip(SECTIONS, positions, strict=True) if p == -1]
     assert positions == sorted(positions)
     flows = doc[positions[0]:positions[1]]
     assert "```mermaid\nflowchart TD\n" in flows

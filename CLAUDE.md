@@ -13,7 +13,8 @@ uv venv -p 3.11 .venv && uv pip install -p .venv -e '.[dev]'   # setup
 .venv/bin/pytest -q                                             # all tests
 .venv/bin/pytest tests/test_config.py::test_unknown_key_raises  # single test
 .venv/bin/kingmadoc plan "Add a feature." --no-input --stdout   # smoke test
-python3 .claude/skills/checking-conventions/scripts/check_conventions.py  # convention check
+python3 .claude/skills/checking-conventions/scripts/check_conventions.py  # convention check (also runs ruff + mypy when in .venv)
+.venv/bin/ruff check . && .venv/bin/mypy                        # lint + mypy --strict
 ```
 
 A Stop hook (`.claude/settings.json`) runs the convention checker after every turn with uncommitted changes and feeds violations back. Fix them; for manual rules use the `checking-conventions` skill (repo dev tool, not the product skill).

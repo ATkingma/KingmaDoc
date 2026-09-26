@@ -146,12 +146,16 @@ def test_unknown_format() -> None:
     assert parse_config({}).diagram_format == "mermaid"
 
 
-@pytest.mark.parametrize(("fmt", "label"), [("mermaid", "Mermaid"), ("plantuml", "PlantUML"), ("d2", "D2")])
+@pytest.mark.parametrize(
+    ("fmt", "label"), [("mermaid", "Mermaid"), ("plantuml", "PlantUML"), ("d2", "D2")]
+)
 def test_plan_uses_configured_backend(tmp_path: Path, fmt: str, label: str) -> None:
     """`plan` renders every diagram, including extra-doc placeholders, in the chosen format."""
     (tmp_path / ".featuredoc.yml").write_text(
         f"diagram_format: {fmt}\n"
-        "extra_designs:\n  functional_design: {enabled: true}\n  technical_design: {enabled: true}\n",
+        "extra_designs:\n"
+        "  functional_design: {enabled: true}\n"
+        "  technical_design: {enabled: true}\n",
         encoding="utf-8",
     )
 

@@ -77,7 +77,9 @@ def test_existing_verify_doc_needs_force(tmp_path: Path) -> None:
 def test_plan_then_verify_round_trip(tmp_path: Path) -> None:
     """The slug `plan` writes is the slug `verify` accepts."""
     runner = CliRunner()
-    planned = runner.invoke(cli, ["plan", "Add login. With MFA.", "--root", str(tmp_path), "--no-input"])
+    planned = runner.invoke(
+        cli, ["plan", "Add login. With MFA.", "--root", str(tmp_path), "--no-input"]
+    )
     assert planned.exit_code == 0, planned.output
 
     verified = runner.invoke(cli, ["verify", "add-login", "--root", str(tmp_path)])

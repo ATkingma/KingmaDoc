@@ -392,7 +392,7 @@ def _dir_language(analysis: CodebaseReport, directory: Path) -> str | None:
     counts = Counter(
         SOURCE_LANGUAGES[language]
         for f in analysis.files
-        if (language := EXTENSION_LANGUAGES.get(f.suffix.lower())) in SOURCE_LANGUAGES
+        if (language := EXTENSION_LANGUAGES.get(f.suffix.lower(), "")) in SOURCE_LANGUAGES
         and f.is_relative_to(directory)
     )
     return counts.most_common(1)[0][0] if counts else None

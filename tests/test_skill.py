@@ -3,7 +3,7 @@
 import importlib.util
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -80,7 +80,7 @@ def test_plan_format_matches_cli_template(tmp_path: Path) -> None:
 def test_verify_format_matches_cli_stub() -> None:
     """The skill's verify format has exactly the headings of the CLI stub."""
     stub = render_verify_stub("add-login", "docs/features/add-login-plan.md",
-                              now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+                              now=datetime(2026, 1, 1, tzinfo=UTC))
 
     assert _headings(_format_block("Verify doc")) == _headings(stub)
 

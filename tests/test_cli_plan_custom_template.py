@@ -30,7 +30,7 @@ def test_custom_template_from_config_is_used(tmp_path: Path) -> None:
 
 
 def test_bundled_name_selects_the_bundled_template(tmp_path: Path) -> None:
-    """A bare bundled name loads the package template, even if the project has a same-named file."""
+    """A bare bundled name loads the package template, even next to a same-named project file."""
     (tmp_path / "plan_default.md.j2").write_text("PROJECT COPY\n", encoding="utf-8")
     (tmp_path / ".featuredoc.yml").write_text("template: plan_default.md.j2\n", encoding="utf-8")
 

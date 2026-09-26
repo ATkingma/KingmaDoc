@@ -21,8 +21,8 @@ When you implement a planned rule, update its status here and in the details bel
 | C1 | No code changes before the design doc is approved (`yes` / `edit` / `stop`) | adopted (skill) | manual |
 | C2 | `plan` asks at most 5 questions | adopted | manual |
 | C3 | `verify` detects build/test/lint commands and stores them in config | planned | manual |
-| D1 | PEP 8 via Ruff; `pathlib` instead of `os.path` | planned (pathlib: adopted) | auto (pathlib) |
-| D2 | `mypy --strict` | planned | auto once installed |
+| D1 | PEP 8 via Ruff; `pathlib` instead of `os.path` | adopted (lint; no formatter yet) | auto |
+| D2 | `mypy --strict` | adopted | auto |
 | D3 | Public functions: full type hints + Google-style docstring | adopted | auto |
 | D4 | Raise only `KingmaDocError` subclasses in `src/` | adopted | auto |
 | D5 | `snake_case` / `PascalCase` / `UPPER_CASE` naming | adopted | manual |
@@ -159,7 +159,10 @@ them back to `.featuredoc.yml`, so detection is not repeated every run.
 
 ## D. Python coding standards
 
-### D1. Style: PEP 8 via Ruff — planned
+### D1. Style: PEP 8 via Ruff — adopted (lint; no formatter yet)
+
+`ruff check .` runs in CI and in the convention checker; rules and line length (99) are in
+`pyproject.toml`. `ruff format` is not adopted yet (it would reformat about half the files).
 
 Ruff replaces Black, isort, flake8, and pyupgrade. Line length 100. Suggested rules:
 
@@ -182,7 +185,10 @@ convention = "google"
 `PTH` enforces the "pathlib everywhere" rule; `ANN` and `D` enforce type hints and
 docstrings.
 
-### D2. Types: `mypy --strict` — planned
+### D2. Types: `mypy --strict` — adopted
+
+`mypy` (configured as `strict` for `src/` in `pyproject.toml`) runs in CI and in the
+convention checker.
 
 The rule "type hints everywhere" is only real when checked. Without `--strict`, mypy
 silently skips unannotated functions.

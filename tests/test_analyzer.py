@@ -69,7 +69,10 @@ def test_mixed_repo(tmp_path: Path) -> None:
         ),
         "frontend/src/index.ts": "export {}\n",
         "frontend/src/__tests__/index.test.ts": "",
-        "go.mod": "module example.com/x\n\ngo 1.22\n\nrequire (\n\tgithub.com/gin-gonic/gin v1.9.1\n)\n",
+        "go.mod": (
+            "module example.com/x\n\ngo 1.22\n\n"
+            "require (\n\tgithub.com/gin-gonic/gin v1.9.1\n)\n"
+        ),
         "Cargo.toml": '[package]\nname = "x"\n\n[dependencies]\naxum = "0.7"\n',
         # Ignored directories must not count.
         "node_modules/react/index.js": "",
