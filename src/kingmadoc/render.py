@@ -5,15 +5,14 @@ image is embedded above the block, and the block is kept below it in a collapsed
 ``<details>`` element: people see the picture, agents (and editors) keep the text.
 Rendering again replaces the images, so editing the D2 source and re-running is enough.
 
-Only D2 is rendered. D2 is a single binary (https://d2lang.com); it is found through the
-``KINGMADOC_D2`` environment variable or on ``PATH``.
+Only D2 is rendered; :func:`kingmadoc.d2_binary.ensure_d2` finds it or downloads the
+pinned release once, so nothing has to be installed besides KingmaDoc.
 """
 
 from __future__ import annotations
 
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 from collections.abc import Sequence
@@ -35,27 +34,6 @@ _MANAGED = re.compile(
 _HEADING = re.compile(r"^#{1,6} +(.+?) *$", re.M)
 
 
-def find_d2() -> list[str]:
-    """Return the command that runs D2.
-
-    Returns:
-        ``[path]`` from ``KINGMADOC_D2``, or the ``d2`` found on ``PATH``.
-
-    Raises:
-        RenderError: If D2 is not installed.
-    """
-    configured = os.environ.get("KINGMADOC_D2")
-    if configured:
-        return [configured]
-    found = shutil.which("d2")
-    if found:
-        return [found]
-    raise RenderError(
-        "D2 is not installed. Install it from https://d2lang.com/tour/install "
-        "(a single binary), or set KINGMADOC_D2 to its path."
-    )
-
-
 def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
     """Render every D2 block in a Markdown file to an SVG and embed the images.
 
@@ -64,7 +42,7 @@ def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
 
     Args:
         path: The Markdown document.
-        d2: Command that runs D2 (see :func:`find_d2`).
+        d2: Command that runs D2 (see :func:`kingmadoc.d2_binary.ensure_d2`).
 
     Returns:
         The written image paths, in document order (empty if there are no D2 blocks).

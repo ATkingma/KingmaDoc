@@ -13,6 +13,7 @@ import click
 from kingmadoc import __version__
 from kingmadoc.adr import STATUSES, adr_path, render_adr
 from kingmadoc.config import CONFIG_FILENAME, MAX_FILES_LIMIT, default_config_yaml, load_config
+from kingmadoc.d2_binary import ensure_d2
 from kingmadoc.documents import write_document, write_documents
 from kingmadoc.exceptions import KingmaDocError
 from kingmadoc.plan.analyzer import CodebaseReport, analyze, format_report, report_to_dict
@@ -26,7 +27,7 @@ from kingmadoc.plan.generator import (
     render_extra_design,
     render_plan,
 )
-from kingmadoc.render import find_d2, render_file
+from kingmadoc.render import render_file
 from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
 
 ROOT_OPTION = click.option(
@@ -262,11 +263,11 @@ def render_command(documents: tuple[Path, ...]) -> None:
     """Render the D2 diagrams in DOCUMENTS to SVG images and embed them.
 
     Images go to img/<document>-<n>.svg next to each document; the D2 source stays in the
-    document, collapsed below the image. Needs D2 (https://d2lang.com) on PATH or in
-    KINGMADOC_D2. Prints the written image paths.
+    document, collapsed below the image. D2 is downloaded once (pinned, checksum-verified)
+    unless it is on PATH or in KINGMADOC_D2. Prints the written image paths.
     """
     try:
-        d2 = find_d2()
+        d2 = ensure_d2(lambda message: click.echo(message, err=True))
         for document in documents:
             images = render_file(document, d2)
             if not images:
