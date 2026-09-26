@@ -5,10 +5,12 @@ twelve sections of the arc42 architecture template, each a figure or a table wit
 explanation. Follow the rules in `../SKILL.md` (numbered figures, tables that decode
 them, at most three sentences per figure, no audit).
 
-How the C4 levels fit in: section 3 is C4 level 1 (context), section 5 holds C4 levels 2
-and 3 (containers, components) and, only where it helps, C4 level 4 (code: the few
-classes that make a component understandable). Section 6 holds the flows, section 7 the
-deployment.
+How the models fit in (draw each as [c4-model.md](c4-model.md) or
+[models.md](models.md) says): section 3 is the C4 system context, section 5 holds the
+C4 container and component diagrams and, only where it helps, C4 level 4 (code: a UML
+class or ER diagram of a key component). Section 6 holds the flows (sequence or C4
+dynamic diagrams, activity diagrams, state machines), section 7 the C4 deployment
+diagram, section 8 the data (ER), domain model and data flows.
 
 Per section:
 
@@ -23,12 +25,15 @@ Per section:
 - **5. Building block view:** Level 1: containers, parts table. Level 2: one figure per
   container worth opening, parts table. Level 3 (C4 level 4, optional): one small class
   figure per component that needs it, plus at most three sentences.
-- **6. Runtime view:** one sequence figure per main action, at most three sentences.
+- **6. Runtime view:** one figure per main action (sequence or C4 dynamic; activity
+  with swimlanes when several roles take turns; state machine for a lifecycle), at most
+  three sentences each.
 - **7. Deployment view:** what runs where: hosts, containers, ports, how it gets there
   (CI/CD). Figure plus a node table.
 - **8. Cross-cutting concepts:** one row per concept (data, permissions, validation,
-  errors, logging, configuration, security headers …) saying how and where; add the data
-  figure and the routes-and-permissions table here when the code has them.
+  errors, logging, configuration, security headers …) saying how and where; add the ER
+  diagram, the domain model, a data flow diagram with trust boundaries and the
+  routes-and-permissions table here when the code has them.
 - **9. Architecture decisions:** Chosen / Instead of / Why, only with a reason stated in
   the code, docs or history; link ADRs if there are any.
 - **10. Quality requirements** and **11. Risks and technical debt:** only what is documented
@@ -52,7 +57,7 @@ Text in `<angle brackets>` is filled in; leave out subsections marked optional.
 | **Scope**        | <feature / branch `<branch>` vs `<base>` / project / part `<path>`>                 |
 | **Stack**        | <languages, frameworks, data stores>                                                |
 | **Entry points** | <`path`, …>                                                                         |
-| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 4.1.0 (arc42) |
+| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 5.0.0 (arc42) |
 
 ## What changed (branch only)
 

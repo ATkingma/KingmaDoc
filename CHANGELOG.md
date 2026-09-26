@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `explaining-code` 5.0: real C4 diagrams in Simon Brown's notation (system context,
+  container, component, code, landscape, dynamic, deployment; title, legend, element
+  type, technology and description, labelled one-way arrows, one colour palette) and
+  the other models the code calls for, picked from a decision table: UML sequence,
+  state machine, class and domain model, package, activity with swimlanes, use case,
+  ER (crow's foot), data flow with trust boundaries, event flow and DDD context map.
+  Every model has notation rules and a checklist the agent goes through; tests check
+  that every example follows its rules and compiles.
+- `explain.documents`: `single` (default) or `split`, which writes a cover `README.md`,
+  a `functional.md` and a `technical.md`; the user can also ask for it.
 - One folder per explained subject: `docs/explain/<NNNN>-<name>/README.md` plus its
   `img/`, with a unique ID that is never reused. `kingmadoc explain new "<name>"` picks
   or reuses the folder and keeps the index `docs/explain/README.md` up to date (so does

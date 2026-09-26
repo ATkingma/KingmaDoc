@@ -1,0 +1,341 @@
+# The C4 model (Simon Brown)
+
+Every C4 figure in an explainer follows this file. It sums up the C4 model as defined
+by its creator at [c4model.com](https://c4model.com): the abstractions, the seven
+diagram types, the notation rules and the review checklist. C4 shows static structure,
+deployment and runtime; for data, state, processes or domain models add the models in
+[models.md](models.md).
+
+## Abstractions
+
+"A software system is made up of one or more containers (applications and data stores),
+each of which contains one or more components, which in turn are implemented by one or
+more code elements." People use software systems.
+
+| Abstraction     | What it is                                                                                   | Is not                                                            |
+| --------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Person          | A human user: actor, role, persona.                                                          | A system account (that is a software system).                     |
+| Software system | Delivers value to its users; what one team builds, owns and can see inside (often one repo). | A product domain, bounded context, business capability or team.   |
+| Container       | An application or data store that must run for the system to work: a runtime boundary.       | A Docker container per se; a JAR, DLL, module, package or folder. |
+| Component       | Related functionality behind a well-defined interface, inside one container (same process).  | Separately deployable; a namespace or folder by itself.           |
+| Code element    | A class, interface, enum, function, object or database table that implements a component.    | Worth drawing for every component.                                |
+
+Containers, precisely:
+
+- **Are containers:** a server-side web app, a single-page app in the browser (a second
+  container next to its server), a desktop or mobile app, a console app or batch job, a
+  serverless function, a database schema, a blob store or bucket, a file system, a
+  shell script, **each** queue or topic.
+- Cloud storage you own (S3 bucket, RDS database, CDN) is a container, not an external
+  system. A message bus is not one container: draw its queues or topics, or label the
+  relationship "… via <queue>".
+- Deployment is separate: three apps on one server are still three containers.
+- Microservices owned by the same team are containers (an API plus its database); a
+  service owned by another team is an external software system.
+
+Components, precisely: a controller, or a service or repository interface plus its
+implementation classes, is one component. Leave out plain data classes and utilities.
+Components map to real groupings in the code, so point to their `path`.
+
+Keep one level of abstraction per diagram. Do not invent levels ("subsystem", "layer",
+"subcomponent"), and never show the inside of an external system.
+
+## The seven diagrams
+
+C4 has four core diagrams (levels 1 to 4) and three supporting ones. "You don't need to
+use all 4 levels of diagram; only those that add value."
+
+| Diagram           | Scope                              | Shows                                                                                | In an explainer                                          |
+| ----------------- | ---------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| 1. System Context | one software system                | the system as one box, its people and the systems it talks to; no technology details | always                                                   |
+| 2. Container      | one software system                | its containers, their technology and how they talk; people and systems around them   | always                                                   |
+| 3. Component      | one container                      | its components, their responsibility and technology; what they connect to            | for each container worth opening                         |
+| 4. Code           | one component                      | the classes, interfaces or tables that implement it (UML class or ER, models.md)     | only for the most important or complex component         |
+| System Landscape  | an organisation or several systems | people and software systems, no single focus                                         | project scope with several systems in one repo or org    |
+| Dynamic           | one feature, story or use case     | elements (systems, containers or components) with numbered interactions              | a flow that is hard to read from the static diagrams     |
+| Deployment        | one environment (e.g. production)  | deployment nodes (hosts, VMs, Docker, PaaS) with the container instances they run    | whenever the code has Dockerfiles, compose, IaC or CI/CD |
+
+A sequence diagram (models.md) is an accepted way to draw a dynamic diagram. Container
+diagrams leave out load balancers, replicas and failover: that is the deployment
+diagram's job, one per environment.
+
+## Notation rules
+
+Each diagram "can stand alone, and be (mostly) understood without a narrative".
+
+- **Title** with the diagram type and scope: `[System Context] Webshop`,
+  `[Container] Webshop`, `[Component] Webshop - API`, `[Deployment] Webshop - production`,
+  `[Dynamic] Webshop - placing an order`.
+- **Legend** explaining every shape, colour and line style used (`d2-legend`).
+- **Every element:** a name, its type, its technology (containers, components and
+  deployment nodes) and a short description of its responsibility (deployment nodes and
+  container instances may leave it out), in this layout:
+
+  ```text
+  **Name**
+  [Container: ASP.NET Core 10]
+
+  Checks and stores contact messages.
+  ```
+
+- **Every relationship:** one direction (no two-headed arrows), a label that states the
+  intent and reads in the arrow's direction ("Sends order e-mails using", not "Uses" or
+  "e-mail"), and between containers the technology or protocol: `[HTTPS/JSON]`,
+  `[SQL]`, `[AMQP]`. Several interactions between the same two elements become one
+  arrow with an inclusive label ("Browses and places orders using"); the individual
+  steps go in a dynamic diagram.
+- **Boundaries** as a dashed box named after the system or container they enclose.
+- **Colours** consistent across all figures: the palette below. Explain acronyms in the
+  legend or the table under the figure.
+- At most about fifteen elements per diagram; split larger ones by area or feature at
+  the same level of abstraction.
+
+## Drawing C4 in D2
+
+Paste this `classes` block at the top of every C4 figure (only the classes it uses),
+label elements with Markdown (`|md … |`) and add a `d2-legend` for the classes used.
+
+```d2
+classes: {
+  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}}
+  system: {shape: rectangle; style: {fill: "#1168bd"; stroke: "#0b4884"; font-color: "#ffffff"}}
+  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
+  boundary: {style: {fill: "#ffffff"; stroke: "#444444"; stroke-dash: 4; font-color: "#444444"}}
+  node: {style: {fill: "#ffffff"; stroke: "#888888"; font-color: "#000000"}}
+}
+title: "[System Context] Webshop" {
+  shape: text
+  near: top-center
+  style: {font-size: 24; bold: true; font-color: "#000000"}
+}
+vars: {
+  d2-legend: {
+    p: Person {class: person}
+    s: Software system {class: system}
+    x: External software system {class: external}
+    a: "" {style.opacity: 0}
+    b: "" {style.opacity: 0}
+    a -> b: Relationship
+  }
+}
+customer: |md
+  **Customer**\
+  [Person]
+
+  Buys products online.
+| {class: person}
+shop: |md
+  **Webshop**\
+  [Software System]
+
+  Lets customers browse and order products.
+| {class: system}
+mail: |md
+  **E-mail service**\
+  [Software System]
+
+  Delivers the order e-mails.
+| {class: external}
+customer -> shop: "Browses and places orders using"
+shop -> mail: "Sends order e-mails using"
+```
+
+**Container** (level 2): the system becomes a dashed boundary with its containers;
+relationships name the protocol.
+
+```d2
+classes: {
+  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}}
+  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  boundary: {style: {fill: "#ffffff"; stroke: "#444444"; stroke-dash: 4; font-color: "#444444"}}
+}
+title: "[Container] Webshop" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+vars: {
+  d2-legend: {
+    p: Person {class: person}
+    c: Container {class: container}
+    d: Container: data store {class: database}
+    x: External software system {class: external}
+    bd: Software system boundary {class: boundary}
+    a: "" {style.opacity: 0}
+    b: "" {style.opacity: 0}
+    a -> b: Relationship
+  }
+}
+customer: |md
+  **Customer**\
+  [Person]
+| {class: person}
+shop: "Webshop [Software System]" {
+  class: boundary
+  web: |md
+    **Web app**\
+    [Container: Next.js 15]
+
+    Serves the shop pages.
+  | {class: container}
+  api: |md
+    **API**\
+    [Container: ASP.NET Core 10]
+
+    Handles orders and payments.
+  | {class: container}
+  db: |md
+    **Database**\
+    [Container: PostgreSQL 16]
+
+    Stores products and orders.
+  | {class: database}
+}
+mail: |md
+  **E-mail service**\
+  [Software System]
+| {class: external}
+customer -> shop.web: "Browses and orders using\n[HTTPS]"
+shop.web -> shop.api: "Places orders using\n[HTTPS/JSON]"
+shop.api -> shop.db: "Reads and writes orders using\n[SQL]"
+shop.api -> mail: "Sends order e-mails using\n[SMTP]"
+```
+
+**Component** (level 3): one container as the boundary; components name the code
+construct and point to their path in the table below the figure.
+
+```d2
+classes: {
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
+  boundary: {style: {fill: "#ffffff"; stroke: "#444444"; stroke-dash: 4; font-color: "#444444"}}
+}
+title: "[Component] Webshop - API" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+vars: {
+  d2-legend: {
+    c: Container {class: container}
+    k: Component {class: component}
+    d: Container: data store {class: database}
+    bd: Container boundary {class: boundary}
+    a: "" {style.opacity: 0}
+    b: "" {style.opacity: 0}
+    a -> b: Relationship
+  }
+}
+web: |md
+  **Web app**\
+  [Container: Next.js 15]
+| {class: container}
+api: "API [Container: ASP.NET Core 10]" {
+  class: boundary
+  orders: |md
+    **Orders controller**\
+    [Component: ASP.NET controller]
+
+    Accepts and validates orders.
+  | {class: component}
+  store: |md
+    **Order repository**\
+    [Component: EF Core]
+
+    Saves and loads orders.
+  | {class: component}
+}
+db: |md
+  **Database**\
+  [Container: PostgreSQL 16]
+| {class: database}
+web -> api.orders: "Posts orders to\n[HTTPS/JSON]"
+api.orders -> api.store: "Saves the order using"
+api.store -> db: "Reads and writes\n[SQL]"
+```
+
+**Deployment**: nested deployment nodes (`[Deployment Node: …]`) with the container
+instances they run; infrastructure (proxy, DNS) only when the code configures it.
+
+```d2
+classes: {
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  node: {style: {fill: "#ffffff"; stroke: "#888888"; font-color: "#000000"}}
+}
+title: "[Deployment] Webshop - production" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+vars: {
+  d2-legend: {
+    n: Deployment node {class: node}
+    c: Container instance {class: container}
+    d: Container instance: data store {class: database}
+    a: "" {style.opacity: 0}
+    b: "" {style.opacity: 0}
+    a -> b: Relationship
+  }
+}
+server: "VPS [Deployment Node: Ubuntu 24.04]" {
+  class: node
+  docker: "Docker [Deployment Node: Docker Compose]" {
+    class: node
+    web: "Web app [Container: Next.js 15] :3000" {class: container}
+    api: "API [Container: ASP.NET Core 10] :8080" {class: container}
+    db: "Database [Container: SQLite file]" {class: database}
+  }
+}
+server.docker.web -> server.docker.api: "Places orders using\n[HTTP, internal network]"
+server.docker.api -> server.docker.db: "Reads and writes\n[SQLite]"
+```
+
+**Dynamic**: one feature; the labels are numbered in order. (For many steps or
+replies, draw a sequence diagram instead; see models.md.)
+
+```d2
+classes: {
+  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+}
+title: "[Dynamic] Webshop - placing an order" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+vars: {
+  d2-legend: {
+    p: Person {class: person}
+    c: Container {class: container}
+    d: Container: data store {class: database}
+    a: "" {style.opacity: 0}
+    b: "" {style.opacity: 0}
+    a -> b: Interaction, in numbered order
+  }
+}
+customer: "Customer [Person]" {class: person}
+web: "Web app [Container: Next.js 15]" {class: container}
+api: "API [Container: ASP.NET Core 10]" {class: container}
+db: "Database [Container: PostgreSQL 16]" {class: database}
+customer -> web: "1. Submits the order form"
+web -> api: "2. Posts the order to\n[HTTPS/JSON]"
+api -> db: "3. Saves the order in\n[SQL]"
+```
+
+A **System Landscape** is drawn like the context diagram, without a system in focus.
+
+## Mistakes to avoid
+
+- A message bus, API gateway or service mesh as one box in the middle: draw the queues
+  or topics, or label the relationship "… via <queue>".
+- JARs, packages, namespaces or folders as containers; cloud storage you own as an
+  external system; shared libraries as containers (they are components where used).
+- Unlabelled arrows, "Uses", two-headed arrows, labels that contradict the arrow.
+- Missing element types or technology, unexplained colours or acronyms, no title.
+- One giant diagram, or mixed levels (a class next to a container).
+- Decisions drawn into diagrams: they belong in the decisions table (or ADRs).
+
+## Review checklist
+
+Before handing over, check every C4 figure; fix it until every answer is yes.
+
+- [ ] It has a title with the diagram type and scope, and a legend.
+- [ ] Every element has a name, a type, a description and (containers, components) a
+      technology.
+- [ ] Every acronym, colour, shape and line style is explained (legend or table).
+- [ ] Every arrow has one direction and a specific label that matches it; arrows
+      between containers name the protocol.
+- [ ] One level of abstraction; nothing inside external systems; at most about
+      fifteen elements.

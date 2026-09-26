@@ -1,0 +1,314 @@
+# Models beyond C4: pick them by what the code has
+
+C4 ([c4-model.md](c4-model.md)) shows structure, deployment and runtime. Everything
+else (data, lifecycles, processes, domain, security-relevant data flows) needs its own
+model. Pick models from the signals in the code; skip a model whose signal is weak and
+never invent content to fill one. Keep the whole explainer to about eight figures.
+
+## Which model for which code
+
+| If the code has…                                                                  | Add                                     | Kind       | arc42 section |
+| --------------------------------------------------------------------------------- | --------------------------------------- | ---------- | ------------- |
+| HTTP or RPC handlers, clients, callbacks crossing three or more parts             | Sequence diagram per key action         | technical  | 6             |
+| A `status` or `state` field with transition methods, guards on it, an FSM library | State machine per entity                | both       | 6 or 8        |
+| Migrations, ORM models or a schema with more than three related tables            | ER diagram (crow's foot)                | technical  | 8             |
+| Entity or aggregate classes that carry business rules                             | Domain model (conceptual classes)       | functional | 8             |
+| An interface or protocol with several implementations, a plugin registry          | UML class diagram of that part          | technical  | 5 (level 3)   |
+| Many packages, layering or import rules                                           | Package (dependency) diagram            | technical  | 5 or 8        |
+| Several roles acting in turn, approval steps, a workflow engine, queued steps     | Activity diagram with swimlanes         | both       | 6             |
+| Routes of a UI, wizards, multi-step forms                                         | User journey (flowchart)                | functional | 6             |
+| Several user types with different permissions                                     | Use case diagram + permissions table    | functional | 3             |
+| Event classes, publish/subscribe, handlers, sagas                                 | Event flow (event storming colours)     | both       | 6             |
+| Several services or modules with their own model, adapters, upstream APIs         | Context map (DDD)                       | technical  | 3 or 8        |
+| Logins, tokens, personal data, payments, uploads, webhooks                        | Data flow diagram with trust boundaries | technical  | 8             |
+| A complex function with more than three branches, a batch job with retries        | Flowchart                               | technical  | 6             |
+
+Tie-breakers: one caller-callee chain is a sequence; several roles taking turns are
+swimlanes; the lifecycle of one thing is a state machine. Prefer one clear figure over
+two overlapping ones. ArchiMate only if the project already uses it.
+
+## Rules for every model
+
+- A title `"[<Model>] <scope>"` (e.g. `[State machine] Order`), placed like the C4
+  titles, and a `d2-legend` whenever colours, line styles or shapes carry meaning.
+- Names are the names the code uses (class, table, status value), so the reader can
+  search for them; the table under the figure gives the `path`.
+- Quote every label that contains `[`, `]`, `:`, `{`, `}`, `;` or `#` (D2 fails on them
+  otherwise).
+- D2 draws a `source-arrowhead` only on a two-headed edge (`<->`); on `->` it is silently
+  dropped. So ER cardinality uses `<->` with both arrowheads set, and a composition
+  diamond is the `target-arrowhead` of an arrow from the part to the whole.
+- Only what the scope touches; say in the caption what was left out.
+
+## Sequence diagram (UML)
+
+Rules: participants left to right in the order they are first called; solid arrow =
+call or message, **dashed arrow = reply**; label calls with the operation
+(`POST /orders`, `save(order)`); alternatives and loops as a group named
+`alt [condition]`, `opt [condition]` or `loop [condition]`; at most about seven
+participants. Draw the happy path, plus an error path only when it explains behaviour.
+
+```d2
+title: "[Sequence] Webshop - placing an order" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+shape: sequence_diagram
+customer: Customer {shape: person}
+web: Web app
+api: API
+db: Database {shape: cylinder}
+customer -> web: submits the order form
+web -> api: POST /orders
+invalid: "alt [body invalid]" {
+  api -> web: 400 Bad Request {style.stroke-dash: 3}
+}
+api -> db: INSERT order
+db -> api: order id {style.stroke-dash: 3}
+api -> web: 201 Created {style.stroke-dash: 3}
+web -> customer: shows the confirmation {style.stroke-dash: 3}
+```
+
+## State machine (UML)
+
+Rules: one filled circle as the initial state and a bullseye for each final state;
+states as rounded boxes named after the code's values; every transition labelled
+`event [guard] / action` (leave out the parts that do not exist); only transitions the
+code allows. Business lifecycle states make it functional too.
+
+```d2
+title: "[State machine] Order" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
+classes: {
+  state: {style: {border-radius: 12}}
+}
+start: "" {shape: circle; width: 20; style.fill: black}
+end: "" {shape: circle; width: 20; style: {fill: black; double-border: true}}
+draft: Draft {class: state}
+paid: Paid {class: state}
+shipped: Shipped {class: state}
+cancelled: Cancelled {class: state}
+start -> draft: "create()"
+draft -> paid: "pay() [amount matches] / send receipt"
+draft -> cancelled: "cancel()"
+paid -> shipped: "ship() / notify customer"
+shipped -> end
+cancelled -> end
+```
+
+## ER diagram (crow's foot)
+
+Rules: one `sql_table` per table with its key columns (primary key, foreign keys,
+unique, the columns the scope uses; leave out audit columns); an arrow for every real
+foreign key, from the referencing column to the referenced one, labelled with a verb;
+**both ends** show cardinality with crow's foot arrowheads (`cf-one`,
+`cf-one-required`, `cf-many`, `cf-many-required`).
+
+```d2
+title: "[ER] Webshop - orders" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: right
+customer: {
+  shape: sql_table
+  id: int {constraint: primary_key}
+  email: text {constraint: unique}
+}
+order: {
+  shape: sql_table
+  id: int {constraint: primary_key}
+  customer_id: int {constraint: foreign_key}
+  status: text
+}
+order.customer_id <-> customer.id: "placed by" {
+  source-arrowhead.shape: cf-many
+  target-arrowhead.shape: cf-one-required
+}
+```
+
+## Class diagram and domain model (UML)
+
+Rules: only the classes and members that tell the story, never getters or setters;
+visibility `+` public, `-` private, `#` protected; **inheritance or realisation** =
+hollow triangle at the parent, **composition** = filled diamond at the whole,
+**dependency** = dashed arrow; interfaces carry `«interface»` in their name;
+multiplicities (`1`, `0..1`, `*`, `1..*`) on associations. A **domain model** is the
+conceptual version for the functional side: business concepts with a few attributes,
+no methods, no types, multiplicities kept.
+
+```d2
+title: "[Class] Diagram backends" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+backend: "«interface» DiagramBackend" {
+  shape: class
+  "+render_context(diagram)": str
+}
+mermaid: MermaidBackend {
+  shape: class
+  "+render_context(diagram)": str
+}
+diagram: Diagram {
+  shape: class
+  +title: str
+}
+node: Node {
+  shape: class
+  +alias: str
+}
+mermaid -> backend: realises {target-arrowhead: {shape: triangle; style.filled: false}; style.stroke-dash: 3}
+node -> diagram: "1..*" {target-arrowhead: {shape: diamond; style.filled: true}}
+backend -> diagram: formats {style.stroke-dash: 3}
+```
+
+## Package diagram
+
+Rules: `shape: package` per package or module of the project itself (no third-party
+libraries); an arrow means "imports / depends on"; highlight a violated layering rule in
+red and say which rule in the caption.
+
+```d2
+title: "[Package] kingmadoc" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+cli: cli {shape: package}
+plan: plan {shape: package}
+diagrams: diagrams {shape: package}
+documents: documents {shape: package}
+cli -> plan: imports
+cli -> documents: imports
+plan -> diagrams: imports
+```
+
+## Activity diagram with swimlanes (UML / BPMN style)
+
+Rules: one lane per role or system, in the order they first act; a filled circle to
+start and a bullseye to end; actions as rounded boxes starting with a verb; decisions
+as diamonds whose outgoing arrows are labelled (`yes` / `no`, or the condition); hand-
+offs cross lanes. For a single role without hand-offs, use a flowchart (same rules, no
+lanes). A **user journey** is a flowchart of the screens and choices a user goes
+through.
+
+```d2
+title: "[Activity] Contact form - handling a message" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
+visitor: Visitor {
+  start: "" {shape: circle; width: 20; style.fill: black}
+  send: Fill in and send the form {style.border-radius: 12}
+}
+api: API {
+  check: Valid and not a bot? {shape: diamond}
+  store: Store the message {style.border-radius: 12}
+  reject: Return an error {style.border-radius: 12}
+}
+owner: Site owner {
+  read: Read it in Discord {style.border-radius: 12}
+  end: "" {shape: circle; width: 20; style: {fill: black; double-border: true}}
+}
+visitor.start -> visitor.send -> api.check
+api.check -> api.store: "yes"
+api.check -> api.reject: "no"
+api.reject -> visitor.send
+api.store -> owner.read -> owner.end
+```
+
+## Use case diagram (UML)
+
+Rules: actors (people or external systems) outside the system boundary; one oval per
+user goal inside it, named verb + object; plain lines without arrowheads between an
+actor and its use cases; no «include» or «extend» unless the code has that structure.
+Pair it with a table of who may do what (routes and permissions).
+
+```d2
+title: "[Use case] Webshop" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: right
+customer: Customer {shape: person}
+admin: Administrator {shape: person}
+shop: Webshop {
+  order: Place an order {shape: oval}
+  track: Track an order {shape: oval}
+  stock: Manage the stock {shape: oval}
+}
+customer -- shop.order
+customer -- shop.track
+admin -- shop.stock
+```
+
+## Data flow diagram with trust boundaries
+
+Rules: external entities as rectangles, processes as numbered circles, data stores as
+`stored_data` shapes named `D1 …`; every flow labelled with **what data** moves and how;
+trust boundaries as dashed red boxes named after what separates them. This explains
+where sensitive data goes; list threats only when the user asks (plan mode's security
+design does that).
+
+```d2
+title: "[Data flow] Login" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: right
+vars: {
+  d2-legend: {
+    e: External entity
+    p: Process {shape: circle}
+    s: Data store {shape: stored_data}
+    t: Trust boundary {style: {stroke: red; stroke-dash: 4}}
+  }
+}
+browser: Browser
+internet: "Trust boundary: internet to server" {
+  style: {stroke: red; stroke-dash: 4}
+  login: "1. Log in" {shape: circle}
+  users: "D1 Users" {shape: stored_data}
+}
+browser -> internet.login: "e-mail and password [HTTPS]"
+internet.login -> internet.users: "password hash lookup [SQL]"
+internet.login -> browser: "session cookie [HTTPS]"
+```
+
+## Event flow (event storming colours)
+
+Rules: time runs left to right; command (blue, imperative) → aggregate or actor
+(yellow) → domain event (orange, past tense) → policy (lilac, "whenever …, …") → next
+command; external systems pink. A legend with the colours is required.
+
+```d2
+title: "[Event flow] Placing an order" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: right
+vars: {
+  d2-legend: {
+    c: Command {style.fill: "#a7c7e7"}
+    a: Aggregate {style.fill: "#fff59d"}
+    e: Domain event {style.fill: "#ffb74d"}
+    p: Policy {style.fill: "#ce93d8"}
+  }
+}
+place: Place order {style.fill: "#a7c7e7"}
+order: Order {style.fill: "#fff59d"}
+placed: Order placed {style.fill: "#ffb74d"}
+reserve: "Whenever an order is placed, reserve the stock" {style.fill: "#ce93d8"}
+place -> order -> placed -> reserve
+```
+
+## Context map (DDD)
+
+Rules: one box per bounded context (a module or service with its own model); each
+arrow points from upstream to downstream and is labelled with the integration pattern:
+`U` / `D` plus OHS (open host service), PL (published language), ACL (anti-corruption
+layer), CF (conformist), SK (shared kernel), or Partnership. Explain the abbreviations in
+the table below the figure.
+
+```d2
+title: "[Context map] Webshop" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: right
+catalog: Catalog context
+sales: Sales context
+payments: Payment provider (external)
+catalog -> sales: "U: OHS/PL -> D: CF"
+payments -> sales: "U: OHS -> D: ACL"
+```
+
+## Review checklist
+
+Check every figure against its model's rules above before handing over:
+
+- [ ] It has a title with the model and scope, and a legend when colours, line styles
+      or shapes mean something.
+- [ ] Sequence: calls solid, replies dashed, groups named `alt/opt/loop [condition]`.
+- [ ] State machine: one initial state, final states, transitions as
+      `event [guard] / action`, only transitions the code allows.
+- [ ] ER: real foreign keys only, cardinality at both ends, key columns only.
+- [ ] Class: hollow triangle for inheritance, filled diamond for composition, dashed for
+      dependency; no getters or setters.
+- [ ] Activity: lanes per role, labelled decision exits, start and end.
+- [ ] Data flow: every flow says what data; trust boundaries dashed red.
+- [ ] Names match the code; nothing drawn that the code does not have.

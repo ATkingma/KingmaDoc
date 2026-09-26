@@ -13,6 +13,7 @@ FOLDER = Path(__file__).resolve().parents[1] / "skill" / "explaining-code"
 SKILL = FOLDER / "SKILL.md"
 ARC42 = FOLDER / "reference" / "arc42.md"
 C4 = FOLDER / "reference" / "c4.md"
+REFERENCES = sorted((FOLDER / "reference").glob("*.md"))
 
 ARC42_HEADINGS = [
     "#",
@@ -95,21 +96,21 @@ def test_workflow_sections_in_order_and_short() -> None:
     text = _read(SKILL)
     sections = [
         "## When to use this skill",
-        "## Step 1. Pin down the scope and the format",
+        "## Step 1. Pin down the scope, the format and the documents",
         "## Step 2. Read the code",
-        "## Step 3. Draw it",
+        "## Step 3. Choose the models and draw them",
         "## Step 4. Write the explainer",
         "## Step 5. Render the pictures",
-        "## Step 6. Hand it over",
+        "## Step 6. Check and hand it over",
     ]
     positions = [text.find(f"\n{s}\n") for s in sections]
 
     assert -1 not in positions, [s for s, p in zip(sections, positions, strict=True) if p == -1]
     assert positions == sorted(positions)
-    assert "reference/arc42.md" in text and "reference/c4.md" in text
+    for reference in REFERENCES:  # every reference file is linked from SKILL.md
+        assert f"reference/{reference.name}" in text, reference.name
+        assert len(_read(reference).splitlines()) < 400, reference.name
     assert len(text.splitlines()) < 300
-    for reference in (ARC42, C4):
-        assert len(_read(reference).splitlines()) < 300, reference.name
 
 
 def test_skill_rules() -> None:
@@ -120,6 +121,7 @@ def test_skill_rules() -> None:
     assert "at most three" in text
     assert "kingmadoc render" in text
     assert "explain.format" in text
+    assert "explain.documents" in text
 
 
 def test_each_subject_gets_its_own_folder() -> None:
@@ -173,7 +175,7 @@ def test_c4_format() -> None:
 def _d2_examples() -> list[str]:
     return [
         m.group(1)
-        for path in (SKILL, ARC42, C4)
+        for path in (SKILL, *REFERENCES)
         for m in re.finditer(r"^```d2\n(.*?)\n```$", _read(path), re.S | re.M)
     ]
 
@@ -187,14 +189,14 @@ D2 = os.environ.get("D2_BIN") or shutil.which("d2")
 
 
 @pytest.mark.skipif(D2 is None, reason="d2 not available")
-@pytest.mark.parametrize("index", range(30))
+@pytest.mark.parametrize("index", range(60))
 def test_d2_examples_compile(tmp_path: Path, index: int) -> None:
     """Agents copy these examples, so every one must compile with the real d2."""
     examples = _d2_examples()
     if index >= len(examples):
         pytest.skip("fewer examples")
-    # Placeholders like <User> become plain text; arrows (->) must stay intact.
-    source = re.sub(r"<([^<>\n]*)>", r"\1", examples[index])
+    # Placeholders like <User> become plain text; arrows (->, <->) must stay intact.
+    source = re.sub(r"<([A-Za-z][^<>\n]*)>", r"\1", examples[index])
     (tmp_path / "x.d2").write_text(source, encoding="utf-8")
 
     result = subprocess.run(

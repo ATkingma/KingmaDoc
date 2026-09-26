@@ -81,10 +81,15 @@ already exists, with pictures: a feature, a branch (what did this branch or task
 change), a whole project, or a part of one. Each subject gets its own folder with a
 unique ID, `docs/explain/<NNNN>-<name>/` (the explainer `README.md` plus its `img/`),
 listed in `docs/explain/README.md`; explaining it again updates that folder. The
-explainer is by default an **arc42** architecture document (the twelve arc42
+explainer is one document, or on request (or with `explain: {documents: split}`) a
+functional and a technical document next to a cover page. It is by default an **arc42** architecture document (the twelve arc42
 sections, with C4 diagrams per level, runtime flows and deployment), or a compact C4
 zoom-in with `explain: {format: c4}` in `.featuredoc.yml`. Every figure is numbered,
-rendered as an image and decoded by a small table. No stories, no audit. Install it next to the first one and ask the agent to "explain <feature / branch /
+rendered as an image and decoded by a small table. The C4 diagrams follow Simon Brown's
+notation (title, legend, element type and technology, labelled one-way arrows); the
+agent adds the models the code calls for (UML sequence, state machine, class, activity
+with swimlanes, use case, ER, data flow with trust boundaries, context map), each drawn
+by its own notation rules. No stories, no audit. Install it next to the first one and ask the agent to "explain <feature / branch /
 project>". `kingmadoc skills install` installs it together with the first skill; the
 pictures are rendered with `kingmadoc render`.
 

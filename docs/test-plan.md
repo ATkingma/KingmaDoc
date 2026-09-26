@@ -120,6 +120,14 @@ For each explainer:
 - [ ] By default it is an arc42 document: sections 1-12, C4 figures in sections 3 and 5,
       flows in 6, deployment in 7. Set `explain: {format: c4}` and ask again for the
       compact version.
+- [ ] Every C4 figure has a title with its type (`[Container] …`), a legend, and elements
+      showing name, `[type: technology]` and a description; every arrow has one
+      direction and a specific label (with the protocol between containers).
+- [ ] Extra models match the code: a state machine only where there is a status with
+      transitions, an ER diagram only where there are related tables, and so on; ER
+      lines show cardinality at both ends.
+- [ ] Ask "explain it with functional and technical apart": the folder gets `README.md`
+      (cover), `functional.md` (no class or table names) and `technical.md`.
 - [ ] Figures are numbered and each is followed by a short table, not paragraphs of text.
 - [ ] After reading only "In short" and the pictures, you can say what is there and how
       the main actions flow. This is the real test.

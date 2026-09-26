@@ -1,7 +1,7 @@
 ---
 name: explaining-code
-description: Explains existing code with numbered pictures and short tables, so a developer sees at a glance what is there and how it works (fixes code blindness, e.g. after an agent wrote it). Works on any scope - a feature, a branch (what did this branch or task change), a whole project, or a part of one. Writes an arc42 architecture document by default (or a compact C4 zoom-in), with rendered diagrams per C4 level, runtime flows and deployment, each decoded by a table. Use when the user asks to explain, document, map or visualise existing code, a feature, a branch or a project.
-version: 4.1.0
+description: Explains existing code with numbered pictures and short tables, so a developer sees at a glance what is there and how it works (fixes code blindness, e.g. after an agent wrote it). Works on any scope - a feature, a branch (what did this branch or task change), a whole project, or a part of one. Writes an arc42 architecture document by default (or a compact C4 zoom-in), as one document or split into a functional and a technical one. Draws the real C4 diagrams (context, container, component, code, landscape, dynamic, deployment, in Simon Brown's notation) plus the models the code calls for - UML sequence, state machine, class, activity with swimlanes, use case, ER, data flow with trust boundaries, context map - each following its notation rules and decoded by a table. Use when the user asks to explain, document, map or visualise existing code, a feature, a branch or a project.
+version: 5.0.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -21,7 +21,8 @@ it fits together, often because an agent wrote it. This skill gives that insight
 | to understand a folder, service or module      | part    | `<folder or module>` |
 
 Every subject gets its own folder with a unique ID and its name:
-`docs/explain/<NNNN>-<slug>/README.md` (the explainer) and `img/` (its pictures).
+`docs/explain/<NNNN>-<slug>/README.md` (the explainer, or its cover page when split)
+and `img/` (its pictures).
 `docs/explain/README.md` lists all subjects. Explaining a subject again updates its
 folder.
 
@@ -35,8 +36,12 @@ Rules:
 - **Picture, caption, table. No stories.** Every figure gets a numbered caption
   (`**Figure 3.** …`) and at most three sentences. Tables decode the picture; never
   repeat a table as bullets, and never describe a diagram in prose.
-- **Zoom in step by step,** one small diagram per level (at most about twelve boxes).
-  Never one giant diagram.
+- **Zoom in step by step,** one small diagram per level (at most about fifteen
+  elements). Never one giant diagram.
+- **Every figure follows its model's notation** ([reference/c4-model.md](reference/c4-model.md)
+  for C4, [reference/models.md](reference/models.md) for the others) and passes that
+  file's checklist before you hand over: a title, a legend, typed and described
+  elements, labelled one-way arrows.
 - **Text must match the pictures.** Counts, names and arrows come from the code, not from
   memory ("2 tables" only if the data figure shows 2).
 - **Number without gaps** (Figure 1, 2, 3… in document order). No introductions or
@@ -47,7 +52,7 @@ Rules:
 - Never invent. If something essential cannot be worked out, ask at most three
   questions (Step 6).
 
-## Step 1. Pin down the scope and the format
+## Step 1. Pin down the scope, the format and the documents
 
 Decide the scope (table above). If it is unclear what is meant, search first and ask one
 question with the candidates you found.
@@ -65,7 +70,15 @@ Pick the format: what the user asks for ("as arc42", "compact", "C4"), otherwise
 | `arc42` (default) | a full architecture picture: the twelve arc42 sections          | [reference/arc42.md](reference/arc42.md) |
 | `c4`              | a compact zoom-in: context, containers, components, flows, data | [reference/c4.md](reference/c4.md)       |
 
-Read the chosen format file before Step 4.
+Pick the documents the same way: what the user asks for ("one document", "functional
+and technical apart"), otherwise `explain.documents`, otherwise **single**.
+
+| Documents          | Writes                                                  | Read                                     |
+| ------------------ | ------------------------------------------------------- | ---------------------------------------- |
+| `single` (default) | `README.md`: the whole explainer                        | the format file                          |
+| `split`            | `README.md` (cover), `functional.md` and `technical.md` | [reference/split.md](reference/split.md) |
+
+Read the chosen files before Step 4.
 
 ## Step 2. Read the code
 
@@ -73,134 +86,62 @@ Follow the code from the entry points (routes, pages, commands, jobs) to the dat
 outside world. Collect:
 
 - **Context:** who uses it, and which external systems it talks to.
-- **Containers:** the runnable parts (apps, services, databases) and how they talk.
+- **Containers:** the runnable parts (apps, services, databases, queues) and how they
+  talk (protocols). A container is what must run, not a folder or a package.
 - **Deployment:** what runs where: hosts, containers, ports, CI/CD (Dockerfiles, compose,
-  workflow files).
-- **Components:** the main modules inside each container that matters; for a component
-  that is hard to follow, the few classes that explain it (C4 level 4).
+  workflow files, IaC).
+- **Components:** the main groupings behind an interface inside each container that
+  matters; for a component that is hard to follow, the few classes that explain it.
 - **Flows:** the three to five main actions and the path each takes.
 - **Data:** stored records, keys and relations (models, migrations, schema), limited to
   what the scope touches.
+- **Lifecycles, processes, events:** status fields and their transitions, steps that
+  several roles take in turn, published and handled events.
 - **Routes and permissions** (web apps and APIs): each endpoint, its handler, and who may
   call it (auth guards, roles, middleware).
+- **Business rules:** validations and checks, in plain words, and where they are enforced.
 - **Configuration:** settings, environment variables and important constants.
 - **Decisions** the code or history states a reason for (ADRs, README, commit messages),
   and documented quality goals or known debt; leave out anything you would have to guess.
 - **Terms:** domain words and the names the code uses for them, when they differ.
 - For a branch: what is new, changed and removed, per part.
 
-## Step 3. Draw it
+## Step 3. Choose the models and draw them
 
-Write every diagram in **D2** (Step 5 turns them into images). Labels in plain words,
-arrows labelled with what flows.
+Write every diagram in **D2** (Step 5 turns them into images).
 
-**Context**: people, the system as one box, external systems.
+1. **C4, always:** a system context and a container diagram; a component diagram per
+   container worth opening; a deployment diagram when the code has deployment files.
+   Code level, landscape and dynamic diagrams only where they help. Follow
+   [reference/c4-model.md](reference/c4-model.md): its abstractions (what is a
+   container, what is a component), its notation and its D2 style block.
+2. **Other models, by what the code has:** go through the decision table in
+   [reference/models.md](reference/models.md) ("a `status` field with transitions" →
+   state machine, "more than three related tables" → ER diagram, "several roles in turn"
+   → activity diagram with swimlanes, …). Draw only models whose signal is clear; about
+   eight figures in total.
+3. **Place them** where the format (or, when split, [reference/split.md](reference/split.md))
+   says: e.g. arc42 section 6 for flows and lifecycles, section 8 for data and domain.
 
-```d2
-direction: right
-user: <User> {shape: person}
-system: <System>
-external: <External service>
-user -> system: <uses>
-system -> external: <sends data to>
-```
-
-**Containers**: the runnable parts and how they talk.
-
-```d2
-direction: right
-user: <User> {shape: person}
-web: <Web app>
-api: <API>
-db: <Database> {shape: cylinder}
-user -> web: <HTTPS>
-web -> api: <REST>
-api -> db: <SQL>
-```
-
-**Deployment**: nodes (servers, cloud services) with the containers they run.
+For a **branch**, mark changes by border, so the C4 colours stay meaningful, and add
+both to the legend:
 
 ```d2
-direction: right
-ci: <CI/CD pipeline>
-host: <Server or cloud> {
-  web: <web container :3000>
-  api: <api container :8080>
-  db: <database file or service> {shape: cylinder}
+classes: {
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  new: {style: {stroke: "#2e7d32"; stroke-width: 4}}
+  changed: {style: {stroke: "#ef6c00"; stroke-width: 4}}
 }
-ci -> host: <builds and deploys>
-host.web -> host.api: <internal network>
-host.api -> host.db
-```
-
-**Components** of one container (one figure per container worth zooming into).
-
-```d2
-direction: down
-api: <API container> {
-  routes: <Routes>
-  service: <Service>
-  repo: <Repository>
+title: "[Container] Webshop - branch feature/invoices" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+vars: {
+  d2-legend: {
+    n: New in this branch {class: [container; new]}
+    c: Changed in this branch {class: [container; changed]}
+  }
 }
-api.routes -> api.service -> api.repo
-```
-
-**Code** (C4 level 4, only where it helps): the classes and members that matter; never
-getters or setters; keep UI and domain classes apart.
-
-```d2
-controller: <Controller> {
-  shape: class
-  "+send(request)": <Response>
-  "-minFillTime": int
-}
-store: <Store> {
-  shape: class
-  "+save(message)": void
-}
-controller -> store: <uses>
-```
-
-**A flow**: one sequence diagram per main action.
-
-```d2
-shape: sequence_diagram
-user: User
-web: <Web app>
-api: <API>
-db: <Database>
-user -> web: <fills in the form>
-web -> api: <POST /contact>
-api -> db: <save message>
-api -> web: <200 OK>
-web -> user: <shows a thank-you message>
-```
-
-**Data**: only the tables the scope touches (say which ones you left out); arrows and
-their direction follow the real foreign keys.
-
-```d2
-user: <User> {
-  shape: sql_table
-  id: int {constraint: primary_key}
-  email: string
-}
-order: <Order> {
-  shape: sql_table
-  id: int {constraint: primary_key}
-  user_id: int {constraint: foreign_key}
-}
-order.user_id -> user.id
-```
-
-For a **branch**, colour the changes: new parts green, changed parts orange.
-
-```d2
-api: <API>
-new: <New service> {style.fill: "#d4f7d4"}
-changed: <Changed module> {style.fill: "#ffe8c2"}
-api -> new: <new call>
-api -> changed
+api: "API [Container: ASP.NET Core 10]" {class: [container; changed]}
+invoices: "Invoice service [Container: .NET 10]" {class: [container; new]}
+api -> invoices: "Requests invoices from\n[HTTPS/JSON]"
 ```
 
 ## Step 4. Write the explainer
@@ -216,22 +157,24 @@ or its ID), returns the existing folder, and updates the index. Without `kingmad
 make the folder yourself: the highest existing number plus one, four digits.
 
 Write that `README.md` in the format you picked in Step 1, following its
-reference file exactly (sections, figure numbering, tables). Leave out optional
-subsections that do not apply; keep every numbered arc42 section, writing
-"_Not documented._" or "_Unchanged._" where there is nothing to say.
+reference file exactly (sections, figure numbering, tables). When split, write the
+cover `README.md`, `functional.md` and `technical.md` next to each other as
+[reference/split.md](reference/split.md) says. Leave out optional subsections that do
+not apply; keep every numbered arc42 section, writing "_Not documented._" or
+"_Unchanged._" where there is nothing to say.
 
 ## Step 5. Render the pictures
 
 An explainer is not finished until its diagrams are pictures. Run:
 
 ```bash
-kingmadoc render docs/explain/<NNNN>-<slug>/README.md
+kingmadoc render docs/explain/<NNNN>-<slug>/*.md
 ```
 
-It replaces each diagram block with its image (`img/figure-<n>.svg` in the subject's
-folder) and moves the D2 source to `img/figure-<n>.d2`, so the document shows only
-pictures. To change a
-diagram later, edit its `.d2` file and render again. The first time it downloads D2 by
+It replaces each diagram block with its image (`img/figure-<n>.svg` for `README.md`,
+`img/functional-<n>.svg` and `img/technical-<n>.svg` when split) and moves the D2
+source next to it (`.d2`), so the documents show only pictures. To change a diagram
+later, edit its `.d2` file and render again. The first time it downloads D2 by
 itself (checksum-verified). **Never ask the user to install D2**, even when `d2` is not
 on the PATH: `kingmadoc render` does not need it.
 
@@ -244,9 +187,11 @@ on the PATH: `kingmadoc render` does not need it.
   `![<caption>](img/figure-<n>.svg)`); otherwise say that installing KingmaDoc gives
   the pictures.
 
-## Step 6. Hand it over
+## Step 6. Check and hand it over
 
-Show the path, the one-paragraph summary and the figures (check the document embeds the
+Go through the checklist of each figure's model (end of
+[reference/c4-model.md](reference/c4-model.md) and [reference/models.md](reference/models.md))
+and fix what fails. Then show the path, the one-paragraph summary and the figures (check the document embeds the
 images). Ask the "Couldn't work out" questions, at most three, and update the explainer
 with the answers. In VS Code, mention that `kingmadoc skills install --vscode` makes
 explainers open as a rendered preview; do not run it without the user's consent.
