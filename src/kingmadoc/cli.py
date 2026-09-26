@@ -182,7 +182,7 @@ def verify(slug: str, root: Path, config_path: Path | None, force: bool) -> None
             plan_path.relative_to(root).as_posix(),
             now=datetime.now().astimezone(),
         )
-        written = write_document(content, verify_output_path(plan_path), overwrite=force)
+        written = write_document(verify_output_path(plan_path), content, overwrite=force)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -218,7 +218,7 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
         config = load_config(root, config_path)
         number, path = adr_path(root.resolve(), config, title)
         content = render_adr(root, number, title, status=status, today=date.today())
-        written = write_document(content, path)
+        written = write_document(path, content)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
 
