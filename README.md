@@ -104,6 +104,7 @@ file with all defaults and comments; [this repository's
 | `project.name` / `.description`           | directory name / empty             | Used in titles and the C4 Context diagram                                                                      |
 | `analyzer.max_files`                      | `5000`                             | Files analyzed (5000 is the maximum)                                                                           |
 | `analyzer.tree_depth`                     | `3`                                | Depth of the file tree in the appendix                                                                         |
+| `analyzer.max_lines_per_file`             | `2000`                             | Lines read per source file when detecting frameworks from imports (manifests are always read in full)          |
 | `analyzer.exclude_dirs`                   | `.git`, `.venv`, `node_modules`, … | Directory names/globs to skip                                                                                  |
 | `diagrams`                                | `[c4_context, c4_container]`       | Which C4 diagrams the plan contains                                                                            |
 | `diagram_format`                          | `mermaid`                          | `mermaid`, `plantuml` (C4-PlantUML) or `d2`                                                                    |

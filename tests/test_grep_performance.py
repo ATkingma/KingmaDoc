@@ -12,7 +12,8 @@ def test_many_blank_lines_are_scanned_quickly(tmp_path: Path) -> None:
     (tmp_path / "app.py").write_text("\n" * 50_000 + "import django\n", encoding="utf-8")
 
     start = time.perf_counter()
-    report = analyze(tmp_path, AnalyzerConfig())
+    # Read every line, so the per-file line limit doesn't hide a regex regression.
+    report = analyze(tmp_path, AnalyzerConfig(max_lines_per_file=100_000))
     elapsed = time.perf_counter() - start
 
     assert "Django" in report.detected_stack

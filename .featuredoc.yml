@@ -18,6 +18,8 @@ project:
 analyzer:
   max_files: 5000  # maximum
   tree_depth: 3
+  # Lines read per source file when scanning imports (imports sit at the top).
+  max_lines_per_file: 2000
   exclude_dirs:
     - ".git"
     - ".hg"

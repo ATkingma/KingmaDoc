@@ -9,6 +9,7 @@ from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from fnmatch import fnmatch
+from itertools import islice
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -282,7 +283,7 @@ def analyze(root: Path, config: AnalyzerConfig) -> CodebaseReport:
         {MARKER_FILES[p] for f in config_files for p in MARKER_FILES if fnmatch(f.name, p)}
         | {SOURCE_LANGUAGES[k] for k in languages if k in SOURCE_LANGUAGES}
         | detect_stack_from_manifests(manifests)
-        | _grep_frameworks(root, files)
+        | _grep_frameworks(root, files, config.max_lines_per_file)
     )
 
     return CodebaseReport(
@@ -558,8 +559,8 @@ def _mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
-def _grep_frameworks(root: Path, files: list[Path]) -> set[str]:
-    """Detect frameworks by scanning source files for import patterns."""
+def _grep_frameworks(root: Path, files: list[Path], max_lines: int) -> set[str]:
+    """Detect frameworks by scanning the first ``max_lines`` lines of source files."""
     found: set[str] = set()
     for f in files:
         remaining = {
@@ -573,7 +574,8 @@ def _grep_frameworks(root: Path, files: list[Path]) -> set[str]:
         try:
             if path.stat().st_size > MAX_GREP_BYTES:
                 continue
-            text = path.read_text(encoding="utf-8", errors="ignore")
+            with path.open(encoding="utf-8", errors="ignore") as handle:
+                text = "".join(islice(handle, max_lines))
         except OSError:
             continue
         found.update(name for name, pattern in remaining.items() if pattern.search(text))

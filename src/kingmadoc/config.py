@@ -53,6 +53,7 @@ class AnalyzerConfig:
     exclude_dirs: tuple[str, ...] = DEFAULT_EXCLUDE_DIRS
     max_files: int = MAX_FILES_LIMIT
     tree_depth: int = 3
+    max_lines_per_file: int = 2000
 
 
 @dataclass(frozen=True)
@@ -254,6 +255,8 @@ project:
 analyzer:
   max_files: {MAX_FILES_LIMIT}  # maximum
   tree_depth: 3
+  # Lines read per source file when scanning imports (imports sit at the top).
+  max_lines_per_file: 2000
   exclude_dirs:
 {excludes}
 
@@ -305,19 +308,27 @@ def _parse_analyzer(data: Any) -> AnalyzerConfig:
     if data is None:
         return defaults
     data = _require_mapping(data, "analyzer")
-    _reject_unknown(data, {"exclude_dirs", "max_files", "tree_depth"}, "analyzer")
+    _reject_unknown(
+        data, {"exclude_dirs", "max_files", "tree_depth", "max_lines_per_file"}, "analyzer"
+    )
     max_files = _get(data, "max_files", int, defaults.max_files, "analyzer.")
     tree_depth = _get(data, "tree_depth", int, defaults.tree_depth, "analyzer.")
     if not 1 <= max_files <= MAX_FILES_LIMIT:
         raise ConfigError(f"analyzer.max_files must be between 1 and {MAX_FILES_LIMIT}")
     if tree_depth < 1:
         raise ConfigError("analyzer.tree_depth must be >= 1")
+    max_lines = _get(
+        data, "max_lines_per_file", int, defaults.max_lines_per_file, "analyzer."
+    )
+    if max_lines < 1:
+        raise ConfigError("analyzer.max_lines_per_file must be >= 1")
     return AnalyzerConfig(
         exclude_dirs=tuple(
             _get_str_list(data, "exclude_dirs", defaults.exclude_dirs, "analyzer.")
         ),
         max_files=max_files,
         tree_depth=tree_depth,
+        max_lines_per_file=max_lines,
     )
 
 
