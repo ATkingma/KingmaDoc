@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- One folder per explained subject: `docs/explain/<NNNN>-<name>/README.md` plus its
+  `img/`, with a unique ID that is never reused. `kingmadoc explain new "<name>"` picks
+  or reuses the folder and keeps the index `docs/explain/README.md` up to date (so does
+  `kingmadoc render`); a README's images are named `img/figure-<n>.svg`.
+  `explaining-code` 4.1 writes there.
 - `kingmadoc skills install` updates skill files an earlier KingmaDoc installed without
   `--force`; only files edited locally need `--force`. A `.kingmadoc-skill.json`
   manifest per skill folder records what was installed; files a skill no longer ships

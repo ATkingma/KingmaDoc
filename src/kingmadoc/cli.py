@@ -16,6 +16,13 @@ from kingmadoc.config import CONFIG_FILENAME, MAX_FILES_LIMIT, default_config_ya
 from kingmadoc.d2_binary import ensure_d2
 from kingmadoc.documents import write_document, write_documents
 from kingmadoc.exceptions import KingmaDocError
+from kingmadoc.explain import (
+    EXPLAINER_FILE,
+    explainer_folder,
+    index_markdown,
+    index_path,
+    read_entries,
+)
 from kingmadoc.plan.analyzer import CodebaseReport, analyze, format_report, report_to_dict
 from kingmadoc.plan.generator import (
     build_plan_context,
@@ -278,20 +285,53 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
 def render_command(documents: tuple[Path, ...]) -> None:
     """Render the D2 diagrams in DOCUMENTS to SVG images and embed them.
 
-    Images go to img/<document>-<n>.svg next to each document; the D2 source stays in the
-    document, collapsed below the image. D2 is downloaded once (pinned, checksum-verified)
-    unless it is on PATH or in KINGMADOC_D2. Prints the written image paths.
+    Images go to img/<document>-<n>.svg next to each document (img/figure-<n>.svg for a
+    README.md), their D2 sources to img/*.d2. D2 is downloaded once (pinned,
+    checksum-verified) unless it is on PATH or in KINGMADOC_D2. Prints the image paths.
     """
     try:
         d2 = ensure_d2(lambda message: click.echo(message, err=True))
         for document in documents:
             images = render_file(document, d2)
+            index = index_path(document)
+            if index is not None:
+                _write_explain_index(index.parent)
             if not images:
                 click.echo(f"No D2 diagrams in {document}", err=True)
             for image in images:
                 click.echo(image)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
+
+
+@cli.group("explain")
+def explain_group() -> None:
+    """Explainer folders for the explaining-code skill (docs/explain/<ID>-<name>/)."""
+
+
+@explain_group.command("new")
+@click.argument("name")
+@ROOT_OPTION
+def explain_new(name: str, root: Path) -> None:
+    """Create (or reuse) the folder for explaining NAME and print its README.md path.
+
+    Each subject gets a unique ID that is never reused; NAME may also be an existing ID.
+    Also updates the index docs/explain/README.md.
+    """
+    try:
+        folder, created = explainer_folder(root, name)
+        _write_explain_index(folder.parent)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if not created:
+        click.echo(f"Reusing {folder.name} (explained before).", err=True)
+    click.echo(folder / EXPLAINER_FILE)
+
+
+def _write_explain_index(directory: Path) -> None:
+    write_document(
+        directory / EXPLAINER_FILE, index_markdown(read_entries(directory)), overwrite=True
+    )
 
 
 @cli.group("skills")

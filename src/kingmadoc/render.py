@@ -71,7 +71,8 @@ def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
 
     image_dir = path.parent / "img"
     sources = [_source(item, path) for item in items]
-    names = [f"{path.stem}-{n}" for n in range(1, len(items) + 1)]
+    stem = _image_stem(path)
+    names = [f"{stem}-{n}" for n in range(1, len(items) + 1)]
     with tempfile.TemporaryDirectory() as tmp:
         rendered = [
             _render(source, Path(tmp), n, path, d2)
@@ -81,7 +82,7 @@ def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
         for name, source, svg in zip(names, sources, rendered, strict=True):
             write_document(image_dir / f"{name}.d2", source.rstrip("\n") + "\n", overwrite=True)
             os.replace(svg, image_dir / f"{name}.svg")
-    _remove_stale_files(image_dir, path.stem, set(names))
+    _remove_stale_files(image_dir, stem, set(names))
 
     for item, name in zip(reversed(items), reversed(names), strict=True):
         alt = _nearest_heading(text, item.start()) or "Diagram"
@@ -132,6 +133,11 @@ def _embed(alt: str, name: str) -> str:
 def _nearest_heading(text: str, position: int) -> str | None:
     headings = [m.group(1) for m in _HEADING.finditer(text, 0, position)]
     return headings[-1] if headings else None
+
+
+def _image_stem(doc: Path) -> str:
+    """Images are named after the document; a folder's README or index uses ``figure``."""
+    return "figure" if doc.stem.lower() in ("readme", "index") else doc.stem
 
 
 def _remove_stale_files(image_dir: Path, stem: str, keep: set[str]) -> None:

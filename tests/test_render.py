@@ -153,15 +153,21 @@ def test_cli_explains_how_to_install_d2(tmp_path: Path, monkeypatch: pytest.Monk
     assert "d2lang.com" in result.output
 
 
-def test_cli_renders_with_the_configured_binary(tmp_path: Path, d2: list[str]) -> None:
-    """KINGMADOC_D2 points at the binary; the CLI prints the images it wrote."""
-    doc = _doc(tmp_path)
+def _wrapper(tmp_path: Path, d2: list[str]) -> Path:
+    """An executable that runs the fake d2 (KINGMADOC_D2 takes a single path)."""
     wrapper = tmp_path / ("d2.bat" if os.name == "nt" else "d2")
     if os.name == "nt":
         wrapper.write_text(f'@"{d2[0]}" "{d2[1]}" %*\n', encoding="utf-8")
     else:
         wrapper.write_text(f'#!/bin/sh\nexec "{d2[0]}" "{d2[1]}" "$@"\n', encoding="utf-8")
         wrapper.chmod(0o755)
+    return wrapper
+
+
+def test_cli_renders_with_the_configured_binary(tmp_path: Path, d2: list[str]) -> None:
+    """KINGMADOC_D2 points at the binary; the CLI prints the images it wrote."""
+    doc = _doc(tmp_path)
+    wrapper = _wrapper(tmp_path, d2)
 
     result = CliRunner().invoke(cli, ["render", str(doc)], env={"KINGMADOC_D2": str(wrapper)})
 
@@ -211,3 +217,30 @@ def test_missing_source_file_is_an_error(tmp_path: Path, d2: list[str]) -> None:
 
     with pytest.raises(RenderError, match="shop-2.d2"):
         render_file(doc, d2)
+
+
+def test_readme_explainer_images_are_named_figure(tmp_path: Path, d2: list[str]) -> None:
+    """An explainer folder's README.md gets img/figure-<n>.svg, not img/README-<n>.svg."""
+    doc = tmp_path / "docs" / "explain" / "0001-shop" / "README.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text(DOC, encoding="utf-8")
+
+    images = render_file(doc, d2)
+
+    assert [p.name for p in images] == ["figure-1.svg", "figure-2.svg"]
+    assert "![Overview](img/figure-1.svg)" in doc.read_text(encoding="utf-8")
+
+
+def test_rendering_an_explainer_updates_the_index(tmp_path: Path, d2: list[str]) -> None:
+    """After rendering docs/explain/<ID>-<name>/README.md, the index lists it by title."""
+    doc = tmp_path / "docs" / "explain" / "0001-shop" / "README.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text(DOC, encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli, ["render", str(doc)], env={"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+    )
+
+    assert result.exit_code == 0, result.output
+    index = (tmp_path / "docs" / "explain" / "README.md").read_text(encoding="utf-8")
+    assert "[Explainer](0001-shop/README.md)" in index

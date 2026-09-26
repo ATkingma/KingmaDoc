@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: Explains existing code with numbered pictures and short tables, so a developer sees at a glance what is there and how it works (fixes code blindness, e.g. after an agent wrote it). Works on any scope - a feature, a branch (what did this branch or task change), a whole project, or a part of one. Writes an arc42 architecture document by default (or a compact C4 zoom-in), with rendered diagrams per C4 level, runtime flows and deployment, each decoded by a table. Use when the user asks to explain, document, map or visualise existing code, a feature, a branch or a project.
-version: 4.0.0
+version: 4.1.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -13,12 +13,17 @@ it fits together, often because an agent wrote it. This skill gives that insight
 
 ## When to use this skill
 
-| The user wants…                                | Scope   | Output                            |
-| ---------------------------------------------- | ------- | --------------------------------- |
-| to understand one feature ("the contact form") | feature | `docs/explain/<slug>.md`          |
-| to know what a branch or task changed          | branch  | `docs/explain/branch-<branch>.md` |
-| an overview of a whole project                 | project | `docs/explain/project.md`         |
-| to understand a folder, service or module      | part    | `docs/explain/<slug>.md`          |
+| The user wants…                                | Scope   | Subject name        |
+| ---------------------------------------------- | ------- | ------------------- |
+| to understand one feature ("the contact form") | feature | `Contact form`      |
+| to know what a branch or task changed          | branch  | `branch <branch>`   |
+| an overview of a whole project                 | project | `Project`           |
+| to understand a folder, service or module      | part    | `<folder or module>` |
+
+Every subject gets its own folder with a unique ID and its name:
+`docs/explain/<NNNN>-<slug>/README.md` (the explainer) and `img/` (its pictures).
+`docs/explain/README.md` lists all subjects. Explaining a subject again updates its
+folder.
 
 For a feature that is not built yet, use the `kingmadoc` skill (plan mode) instead.
 
@@ -200,7 +205,17 @@ api -> changed
 
 ## Step 4. Write the explainer
 
-Write the file from the scope table in the format you picked in Step 1, following its
+Get the subject's folder:
+
+```bash
+kingmadoc explain new "<subject name>"   # prints docs/explain/<NNNN>-<slug>/README.md
+```
+
+It picks the next free ID (never reused) or, for a subject explained before (same name,
+or its ID), returns the existing folder, and updates the index. Without `kingmadoc`,
+make the folder yourself: the highest existing number plus one, four digits.
+
+Write that `README.md` in the format you picked in Step 1, following its
 reference file exactly (sections, figure numbering, tables). Leave out optional
 subsections that do not apply; keep every numbered arc42 section, writing
 "_Not documented._" or "_Unchanged._" where there is nothing to say.
@@ -210,11 +225,12 @@ subsections that do not apply; keep every numbered arc42 section, writing
 An explainer is not finished until its diagrams are pictures. Run:
 
 ```bash
-kingmadoc render docs/explain/<file>.md
+kingmadoc render docs/explain/<NNNN>-<slug>/README.md
 ```
 
-It replaces each diagram block with its image (`docs/explain/img/*.svg`) and moves the
-D2 source to `docs/explain/img/*.d2`, so the document shows only pictures. To change a
+It replaces each diagram block with its image (`img/figure-<n>.svg` in the subject's
+folder) and moves the D2 source to `img/figure-<n>.d2`, so the document shows only
+pictures. To change a
 diagram later, edit its `.d2` file and render again. The first time it downloads D2 by
 itself (checksum-verified). **Never ask the user to install D2**, even when `d2` is not
 on the PATH: `kingmadoc render` does not need it.
@@ -223,9 +239,9 @@ on the PATH: `kingmadoc render` does not need it.
 - `kingmadoc` has no `render` command: it is outdated; ask the user to update it with
   `pipx reinstall kingmadoc` (or `pip install -U kingmadoc`), then render.
 - `kingmadoc` is not installed at all: render with `d2` if it happens to be available
-  (save each diagram as `docs/explain/img/<file>-<n>.d2`, run
+  (save each diagram as `img/figure-<n>.d2` in the subject's folder, run
   `d2 --pad 20 <that>.d2 <that>.svg`, and replace the block with
-  `![<caption>](img/<file>-<n>.svg)`); otherwise say that installing KingmaDoc gives
+  `![<caption>](img/figure-<n>.svg)`); otherwise say that installing KingmaDoc gives
   the pictures.
 
 ## Step 6. Hand it over

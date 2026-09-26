@@ -122,6 +122,18 @@ def test_skill_rules() -> None:
     assert "explain.format" in text
 
 
+def test_each_subject_gets_its_own_folder() -> None:
+    """Output goes to docs/explain/<NNNN>-<slug>/README.md, picked by `kingmadoc explain new`."""
+    text = _read(SKILL)
+    version = yaml.safe_load(text.split("---", 2)[1])["version"]
+
+    assert "kingmadoc explain new" in text
+    assert "docs/explain/<NNNN>-<slug>/README.md" in text
+    assert "docs/explain/<slug>.md" not in text
+    for reference in (ARC42, C4):  # the "Based on" row names the current skill version
+        assert f"explaining-code {version}" in _read(reference), reference.name
+
+
 def test_skill_never_sends_the_user_to_install_d2() -> None:
     """render downloads D2 itself; updating uses `pipx reinstall` (pipx --force can fail)."""
     text = _read(SKILL)

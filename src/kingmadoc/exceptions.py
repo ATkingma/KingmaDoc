@@ -31,3 +31,7 @@ class AdrError(KingmaDocError):
 
 class RenderError(KingmaDocError):
     """Raised when diagrams cannot be rendered to images (e.g. D2 missing or failing)."""
+
+
+class ExplainError(KingmaDocError):
+    """Raised when an explainer folder cannot be picked or created."""

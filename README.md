@@ -78,8 +78,10 @@ installed, the skill uses it for the codebase analysis.
 **Explaining existing code.** A second skill,
 [`skill/explaining-code/SKILL.md`](skill/explaining-code/SKILL.md), explains code that
 already exists, with pictures: a feature, a branch (what did this branch or task
-change), a whole project, or a part of one. It writes a short explainer in
-`docs/explain/`: by default an **arc42** architecture document (the twelve arc42
+change), a whole project, or a part of one. Each subject gets its own folder with a
+unique ID, `docs/explain/<NNNN>-<name>/` (the explainer `README.md` plus its `img/`),
+listed in `docs/explain/README.md`; explaining it again updates that folder. The
+explainer is by default an **arc42** architecture document (the twelve arc42
 sections, with C4 diagrams per level, runtime flows and deployment), or a compact C4
 zoom-in with `explain: {format: c4}` in `.featuredoc.yml`. Every figure is numbered,
 rendered as an image and decoded by a small table. No stories, no audit. Install it next to the first one and ask the agent to "explain <feature / branch /
@@ -120,7 +122,8 @@ More commands:
 
 ```bash
 kingmadoc plan "…" --no-input --stdout   # no questions, print instead of writing
-kingmadoc render docs/explain/shop.md    # D2 diagrams -> SVG images in the doc
+kingmadoc explain new "Checkout"         # folder for a subject: docs/explain/0001-checkout/
+kingmadoc render docs/explain/0001-checkout/README.md   # D2 diagrams -> SVG images
 kingmadoc adr "Use PostgreSQL" --status accepted   # needs adr.enabled
 ```
 
