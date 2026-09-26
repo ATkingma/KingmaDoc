@@ -14,6 +14,7 @@ Feature Verification Doc afterwards.
 | [CONTRIBUTING](../CONTRIBUTING.md) | Dev setup, running tests, adding a diagram backend or a template |
 | [CHANGELOG](../CHANGELOG.md)  | Release history (Keep a Changelog)                                                    |
 | [Roadmap](roadmap.md)         | Open functional gaps after 0.1.1, split into work packages                            |
+| [Test plan](test-plan.md)     | Hands-on test of KingmaDoc on an existing project, including existing features         |
 
 ## By task
 
