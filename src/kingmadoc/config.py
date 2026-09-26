@@ -110,6 +110,8 @@ def _design(name: str) -> ExtraDesignConfig:
 # Explainer formats of the `explaining-code` skill: arc42 (the 12 arc42 sections, default)
 # or c4 (a compact zoom-in: context, containers, components, flows, data).
 EXPLAIN_FORMATS: tuple[str, ...] = ("arc42", "c4")
+# One explainer per subject (default), or split into a functional and a technical one.
+EXPLAIN_DOCUMENTS: tuple[str, ...] = ("single", "split")
 
 
 @dataclass(frozen=True)
@@ -118,9 +120,11 @@ class ExplainConfig:
 
     Attributes:
         format: One of :data:`EXPLAIN_FORMATS`.
+        documents: One of :data:`EXPLAIN_DOCUMENTS`.
     """
 
     format: str = "arc42"
+    documents: str = "single"
 
 
 @dataclass(frozen=True)
@@ -343,8 +347,10 @@ adr:
 
 # Explainers written by the explaining-code agent skill ("explain this project").
 # format: arc42 (the 12 arc42 sections, default) or c4 (compact zoom-in).
+# documents: single (one explainer, default) or split (functional + technical).
 explain:
   format: arc42
+  documents: single
 """
 
 
@@ -424,13 +430,18 @@ def _parse_explain(data: Any) -> ExplainConfig:
     if data is None:
         return defaults
     data = _require_mapping(data, "explain")
-    _reject_unknown(data, {"format"}, "explain")
+    _reject_unknown(data, {"format", "documents"}, "explain")
     fmt = _get(data, "format", str, defaults.format, "explain.")
     if fmt not in EXPLAIN_FORMATS:
         raise ConfigError(
             f"Unknown explain.format {fmt!r}; supported: {', '.join(EXPLAIN_FORMATS)}"
         )
-    return ExplainConfig(format=fmt)
+    documents = _get(data, "documents", str, defaults.documents, "explain.")
+    if documents not in EXPLAIN_DOCUMENTS:
+        raise ConfigError(
+            f"Unknown explain.documents {documents!r}; supported: {', '.join(EXPLAIN_DOCUMENTS)}"
+        )
+    return ExplainConfig(format=fmt, documents=documents)
 
 
 def _parse_adr(data: Any) -> AdrConfig:

@@ -2,7 +2,13 @@
 
 import pytest
 
-from kingmadoc.config import EXPLAIN_FORMATS, FeatureDocConfig, default_config_yaml, parse_config
+from kingmadoc.config import (
+    EXPLAIN_DOCUMENTS,
+    EXPLAIN_FORMATS,
+    FeatureDocConfig,
+    default_config_yaml,
+    parse_config,
+)
 from kingmadoc.exceptions import ConfigError
 
 
@@ -26,3 +32,17 @@ def test_invalid_explain_settings_are_rejected(data: dict) -> None:
     """Unknown formats and keys fail with the supported values."""
     with pytest.raises(ConfigError, match="explain"):
         parse_config(data)
+
+
+def test_one_document_by_default_or_split() -> None:
+    """One explainer by default; `split` writes a functional and a technical document."""
+    assert FeatureDocConfig().explain.documents == "single"
+    assert EXPLAIN_DOCUMENTS == ("single", "split")
+    assert "  documents: single" in default_config_yaml()
+    assert parse_config({"explain": {"documents": "split"}}).explain.documents == "split"
+
+
+def test_unknown_documents_value_is_rejected() -> None:
+    """Only single or split."""
+    with pytest.raises(ConfigError, match="explain.documents"):
+        parse_config({"explain": {"documents": "three"}})
