@@ -236,6 +236,21 @@ def enabled_extra_designs(config: FeatureDocConfig) -> tuple[ExtraDesign, ...]:
     return tuple(d for d in EXTRA_DESIGNS if getattr(config.extra_designs, d.name).enabled)
 
 
+def needs_dependencies(config: FeatureDocConfig) -> bool:
+    """Whether ``plan`` must build the module dependency graph (it parses every file).
+
+    Args:
+        config: KingmaDoc configuration.
+
+    Returns:
+        True if an enabled document selects the ``dependency_graph`` model.
+    """
+    return any(
+        "dependency_graph" in getattr(config.extra_designs, design.name).models
+        for design in enabled_extra_designs(config)
+    )
+
+
 def render_extra_design(
     design: ExtraDesign, context: PlanContext, config: FeatureDocConfig, plan_path: Path
 ) -> str:

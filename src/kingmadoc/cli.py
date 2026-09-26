@@ -22,6 +22,7 @@ from kingmadoc.plan.generator import (
     default_output_path,
     enabled_extra_designs,
     extra_design_path,
+    needs_dependencies,
     render_extra_design,
     render_plan,
 )
@@ -95,7 +96,7 @@ def plan(
     """
     try:
         config = load_config(root, config_path)
-        report = analyze(root, config.analyzer)
+        report = analyze(root, config.analyzer, with_dependencies=needs_dependencies(config))
         _warn_if_truncated(report)
 
         questions = build_questions(report, config)

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 from kingmadoc.config import DOCUMENT_MODELS
 from kingmadoc.diagrams.base import DiagramBackend
 from kingmadoc.exceptions import GenerationError
+from kingmadoc.plan.dependencies import collapse
 
 if TYPE_CHECKING:
     from kingmadoc.plan.generator import PlanContext
@@ -114,9 +115,41 @@ domain events orange, commands blue, actors yellow, policies purple.
 | 3 | _TODO_ | _TODO_ | _TODO_ | _TODO_ |"""
 
 
+# More nodes than this makes a dependency diagram unreadable; merge into packages instead.
+MAX_GRAPH_NODES = 25
+
+
+def _dependency_graph(context: PlanContext, backend: DiagramBackend) -> str:
+    edges = context.codebase_report.module_dependencies or ()
+    if not edges:
+        return (
+            "_(inferred)_ No imports between the project's own Python modules were found "
+            "(only Python is analyzed so far)."
+        )
+    shown, depth = collapse(edges, MAX_GRAPH_NODES)
+    nodes = sorted({name for edge in shown for name in edge})
+    diagram = backend.render_class(
+        "Module dependencies",
+        [{"name": name} for name in nodes],
+        [(importer, imported, "dependency", "") for importer, imported in shown],
+    )
+    merged = (
+        f" Modules are merged into their packages (first {depth} name parts) to keep at most "
+        f"{MAX_GRAPH_NODES} nodes."
+        if depth
+        else ""
+    )
+    return f"""_(inferred)_ Imports between the project's own Python modules; an arrow points
+from the importing module to the imported one.{merged} Check which of these modules this
+feature changes, and whether it adds new dependencies.
+
+{diagram}"""
+
+
 MODELS: tuple[Model, ...] = (
     Model("domain_model", "domain_design", "Domain model", _domain_model),
     Model("event_storming", "domain_design", "Event storming", _event_storming),
+    Model("dependency_graph", "technical_design", "Dependency graph", _dependency_graph),
     Model("threat_model", "security_design", "Threat model (STRIDE)", _threat_model),
     Model("permissions", "security_design", "Permissions: who may do what", _permissions),
 )

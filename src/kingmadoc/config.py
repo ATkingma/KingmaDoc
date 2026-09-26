@@ -41,7 +41,7 @@ SUPPORTED_DIAGRAMS: frozenset[str] = frozenset({"c4_context", "c4_container"})
 DOCUMENT_MODELS: Mapping[str, tuple[str, ...]] = MappingProxyType({
     "functional_design": (),
     "domain_design": ("domain_model", "event_storming"),
-    "technical_design": (),
+    "technical_design": ("dependency_graph",),
     "security_design": ("threat_model", "permissions"),
 })
 

@@ -93,3 +93,39 @@ def _resolve(candidates: list[list[str]], internal: set[str]) -> str | None:
             if name in internal:
                 return name
     return None
+
+
+def collapse(edges: Sequence[Edge], max_nodes: int) -> tuple[tuple[Edge, ...], int | None]:
+    """Merge modules into their packages until the graph has at most ``max_nodes`` nodes.
+
+    Args:
+        edges: ``(importer, imported)`` pairs.
+        max_nodes: Largest number of distinct modules to keep.
+
+    Returns:
+        ``(edges, depth)``: the (possibly merged) edges, and the number of name parts kept
+        per module, or ``None`` if nothing had to be merged.
+
+    Example:
+        >>> collapse((("a.x.one", "a.y.two"), ("a.x.three", "a.y.two")), max_nodes=2)
+        ((('a.x', 'a.y'),), 2)
+    """
+    nodes = {name for edge in edges for name in edge}
+    if len(nodes) <= max_nodes:
+        return tuple(edges), None
+    depth = max(len(name.split(".")) for name in nodes)
+    merged: set[Edge] = set(edges)
+    while depth > 1:
+        depth -= 1
+        merged = {
+            (_prefix(a, depth), _prefix(b, depth))
+            for a, b in edges
+            if _prefix(a, depth) != _prefix(b, depth)
+        }
+        if len({name for edge in merged for name in edge}) <= max_nodes:
+            break
+    return tuple(sorted(merged)), depth
+
+
+def _prefix(name: str, depth: int) -> str:
+    return ".".join(name.split(".")[:depth])

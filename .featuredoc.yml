@@ -60,7 +60,7 @@ extra_designs:
     # performance and security considerations.
     enabled: false
     template: technical_design.md.j2
-    models: []
+    models: [dependency_graph]
   domain_design:
     # <slug>-domain-design.md: domain model and event storming.
     enabled: false

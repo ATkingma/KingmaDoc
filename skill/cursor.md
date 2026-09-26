@@ -362,9 +362,11 @@ erDiagram
 ## Performance considerations
 
 ## Security considerations
+
+## Dependency graph
 ````
 
-Each section lists `_TODO: …_` bullets for what is not yet known.
+Each section lists `_TODO: …_` bullets for what is not yet known; the dependency graph is a class diagram of imports between the project's own modules, marked _(inferred)_.
 
 ### Verify doc: `docs/features/<slug>-verify.md`
 
