@@ -1,0 +1,16 @@
+# kingmadoc plan mode: a plan doc before the code, and no code written.
+skill: kingmadoc
+fixture: shop
+request: >-
+  Plan a new feature for this shop: customers can cancel an order that is not shipped
+  yet. Write the plan only; do not implement it.
+checks:
+  - exists: docs/features/*-plan.md
+  - contains:
+      files: docs/features/*-plan.md
+      text:
+        - "## One-sentence summary"
+        - "## Scope (in / out)"
+        - "## C4 Context"
+        - "## Open questions"
+  - unchanged_outside: [docs/, .claude/, .featuredoc.yml]

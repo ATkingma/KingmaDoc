@@ -1,0 +1,17 @@
+# explaining-code on a branch: what it changed, from its diff.
+skill: explaining-code
+fixture: shop
+branch:
+  name: feature/discount
+  overlay: shop-discount
+request: Explain what the branch feature/discount changed compared with main.
+checks:
+  - exists: docs/explain/0001-*/README.md
+  - contains:
+      files: docs/explain/0001-*/README.md
+      text: ["## What changed", "discount"]
+  - pictures_only: docs/explain/0001-*/*.md
+  - max_questions:
+      files: docs/explain/0001-*/README.md
+      max: 3
+  - unchanged_outside: [docs/, .claude/]

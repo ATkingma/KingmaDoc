@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Skill evaluations (roadmap WP5): three scenarios in `evals/` (explain a feature,
+  explain a branch, plan a feature) on a small Django fixture, run with
+  `python scripts/run_evals.py [--compare] [--record]`; deterministic checks (paths,
+  headings, pictures only, at most three questions, no source code changed).
 - `kingmadoc explain facts [--base REF] [--json]` (roadmap WP12 task 3): what can be read
   from the code without guessing, for the agent to draw from: the stack, the references
   between .NET projects (`.csproj`), the Python module dependencies, the data model from

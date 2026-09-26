@@ -111,6 +111,9 @@ full workflow and formats.
 
 ## WP5. Skill evaluations
 
+**Status:** scenarios, checks and runner done (unreleased); see
+[evals/README.md](../evals/README.md). Recording results is ongoing.
+
 **Goal.** Know whether agents actually follow the skill (A4), before adding WP1–WP3 to
 it.
 

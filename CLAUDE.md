@@ -15,6 +15,7 @@ uv venv -p 3.11 .venv && uv pip install -p .venv -e '.[dev]'   # setup
 .venv/bin/kingmadoc plan "Add a feature." --no-input --stdout   # smoke test
 python3 .claude/skills/checking-conventions/scripts/check_conventions.py  # convention check (also runs ruff + mypy when in .venv)
 .venv/bin/ruff check . && .venv/bin/mypy                        # lint + mypy --strict
+.venv/bin/python scripts/run_evals.py --compare --record     # skill evals (runs real agents; evals/README.md)
 ```
 
 The version comes from git tags (`hatch-vcs`; never set it by hand, `kingmadoc.__version__` reads the installed metadata); releases: `docs/releasing.md`. After changing dependencies in `pyproject.toml`, run `uv lock` (CI checks `uv.lock` and runs `pip-audit`). Ruff includes the `S` (bandit) rules; justify a `# noqa: S…` in a comment.

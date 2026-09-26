@@ -1,0 +1,20 @@
+# explaining-code on an existing feature: arc42 explainer in its own folder, pictures only.
+skill: explaining-code
+fixture: shop
+request: Explain how placing an order works in this project.
+checks:
+  - exists: docs/explain/0001-*/README.md
+  - exists: docs/explain/README.md
+  - contains:
+      files: docs/explain/0001-*/README.md
+      text:
+        - "## 1. Introduction and goals"
+        - "## 5. Building block view"
+        - "## 6. Runtime view"
+        - "## 8. Cross-cutting concepts"
+        - "**Based on**"
+  - pictures_only: docs/explain/0001-*/*.md
+  - max_questions:
+      files: docs/explain/0001-*/README.md
+      max: 3
+  - unchanged_outside: [docs/, .claude/]

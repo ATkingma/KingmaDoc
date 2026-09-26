@@ -67,6 +67,8 @@ exclude = [".claude"]
 [tool.ruff]
 line-length = 99
 target-version = "py311"
+# Fixture projects for the skill evaluations: sample code agents read, never run.
+extend-exclude = ["evals/fixtures"]
 
 [tool.ruff.lint]
 # pycodestyle, pyflakes, import order, pyupgrade, bugbear (convention D1), bandit (G7).
