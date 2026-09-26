@@ -126,6 +126,9 @@ it.
 
 ## WP6. Publishing and supply chain
 
+**Status:** done (unreleased) except the one-time PyPI setup and the first tag; see
+[Releasing](releasing.md).
+
 **Tasks**
 
 1. Release workflow: build on a tag, publish to PyPI with trusted publishing (no API

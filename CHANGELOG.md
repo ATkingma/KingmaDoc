@@ -62,6 +62,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The version comes from the git tag (`hatch-vcs`): every commit after a release has a
+  higher development version (`0.2.0.devN`), so an update is visible and `pipx upgrade`
+  sees it.
+- Release workflow: pushing a `v*` tag builds, tests and publishes to PyPI with trusted
+  publishing and creates the GitHub release (`docs/releasing.md`).
+- Supply chain: committed `uv.lock` (checked in CI), `pip-audit` in CI, and Ruff's `S`
+  (security) rules.
 - API: `skills.install_skills` returns an `InstallResult` (`written`, `up_to_date`,
   `removed`) instead of a `(written, up_to_date)` tuple.
 

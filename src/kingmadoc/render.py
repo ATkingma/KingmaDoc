@@ -114,7 +114,8 @@ def _render(source: str, tmp: Path, n: int, doc: Path, d2: Sequence[str]) -> Pat
     src.write_text(source + "\n", encoding="utf-8")
     command = [*d2, "--pad", str(D2_PAD), str(src), str(out)]
     try:
-        result = subprocess.run(
+        # No shell; the program is the D2 binary from ensure_d2, the rest are file paths.
+        result = subprocess.run(  # noqa: S603
             command, capture_output=True, text=True, timeout=D2_TIMEOUT, check=False
         )
     except FileNotFoundError as exc:

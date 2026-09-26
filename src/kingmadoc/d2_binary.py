@@ -105,7 +105,8 @@ def _install(asset: str, sha256: str, binary: Path) -> None:
     with tempfile.TemporaryDirectory(dir=binary.parent) as tmp:
         archive = Path(tmp) / asset
         try:
-            with urllib.request.urlopen(url, timeout=DOWNLOAD_TIMEOUT) as response:
+            # A fixed https:// URL (D2_RELEASE_URL), never user input.
+            with urllib.request.urlopen(url, timeout=DOWNLOAD_TIMEOUT) as response:  # noqa: S310
                 archive.write_bytes(response.read())
         except (urllib.error.URLError, OSError) as exc:
             raise RenderError(f"Could not download D2 from {url}: {exc}. {_MANUAL}") from exc

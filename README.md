@@ -9,8 +9,8 @@ implementation, `verify` compares the code with that plan and lists the deviatio
 validation results. Use it as a Python CLI, or with no install at all as a Markdown skill
 for Claude Code, Cursor, Codex or GitHub Copilot.
 
-> **Status: 0.2.0.dev0 (in development; 0.1.1 was the first release).** `plan` is
-> complete. `kingmadoc --version` also shows the installed commit. The CLI's `verify` is a
+> **Status: 0.2.0 in development (0.1.1 was the first release).** `plan` is complete.
+> `kingmadoc --version` shows the version and the installed commit. The CLI's `verify` is a
 > work-in-progress stub that writes a placeholder; the Markdown skill performs the full
 > verification. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -24,11 +24,13 @@ Requires Python 3.11+.
 pipx install git+https://github.com/ATkingma/KingmaDoc
 ```
 
-Once KingmaDoc is published on PyPI, this becomes `pipx install kingmadoc`.
+Once KingmaDoc is published on PyPI, this becomes `pipx install kingmadoc`, and
+`pipx upgrade kingmadoc` updates it.
 
-To update to the latest commit, run `pipx reinstall kingmadoc`; `kingmadoc --version` then
-shows the new commit. (`pipx install --force` fails on recent pipx versions with "Failed
-to create virtual environment" and keeps the old version.)
+To update a git install to the latest commit, run `pipx reinstall kingmadoc`;
+`kingmadoc --version` then shows the new version and commit (every commit has a higher
+version, e.g. `0.2.0.dev43 (git 1a2b3c4)`). (`pipx install --force` fails on recent pipx
+versions with "Failed to create virtual environment" and keeps the old version.)
 
 Then, in your project, install the agent skills; that's all:
 

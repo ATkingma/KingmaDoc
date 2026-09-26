@@ -1,6 +1,10 @@
 """Tests for `kingmadoc --version`: it shows which commit is installed."""
 
 import json
+import re
+import tomllib
+from importlib import metadata
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -49,9 +53,19 @@ def test_cli_version_includes_the_build(monkeypatch: pytest.MonkeyPatch) -> None
     assert result.output.strip() == f"kingmadoc, version {__version__} (git abcdef1)"
 
 
-def test_version_is_a_development_version() -> None:
-    """Unreleased work is marked as such, so an update is visible in the version."""
-    assert __version__ == "0.2.0.dev0"
+def test_version_comes_from_the_installed_package() -> None:
+    """The version is set at build time from the git tag (hatch-vcs), not by hand."""
+    assert __version__ == metadata.version("kingmadoc")
+    assert re.fullmatch(r"\d+\.\d+\.\d+(\.dev\d+|(a|b|rc)\d+)?", __version__), __version__
+
+
+def test_pyproject_takes_the_version_from_git() -> None:
+    """Commits after a tag get a higher dev version, so `pipx upgrade` sees every update."""
+    config = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text("utf-8"))
+    version = config["tool"]["hatch"]["version"]
+
+    assert version["source"] == "vcs"
+    assert version["raw-options"]["local_scheme"] == "no-local-version"
 
 
 @pytest.mark.parametrize("raw", ["{not json", '{"vcs_info": "git"}', '{"dir_info": []}', "[]"])

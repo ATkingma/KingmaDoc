@@ -17,6 +17,8 @@ python3 .claude/skills/checking-conventions/scripts/check_conventions.py  # conv
 .venv/bin/ruff check . && .venv/bin/mypy                        # lint + mypy --strict
 ```
 
+The version comes from git tags (`hatch-vcs`; never set it by hand, `kingmadoc.__version__` reads the installed metadata); releases: `docs/releasing.md`. After changing dependencies in `pyproject.toml`, run `uv lock` (CI checks `uv.lock` and runs `pip-audit`). Ruff includes the `S` (bandit) rules; justify a `# noqa: S…` in a comment.
+
 A Stop hook (`.claude/settings.json`) runs the convention checker after every turn with uncommitted changes and feeds violations back. Fix them; for manual rules use the `checking-conventions` skill (repo dev tool, not the product skill).
 
 Regenerate `examples/verify-mode-plan.md` after changing the template or generator (it's output of running `plan` on this repo with `-o examples/verify-mode-plan.md --force`; keep its answers).
