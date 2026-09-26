@@ -42,6 +42,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decoded by a parts or arrows table instead of prose.
 - `explain.format` in `.featuredoc.yml` (`arc42` default, or `c4`).
 
+### Fixed
+
+- `explaining-code` never asks the user to install D2 (`kingmadoc render` downloads it)
+  and tells an outdated install to update with `pipx reinstall kingmadoc` instead of
+  `pipx install --force`, which fails on recent pipx versions.
+
 ## [0.1.1] - 2026-09-26
 
 First public release, including all fixes from the pre-release review. Upgrading from

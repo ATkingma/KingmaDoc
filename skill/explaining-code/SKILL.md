@@ -216,12 +216,13 @@ kingmadoc render docs/explain/<file>.md
 It replaces each diagram block with its image (`docs/explain/img/*.svg`) and moves the
 D2 source to `docs/explain/img/*.d2`, so the document shows only pictures. To change a
 diagram later, edit its `.d2` file and render again. The first time it downloads D2 by
-itself (checksum-verified).
+itself (checksum-verified). **Never ask the user to install D2**, even when `d2` is not
+on the PATH: `kingmadoc render` does not need it.
 
 - A diagram D2 rejects: fix it and run again.
-- `kingmadoc` has no `render` command: it is outdated; ask the user to update it
-  (`pipx install --force git+https://github.com/ATkingma/KingmaDoc`), then render.
-- `kingmadoc` is not installed at all: render with `d2` if available
+- `kingmadoc` has no `render` command: it is outdated; ask the user to update it with
+  `pipx reinstall kingmadoc` (or `pip install -U kingmadoc`), then render.
+- `kingmadoc` is not installed at all: render with `d2` if it happens to be available
   (save each diagram as `docs/explain/img/<file>-<n>.d2`, run
   `d2 --pad 20 <that>.d2 <that>.svg`, and replace the block with
   `![<caption>](img/<file>-<n>.svg)`); otherwise say that installing KingmaDoc gives

@@ -23,9 +23,13 @@ every problem in the [results table](#results) at the end.
 - [ ] Install the CLI (Python 3.11+) and check the version:
 
   ```bash
-  pipx install --force git+https://github.com/ATkingma/KingmaDoc   # --force: also upgrades
-  kingmadoc --version
+  pipx install git+https://github.com/ATkingma/KingmaDoc   # first time
+  pipx reinstall kingmadoc                                 # update to the latest commit
+  kingmadoc --version                                      # shows the installed commit
   ```
+
+  Do not update with `pipx install --force`: recent pipx versions (uv backend) fail with
+  "Failed to create virtual environment" and keep the old version.
 
 - [ ] Install both agent skills into the project (nothing else needs installing):
 

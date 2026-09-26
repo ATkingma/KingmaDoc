@@ -122,6 +122,15 @@ def test_skill_rules() -> None:
     assert "explain.format" in text
 
 
+def test_skill_never_sends_the_user_to_install_d2() -> None:
+    """render downloads D2 itself; updating uses `pipx reinstall` (pipx --force can fail)."""
+    text = _read(SKILL)
+
+    assert "Never ask the user to install D2" in text
+    assert "pipx reinstall kingmadoc" in text
+    assert "install --force" not in text
+
+
 def test_arc42_format() -> None:
     """The default format has the 12 arc42 sections, in order, with numbered figures."""
     block = _output_block(ARC42)

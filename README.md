@@ -26,6 +26,10 @@ pipx install git+https://github.com/ATkingma/KingmaDoc
 
 Once KingmaDoc is published on PyPI, this becomes `pipx install kingmadoc`.
 
+To update to the latest commit, run `pipx reinstall kingmadoc`; `kingmadoc --version` then
+shows the new commit. (`pipx install --force` fails on recent pipx versions with "Failed
+to create virtual environment" and keeps the old version.)
+
 Then, in your project, install the agent skills; that's all:
 
 ```bash
