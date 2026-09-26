@@ -61,8 +61,10 @@ def _doc(tmp_path: Path, text: str = DOC) -> Path:
     return path
 
 
-def test_diagrams_become_images_above_their_source(tmp_path: Path, d2: list[str]) -> None:
-    """Each D2 block gets an SVG next to the doc, embedded above the collapsed source."""
+def test_diagrams_become_images_and_their_source_moves_out(
+    tmp_path: Path, d2: list[str]
+) -> None:
+    """Each D2 block becomes an SVG; the document keeps only the image (source in img/)."""
     doc = _doc(tmp_path)
 
     images = render_file(doc, d2)
@@ -70,11 +72,12 @@ def test_diagrams_become_images_above_their_source(tmp_path: Path, d2: list[str]
     img = doc.parent / "img"
     assert images == [img / "shop-1.svg", img / "shop-2.svg"]
     assert (img / "shop-1.svg").read_text(encoding="utf-8") == "<svg>browser -> api: POST</svg>"
+    assert (img / "shop-1.d2").read_text(encoding="utf-8") == "browser -> api: POST\n"
     text = doc.read_text(encoding="utf-8")
     assert "![Overview](img/shop-1.svg)" in text
     assert "![How it works](img/shop-2.svg)" in text
-    assert text.index("![Overview]") < text.index("```d2\nbrowser -> api: POST\n```")
-    assert "<summary>Diagram source (D2)</summary>" in text
+    assert "```d2" not in text and "<details>" not in text
+    assert "<!-- kingmadoc:diagram img/shop-1.d2 -->" in text  # invisible in previews
     assert "```mermaid\nflowchart TD" in text  # other diagram languages are left alone
 
 
@@ -87,15 +90,16 @@ def test_rendering_twice_changes_nothing(tmp_path: Path, d2: list[str]) -> None:
     render_file(doc, d2)
 
     assert doc.read_text(encoding="utf-8") == first
-    assert sorted(p.name for p in (doc.parent / "img").iterdir()) == ["shop-1.svg", "shop-2.svg"]
+    assert sorted(p.name for p in (doc.parent / "img").iterdir()) == [
+        "shop-1.d2", "shop-1.svg", "shop-2.d2", "shop-2.svg",
+    ]
 
 
 def test_edited_source_updates_the_image(tmp_path: Path, d2: list[str]) -> None:
-    """Editing the diagram source and rendering again refreshes the image."""
+    """Editing the diagram's .d2 file and rendering again refreshes the image."""
     doc = _doc(tmp_path)
     render_file(doc, d2)
-    edited = doc.read_text(encoding="utf-8").replace("api -> db: insert", "api -> db: upsert")
-    doc.write_text(edited, encoding="utf-8")
+    (doc.parent / "img" / "shop-2.d2").write_text("api -> db: upsert\n", encoding="utf-8")
 
     render_file(doc, d2)
 
@@ -112,7 +116,7 @@ def test_removed_diagram_removes_its_image(tmp_path: Path, d2: list[str]) -> Non
     doc.write_text("# Explainer\n\n```d2\nx -> y\n```\n", encoding="utf-8")
     render_file(doc, d2)
 
-    assert sorted(p.name for p in (doc.parent / "img").iterdir()) == ["shop-1.svg"]
+    assert sorted(p.name for p in (doc.parent / "img").iterdir()) == ["shop-1.d2", "shop-1.svg"]
 
 
 def test_a_broken_diagram_changes_nothing(tmp_path: Path, d2: list[str]) -> None:
@@ -180,3 +184,30 @@ def test_real_d2_produces_svg(tmp_path: Path) -> None:
     assert len(images) == 2
     for image in images:
         assert "<svg" in image.read_text(encoding="utf-8")[:500]
+
+
+def test_older_folded_source_format_is_converted(tmp_path: Path, d2: list[str]) -> None:
+    """Explainers rendered with the earlier <details> format lose the folded source."""
+    old = (
+        "# Doc\n\n## Data\n\n<!-- kingmadoc:render -->\n![Data](img/shop-1.svg)\n\n"
+        "<details>\n<summary>Diagram source (D2)</summary>\n\n```d2\nuser -> order\n```\n\n"
+        "</details>\n<!-- /kingmadoc:render -->\n"
+    )
+    doc = _doc(tmp_path, old)
+
+    render_file(doc, d2)
+
+    text = doc.read_text(encoding="utf-8")
+    assert "<details>" not in text and "```d2" not in text
+    assert "![Data](img/shop-1.svg)" in text
+    assert (doc.parent / "img" / "shop-1.d2").read_text(encoding="utf-8") == "user -> order\n"
+
+
+def test_missing_source_file_is_an_error(tmp_path: Path, d2: list[str]) -> None:
+    """A diagram reference without its .d2 file says which file is missing."""
+    doc = _doc(tmp_path)
+    render_file(doc, d2)
+    (doc.parent / "img" / "shop-2.d2").unlink()
+
+    with pytest.raises(RenderError, match="shop-2.d2"):
+        render_file(doc, d2)

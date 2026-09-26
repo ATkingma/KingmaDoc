@@ -109,7 +109,7 @@ Try each scope:
 For each explainer in `docs/explain/`:
 
 - [ ] Open it in VS Code: it opens as a **rendered preview** with the pictures (SVG images
-      from `docs/explain/img/`), the diagram source folded below each one.
+      from `docs/explain/img/`) and no diagram code; the sources are in `img/*.d2`.
 - [ ] Figures are numbered and each is followed by a short table, not paragraphs of text.
 - [ ] After reading only "In short" and the pictures, you can say what is there and how
       the main actions flow. This is the real test.
@@ -119,8 +119,8 @@ For each explainer in `docs/explain/`:
 - [ ] "Where to find what" points to the files you would really open.
 - [ ] No risk list or code review; at most three questions, and only real ones.
 - [ ] `git status`: no source files changed, only files under `docs/explain/`.
-- [ ] Edit a diagram source, run `kingmadoc render docs/explain/<file>.md`: the image
-      updates.
+- [ ] Edit a diagram's `docs/explain/img/*.d2` file, run
+      `kingmadoc render docs/explain/<file>.md`: the image updates.
 
 ## 6. Verify
 
