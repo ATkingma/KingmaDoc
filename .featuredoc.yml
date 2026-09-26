@@ -76,3 +76,8 @@ extra_designs:
 adr:
   enabled: false
   template: adr.md.j2
+
+# Explainers written by the explaining-code agent skill ("explain this project").
+# format: arc42 (the 12 arc42 sections, default) or c4 (compact zoom-in).
+explain:
+  format: arc42

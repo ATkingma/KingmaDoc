@@ -107,6 +107,22 @@ def _design(name: str) -> ExtraDesignConfig:
     return ExtraDesignConfig(template=f"{name}.md.j2", models=DOCUMENT_MODELS[name])
 
 
+# Explainer formats of the `explaining-code` skill: arc42 (the 12 arc42 sections, default)
+# or c4 (a compact zoom-in: context, containers, components, flows, data).
+EXPLAIN_FORMATS: tuple[str, ...] = ("arc42", "c4")
+
+
+@dataclass(frozen=True)
+class ExplainConfig:
+    """Explainers written by the `explaining-code` agent skill.
+
+    Attributes:
+        format: One of :data:`EXPLAIN_FORMATS`.
+    """
+
+    format: str = "arc42"
+
+
 @dataclass(frozen=True)
 class AdrConfig:
     """Architecture Decision Records (the ``kingmadoc adr`` command).
@@ -133,6 +149,7 @@ class FeatureDocConfig:
     diagram_format: str = "mermaid"
     extra_designs: ExtraDesignsConfig = field(default_factory=ExtraDesignsConfig)
     adr: AdrConfig = field(default_factory=AdrConfig)
+    explain: ExplainConfig = field(default_factory=ExplainConfig)
 
 
 def load_config(root: Path, config_path: Path | None = None) -> FeatureDocConfig:
@@ -217,6 +234,7 @@ def parse_config(data: Any) -> FeatureDocConfig:
             "diagram_format",
             "extra_designs",
             "adr",
+            "explain",
         },
         "config",
     )
@@ -250,6 +268,7 @@ def parse_config(data: Any) -> FeatureDocConfig:
         diagram_format=diagram_format,
         extra_designs=_parse_extra_designs(data.get("extra_designs")),
         adr=_parse_adr(data.get("adr")),
+        explain=_parse_explain(data.get("explain")),
     )
 
 
@@ -321,6 +340,11 @@ extra_designs:
 adr:
   enabled: false
   template: adr.md.j2
+
+# Explainers written by the explaining-code agent skill ("explain this project").
+# format: arc42 (the 12 arc42 sections, default) or c4 (compact zoom-in).
+explain:
+  format: arc42
 """
 
 
@@ -393,6 +417,20 @@ def _parse_extra_designs(data: Any) -> ExtraDesignsConfig:
             models=models,
         )
     return ExtraDesignsConfig(**designs)
+
+
+def _parse_explain(data: Any) -> ExplainConfig:
+    defaults = ExplainConfig()
+    if data is None:
+        return defaults
+    data = _require_mapping(data, "explain")
+    _reject_unknown(data, {"format"}, "explain")
+    fmt = _get(data, "format", str, defaults.format, "explain.")
+    if fmt not in EXPLAIN_FORMATS:
+        raise ConfigError(
+            f"Unknown explain.format {fmt!r}; supported: {', '.join(EXPLAIN_FORMATS)}"
+        )
+    return ExplainConfig(format=fmt)
 
 
 def _parse_adr(data: Any) -> AdrConfig:
