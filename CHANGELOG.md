@@ -60,8 +60,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decoded by a parts or arrows table instead of prose.
 - `explain.format` in `.featuredoc.yml` (`arc42` default, or `c4`).
 
+### Security
+
+- `kingmadoc skills install`: paths in a skill folder's `.kingmadoc-skill.json` (which is
+  repository content) can no longer point outside that folder; a crafted manifest could
+  make the install delete files elsewhere.
+
 ### Fixed
 
+- `kingmadoc render`: a `README.md` and an `index.md` in one folder no longer share
+  `img/figure-<n>` and overwrite each other's images and D2 sources; only an explainer
+  folder's README uses `figure-<n>`. Images an explainer had under its old name
+  (`img/README-<n>`) are removed when it is rendered again.
 - `kingmadoc render` no longer fails with "Invalid cross-device link" (Errno 18) when
   the system temp dir is on another disk than the project.
 - `explaining-code` never asks the user to install D2 (`kingmadoc render` downloads it)

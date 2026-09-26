@@ -26,6 +26,7 @@ from pathlib import Path
 
 from kingmadoc.documents import write_document
 from kingmadoc.exceptions import RenderError
+from kingmadoc.explain import EXPLAINER_FILE, index_path
 
 # Seconds per diagram; D2's own default is 120, but diagrams in docs are small.
 D2_TIMEOUT = 60
@@ -85,6 +86,7 @@ def render_file(path: Path, d2: Sequence[str]) -> list[Path]:
             write_document(image_dir / f"{name}.d2", source.rstrip("\n") + "\n", overwrite=True)
             os.replace(svg, image_dir / f"{name}.svg")
     _remove_stale_files(image_dir, stem, set(names))
+    _remove_renamed_files(image_dir, path, items, set(names))
 
     for item, name in zip(reversed(items), reversed(names), strict=True):
         alt = _nearest_heading(text, item.start()) or "Diagram"
@@ -138,8 +140,31 @@ def _nearest_heading(text: str, position: int) -> str | None:
 
 
 def _image_stem(doc: Path) -> str:
-    """Images are named after the document; a folder's README or index uses ``figure``."""
-    return "figure" if doc.stem.lower() in ("readme", "index") else doc.stem
+    """Images are named after the document; an explainer folder's README uses ``figure``.
+
+    Only there: elsewhere a README.md and an index.md can share one ``img/`` folder.
+    """
+    if doc.name.lower() == EXPLAINER_FILE.lower() and index_path(doc) is not None:
+        return "figure"
+    return doc.stem
+
+
+def _remove_renamed_files(
+    image_dir: Path, doc: Path, items: Sequence[re.Match[str]], keep: set[str]
+) -> None:
+    """Delete this document's own files that it referred to under a name it no longer uses.
+
+    E.g. ``img/README-1.*`` of an explainer rendered before its images became ``figure-1``.
+    Only the document's own names (``<doc>-<n>``, ``figure-<n>``) are touched.
+    """
+    own = re.compile(rf"(?:{re.escape(doc.stem)}|figure)-\d+")
+    for item in items:
+        ref = item.group("ref")
+        name = Path(ref).stem if ref else ""
+        if name in keep or not own.fullmatch(name):
+            continue
+        for suffix in (".svg", ".d2"):
+            (image_dir / f"{name}{suffix}").unlink(missing_ok=True)
 
 
 def _remove_stale_files(image_dir: Path, stem: str, keep: set[str]) -> None:

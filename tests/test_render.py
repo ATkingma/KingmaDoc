@@ -270,3 +270,38 @@ def test_works_when_the_temp_dir_is_on_another_disk(
 
     assert [p.name for p in images] == ["shop-1.svg", "shop-2.svg"]
     assert sorted(p.name for p in doc.parent.iterdir()) == ["img", "shop.md"]  # no leftovers
+
+
+def test_readme_and_index_in_one_folder_keep_their_own_images(
+    tmp_path: Path, d2: list[str]
+) -> None:
+    """Outside explainer folders images keep the document's name, so they never collide."""
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "index.md").write_text(DOC, encoding="utf-8")
+    (docs / "README.md").write_text("# Readme\n\n```d2\nx -> y\n```\n", encoding="utf-8")
+
+    render_file(docs / "index.md", d2)
+    render_file(docs / "README.md", d2)
+
+    names = sorted(p.name for p in (docs / "img").iterdir())
+    assert names == [
+        "README-1.d2", "README-1.svg", "index-1.d2", "index-1.svg", "index-2.d2", "index-2.svg"
+    ]
+
+
+def test_images_under_an_old_name_are_removed(tmp_path: Path, d2: list[str]) -> None:
+    """An explainer rendered as img/README-<n> before moves to figure-<n> without leftovers."""
+    folder = tmp_path / "docs" / "explain" / "0001-shop"
+    (folder / "img").mkdir(parents=True)
+    (folder / "img" / "README-1.d2").write_text("a -> b\n", encoding="utf-8")
+    (folder / "img" / "README-1.svg").write_text("<svg/>", encoding="utf-8")
+    (folder / "README.md").write_text(
+        "# Shop\n\n<!-- kingmadoc:diagram img/README-1.d2 -->\n![Shop](img/README-1.svg)\n",
+        encoding="utf-8",
+    )
+
+    render_file(folder / "README.md", d2)
+
+    assert sorted(p.name for p in (folder / "img").iterdir()) == ["figure-1.d2", "figure-1.svg"]
+    assert (folder / "img" / "figure-1.d2").read_text(encoding="utf-8") == "a -> b\n"
