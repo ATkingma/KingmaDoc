@@ -4,7 +4,7 @@
 |---|---|
 | **Project** | KingmaDoc |
 | **Status** | Draft |
-| **Generated** | 2026-09-26T19:26+02:00 by KingmaDoc 0.1.1 |
+| **Generated** | 2026-09-26T19:41+02:00 by KingmaDoc 0.1.1 |
 
 > Generated before implementation. Fill in every _TODO_ and review everything marked
 > _(inferred)_: it comes from the codebase analysis and is a starting point, not the truth.
@@ -85,15 +85,15 @@ C4Container
 
 | Language | Files |
 |---|---|
-| python | 45 |
-| markdown | 14 |
+| python | 50 |
+| markdown | 15 |
 | jinja | 4 |
 | yaml | 2 |
 | json | 1 |
 | toml | 1 |
 
 <details>
-<summary>File tree (87 files)</summary>
+<summary>File tree (93 files)</summary>
 
 ```text
 KingmaDoc/
@@ -110,7 +110,8 @@ KingmaDoc/
 │       └── ci.yml
 ├── docs/
 │   ├── conventions.md
-│   └── index.md
+│   ├── index.md
+│   └── roadmap.md
 ├── examples/
 │   └── verify-mode-plan.md
 ├── scripts/
@@ -145,6 +146,7 @@ KingmaDoc/
 │   │   └── mermaid/
 │   │       └── …
 │   ├── test_adr.py
+│   ├── test_adr_numbering.py
 │   ├── test_analyzer.py
 │   ├── test_cli.py
 │   ├── test_cli_encoding.py
@@ -158,13 +160,17 @@ KingmaDoc/
 │   ├── test_diagram_backends.py
 │   ├── test_diagrams_mermaid.py
 │   ├── test_documents.py
+│   ├── test_duplicate_names.py
 │   ├── test_extra_designs_coverage.py
 │   ├── test_functional_design.py
 │   ├── test_generator.py
+│   ├── test_grep_performance.py
 │   ├── test_manifests.py
+│   ├── test_max_lines_per_file.py
 │   ├── test_output_dir.py
 │   ├── test_plan_e2e.py
 │   ├── test_skill.py
+│   ├── test_source_dirs.py
 │   ├── test_summary_slug_diagram_defaults.py
 │   ├── test_technical_design.py
 │   ├── test_templating_security.py
