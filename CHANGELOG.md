@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Beta channel: every commit on `main` that passes CI is published to PyPI as a
+  development version (`0.3.0.devN`); follow it with
+  `pipx install --pip-args=--pre kingmadoc` and `pipx upgrade kingmadoc`.
 - Fewer tokens for agents: `kingmadoc render` prints one line per document
   (`--verbose` lists every image), `kingmadoc explain facts --only routes,data` prints
   only the sections asked for, and `explaining-code` 5.6 works quietly, loads reference

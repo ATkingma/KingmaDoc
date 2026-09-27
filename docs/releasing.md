@@ -20,6 +20,15 @@ git has a higher version than the one before. Never set the version by hand.
    is the tag, installs the wheel and runs it (plan, skills install), publishes to PyPI,
    and creates the GitHub release with the changelog section and the built files.
 
+## Beta channel
+
+`release.yml` also runs after every successful CI run on `main` and publishes that
+commit's development version (`0.3.0.devN`) to PyPI with the same trusted publisher;
+it creates no GitHub release. pip installs development versions only with `--pre`, so
+`pipx install kingmadoc` keeps getting releases, and
+`pipx install --pip-args=--pre kingmadoc` follows the beta. A re-run of the same commit
+skips the upload (`skip-existing`). Pull requests never publish.
+
 ## Supply chain
 
 - `uv.lock` pins the development dependencies; CI fails when it is out of date

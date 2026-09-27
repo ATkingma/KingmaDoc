@@ -25,6 +25,14 @@ pipx install kingmadoc      # from PyPI
 pipx upgrade kingmadoc      # later: update to the newest release
 ```
 
+**Beta:** every commit on `main` that passes CI is published as a development version
+(e.g. `0.3.0.dev12`). Plain installs ignore it; to follow the beta:
+
+```bash
+pipx install --pip-args=--pre kingmadoc   # once (pipx remembers --pre)
+pipx upgrade kingmadoc                    # later: the newest beta
+```
+
 For the latest commit instead of a release, install from GitHub with
 `pipx install git+https://github.com/ATkingma/KingmaDoc` and update it with
 `pipx reinstall kingmadoc`; `kingmadoc --version` then shows the commit
