@@ -48,6 +48,10 @@ and hand-edited plans with a broken frontmatter fail `check` with a useful messa
 
 ## WP2. Verify in the CLI
 
+**Status:** done (unreleased): change detection (git), commands (detected or
+`verify:` in the config, run only with `--run-checks`), deviations (scope, requirements,
+architecture, the approval gate) and the plan's status.
+
 **Goal.** `kingmadoc verify <slug>` compares the code with the plan instead of
 writing a placeholder. Today only the agent skill does this.
 

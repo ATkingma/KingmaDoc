@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import PurePosixPath
 from typing import Any
 
@@ -31,6 +32,7 @@ KEYS: tuple[str, ...] = ("kingmadoc", "feature", "status", "requirements", "file
 REQUIREMENT_ID = re.compile(r"REQ-[1-9]\d*")
 _DEFINED = re.compile(r"^\s*[-*]\s+\*\*(REQ-[1-9]\d*)\*\*\s*:", re.M)
 _FRONTMATTER = re.compile(r"\A---\n(.*?)^---\n", re.S | re.M)
+_GENERATED_ROW = re.compile(r"^\|\s*\*\*Generated\*\*\s*\|\s*(\S+)", re.M)
 _STATUS_ROW = re.compile(r"^(\|\s*\*\*Status\*\*\s*\|\s*)[^|\n]*?(\s*\|)$", re.M)
 
 
@@ -108,6 +110,22 @@ def parse_plan(text: str) -> PlanMeta:
         requirements=tuple(data["requirements"] or ()),
         files_expected=tuple(data["files_expected"] or ()),
     )
+
+
+def generated_at(text: str) -> datetime | None:
+    """Return when the plan was generated (its **Generated** row), if it says.
+
+    Args:
+        text: The plan doc.
+
+    Returns:
+        The timestamp, or None when the row is missing or not an ISO date and time.
+    """
+    match = _GENERATED_ROW.search(text)
+    try:
+        return datetime.fromisoformat(match.group(1)) if match else None
+    except ValueError:
+        return None
 
 
 def set_status(text: str, status: str) -> str:

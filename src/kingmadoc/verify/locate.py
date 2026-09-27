@@ -1,12 +1,10 @@
-"""Phase 1 verify stub: finds the plan doc and writes a placeholder verification doc."""
+"""Where a feature's plan and verification docs are (``<output_dir>/<slug>-plan.md``)."""
 
 from __future__ import annotations
 
 import re
-from datetime import datetime
 from pathlib import Path
 
-from kingmadoc import __version__
 from kingmadoc.config import FeatureDocConfig, resolve_output_dir
 from kingmadoc.exceptions import VerificationError
 
@@ -60,48 +58,3 @@ def verify_output_path(plan_path: Path) -> Path:
         ``.../<slug>-verify.md``.
     """
     return plan_path.with_name(plan_path.name.removesuffix(PLAN_SUFFIX) + VERIFY_SUFFIX)
-
-
-def render_verify_stub(slug: str, plan_ref: str, *, now: datetime) -> str:
-    """Render the placeholder verification doc (pure: the caller passes the clock).
-
-    Args:
-        slug: Feature slug.
-        plan_ref: Plan doc path as shown to the reader (relative to the project root).
-        now: Generation timestamp.
-
-    Returns:
-        Markdown text.
-    """
-    plan_name = Path(plan_ref).name
-    return f"""# Verification: {slug}
-
-| | |
-|---|---|
-| **Plan** | [`{plan_ref}`]({plan_name}) |
-| **Status** | Work in progress: not verified |
-| **Generated** | {now.isoformat(timespec="minutes")} by KingmaDoc {__version__} |
-
-> [!WARNING]
-> **TODO: automatic verification is not implemented yet (planned for phase 2).**
-> This file is a placeholder. KingmaDoc has not compared the plan with the code and has
-> not run any build, test or lint command. Nothing below is checked; fill it in by hand
-> or regenerate it once `verify` is complete.
-
-## Deviations
-
-_TODO: where the implementation differs from the plan (scope, containers, assumptions),
-and why._
-
-- _TODO_
-
-## Validation results
-
-_TODO: results of the checks that prove the feature works._
-
-| Check | Command | Result |
-|---|---|---|
-| Build | _TODO_ | _not run_ |
-| Tests | _TODO_ | _not run_ |
-| Lint | _TODO_ | _not run_ |
-"""

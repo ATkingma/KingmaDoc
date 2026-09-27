@@ -128,6 +128,23 @@ class ExplainConfig:
 
 
 @dataclass(frozen=True)
+class VerifyConfig:
+    """Checks run by ``kingmadoc verify --run-checks``.
+
+    Attributes:
+        build: Build command; None: detected from the project files.
+        test: Test command; None: detected.
+        lint: Lint command; None: detected.
+        timeout: Seconds each command may run.
+    """
+
+    build: str | None = None
+    test: str | None = None
+    lint: str | None = None
+    timeout: int = 600
+
+
+@dataclass(frozen=True)
 class AdrConfig:
     """Architecture Decision Records (the ``kingmadoc adr`` command).
 
@@ -154,6 +171,7 @@ class FeatureDocConfig:
     extra_designs: ExtraDesignsConfig = field(default_factory=ExtraDesignsConfig)
     adr: AdrConfig = field(default_factory=AdrConfig)
     explain: ExplainConfig = field(default_factory=ExplainConfig)
+    verify: VerifyConfig = field(default_factory=VerifyConfig)
 
 
 def load_config(root: Path, config_path: Path | None = None) -> FeatureDocConfig:
@@ -239,6 +257,7 @@ def parse_config(data: Any) -> FeatureDocConfig:
             "extra_designs",
             "adr",
             "explain",
+            "verify",
         },
         "config",
     )
@@ -273,6 +292,7 @@ def parse_config(data: Any) -> FeatureDocConfig:
         extra_designs=_parse_extra_designs(data.get("extra_designs")),
         adr=_parse_adr(data.get("adr")),
         explain=_parse_explain(data.get("explain")),
+        verify=_parse_verify(data.get("verify")),
     )
 
 
@@ -351,6 +371,14 @@ adr:
 explain:
   format: arc42
   documents: single
+
+# Verification (`kingmadoc verify`). Build, test and lint commands; null means detected
+# from the project files. They only run with `kingmadoc verify --run-checks`.
+verify:
+  build: null
+  test: null
+  lint: null
+  timeout: 600  # seconds per command
 """
 
 
@@ -442,6 +470,24 @@ def _parse_explain(data: Any) -> ExplainConfig:
             f"Unknown explain.documents {documents!r}; supported: {', '.join(EXPLAIN_DOCUMENTS)}"
         )
     return ExplainConfig(format=fmt, documents=documents)
+
+
+def _parse_verify(data: Any) -> VerifyConfig:
+    defaults = VerifyConfig()
+    if data is None:
+        return defaults
+    data = _require_mapping(data, "verify")
+    _reject_unknown(data, {"build", "test", "lint", "timeout"}, "verify")
+    commands: dict[str, str | None] = {}
+    for key in ("build", "test", "lint"):
+        value = data.get(key)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise ConfigError(f"verify.{key} must be a command (a non-empty string) or null")
+        commands[key] = value
+    timeout = _get(data, "timeout", int, defaults.timeout, "verify.")
+    if timeout < 1:
+        raise ConfigError("verify.timeout must be at least 1 (seconds)")
+    return VerifyConfig(**commands, timeout=timeout)
 
 
 def _parse_adr(data: Any) -> AdrConfig:

@@ -148,7 +148,11 @@ Make a small change to the feature from test 5 (or leave it as is), then:
 
 - [ ] The agent (skill verify mode) writes `docs/features/<slug>-verify.md` with
       deviations and the build/test/lint results, and only claims checks it really ran.
-- [ ] `kingmadoc verify <slug>` (CLI) writes its work-in-progress placeholder and says so.
+- [ ] `kingmadoc verify <slug>` (CLI) lists the files changed since the plan, expected
+      files never touched, changes outside the plan and `REQ-n` no test mentions, and sets
+      the plan's status (`implemented` / `partial`).
+- [ ] Without `--run-checks` no project command runs; with it, build/test/lint results
+      appear with the end of their output.
 
 ## 7. Decision records
 

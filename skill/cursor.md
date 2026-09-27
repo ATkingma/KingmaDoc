@@ -140,6 +140,11 @@ the diagrams, but never beyond what the user said or the code shows.
 
 ## Mode 2: verify
 
+With the CLI, start with `kingmadoc verify <slug>`: it writes the verify doc with the
+changed files, scope and requirement deviations, and sets the plan's status. Add
+`--run-checks` only when the user agrees to run the project's commands. Then go through
+the steps below to add what it cannot see (behaviour, assumptions, risks).
+
 ### Step 1. Find the plan
 
 - If the user gave a slug, use `<output_dir>/<slug>-plan.md`. If they gave a path or a

@@ -10,7 +10,8 @@ import yaml
 from click.testing import CliRunner
 
 from kingmadoc.cli import cli
-from kingmadoc.verify.stub import render_verify_stub
+from kingmadoc.verify.changes import Changes
+from kingmadoc.verify.report import render_verify
 
 SKILL = Path(__file__).resolve().parents[1] / "skill" / "SKILL.md"
 REFERENCE = SKILL.parent / "reference"
@@ -122,12 +123,15 @@ def test_plan_format_has_the_cli_frontmatter(tmp_path: Path) -> None:
     assert "- **REQ-1**:" in skill_block
 
 
-def test_verify_format_matches_cli_stub() -> None:
-    """The skill's verify format has exactly the headings of the CLI stub."""
-    stub = render_verify_stub("add-login", "docs/features/add-login-plan.md",
-                              now=datetime(2026, 1, 1, tzinfo=UTC))
+def test_verify_format_matches_cli_verify() -> None:
+    """The skill's verify format has exactly the headings `kingmadoc verify` writes."""
+    doc = render_verify(
+        "add-login", "docs/features/add-login-plan.md", now=datetime(2026, 1, 1, tzinfo=UTC),
+        status="Matches plan", changes=Changes("abc1234", (), "", None), deviations=(),
+        commands=(), results=(),
+    )
 
-    assert _headings(_format_block("Verify doc")) == _headings(stub)
+    assert _headings(_format_block("Verify doc")) == _headings(doc)
 
 
 def test_technical_design_format_matches_template(tmp_path: Path) -> None:

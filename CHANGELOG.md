@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `kingmadoc verify <slug>` compares the code with its plan (roadmap WP2) instead of
+  writing a placeholder: the files changed since the plan (git, including uncommitted
+  work), expected files never touched, changes outside `files_expected`, `REQ-n` no test
+  or commit message mentions, containers added or gone, and code written while the plan
+  was still draft. Build, test and lint commands (from `verify:` in `.featuredoc.yml`,
+  or detected: Makefile, npm, Cargo, Go, .NET, pytest, Ruff) run only with
+  `--run-checks`, without a shell and with a timeout. The plan's status becomes
+  `implemented` or `partial`. `--force` overwrites an existing verify doc.
 - Machine-readable plans (roadmap WP1): every plan starts with YAML frontmatter
   (`kingmadoc: 1`, `feature`, `status`, `requirements`, `files_expected`) and has a
   "Requirements" section with `REQ-n` IDs (from the acceptance criteria, else a TODO in

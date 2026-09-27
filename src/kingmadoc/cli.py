@@ -30,21 +30,37 @@ from kingmadoc.explain import (
 from kingmadoc.facts.branch import branch_changes
 from kingmadoc.facts.collect import collect_facts, facts_markdown, facts_to_dict
 from kingmadoc.git import short_head
-from kingmadoc.plan.analyzer import CodebaseReport, analyze, format_report, report_to_dict
+from kingmadoc.plan.analyzer import (
+    TEST_DIR_NAMES,
+    CodebaseReport,
+    analyze,
+    format_report,
+    report_to_dict,
+)
 from kingmadoc.plan.generator import (
     build_plan_context,
     build_questions,
     default_output_path,
     enabled_extra_designs,
     extra_design_path,
+    infer_containers,
     needs_dependencies,
     render_extra_design,
     render_plan,
 )
-from kingmadoc.plandoc import check_plan, parse_plan, set_status
+from kingmadoc.plandoc import check_plan, generated_at, parse_plan, set_status
 from kingmadoc.render import render_file
 from kingmadoc.skills import AGENT_DIRS, install_skills
-from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
+from kingmadoc.verify.changes import detect_changes
+from kingmadoc.verify.commands import MARKER_FILES, detect_commands, run_check
+from kingmadoc.verify.deviations import (
+    Deviation,
+    find_deviations,
+    mentioned_requirements,
+    planned_containers,
+)
+from kingmadoc.verify.locate import find_plan, verify_output_path
+from kingmadoc.verify.report import render_verify, verify_status
 from kingmadoc.vscode import enable_markdown_preview, preview_enabled
 
 ROOT_OPTION = click.option(
@@ -223,27 +239,94 @@ def _ask(questions: list[str]) -> list[tuple[str, str]]:
     help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
 )
 @click.option("--force", is_flag=True, help="Overwrite an existing verification doc.")
-def verify(slug: str, root: Path, config_path: Path | None, force: bool) -> None:
-    """[WORK IN PROGRESS] Write a placeholder verification doc for plan SLUG.
+@click.option(
+    "--run-checks",
+    is_flag=True,
+    help="Also run the project's build, test and lint commands (runs the repository's code).",
+)
+def verify(
+    slug: str, root: Path, config_path: Path | None, force: bool, run_checks: bool
+) -> None:
+    """Compare the code with plan SLUG and write SLUG-verify.md next to it.
 
-    Reads <output_dir>/SLUG-plan.md and writes SLUG-verify.md next to it, then prints
-    its path. The comparison against the code is not implemented yet (phase 2).
+    Looks at every file changed since the plan was generated (git, including uncommitted
+    work): expected files never touched, changes outside the plan, requirements no test or
+    commit mentions, and containers added or gone. Sets the plan's status to implemented
+    or partial. Build, test and lint commands only run with --run-checks.
     """
     try:
         config = load_config(root, config_path)
         root = root.resolve()
         plan_path = find_plan(root, config, slug)
-        content = render_verify_stub(
-            slug,
-            plan_path.relative_to(root).as_posix(),
-            now=datetime.now().astimezone(),
+        output = verify_output_path(plan_path)
+        if output.exists() and not force:
+            raise KingmaDocError(f"{output} already exists; use --force to overwrite it")
+        text = plan_path.read_text(encoding="utf-8")
+        problems = check_plan(text, slug=slug)
+        meta = None if problems else parse_plan(text)
+        report = analyze(root, config.analyzer)
+        docs_dir = plan_path.parent.relative_to(root).as_posix()
+        changes = detect_changes(
+            root, generated_at(text), ignore=(docs_dir + "/",),
+            plan=plan_path.relative_to(root).as_posix(),
         )
-        written = write_document(verify_output_path(plan_path), content, overwrite=force)
+        mentioned = mentioned_requirements(
+            [changes.messages, *(_read_quietly(root / f) for f in report.files if _is_test(f))]
+        )
+        project_name = config.project.name or root.name
+        current = tuple(c["name"] for c in infer_containers(report, project_name))
+        deviations = find_deviations(
+            meta, changes, mentioned, planned_containers(text), current
+        )
+        if problems:
+            deviations = (
+                Deviation("Process", "the plan passes `kingmadoc check`", problems[0], "Medium"),
+                *deviations,
+            )
+        commands = detect_commands(_marker_files(root), {
+            "build": config.verify.build, "test": config.verify.test, "lint": config.verify.lint,
+        })
+        timeout = config.verify.timeout
+        results = [run_check(root, c, timeout) for c in commands] if run_checks else []
+        plan_problem = "the plan has no valid frontmatter" if problems else None
+        status = verify_status(changes, deviations, results, plan_problem)
+        documents = [(output, render_verify(
+            slug, plan_path.relative_to(root).as_posix(), now=datetime.now().astimezone(),
+            status=status, changes=changes, deviations=deviations, commands=commands,
+            results=results, plan_problem=plan_problem,
+        ))]
+        if meta is not None and meta.status != "draft" and status != "Not verified":
+            new = "implemented" if status == "Matches plan" else "partial"
+            documents.append((plan_path, set_status(text, new)))
+        write_documents(documents, overwrite=True)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    click.echo("verify is a work-in-progress stub: nothing was checked.", err=True)
-    click.echo(written)
+    failed = sum(r.passed is False for r in results)
+    summary = f"{status}: {len(deviations)} deviation(s)"
+    summary += f", {failed} failed check(s)" if results else ", checks not run (--run-checks)"
+    click.echo(summary, err=True)
+    click.echo(output)
+
+
+def _is_test(path: Path) -> bool:
+    return any(part in TEST_DIR_NAMES for part in path.parts[:-1]) or path.name.startswith(
+        "test_"
+    )
+
+
+def _read_quietly(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _marker_files(root: Path) -> dict[str, str]:
+    """The top-level files that name the project's commands (see detect_commands)."""
+    names = [n for n in MARKER_FILES if (root / n).is_file()]
+    names += [p.name for p in root.glob("*") if p.suffix in (".sln", ".csproj") and p.is_file()]
+    return {name: _read_quietly(root / name) for name in names}
 
 
 CONFIG_OPTION = click.option(
