@@ -106,6 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `img/figure-<n>` and overwrite each other's images and D2 sources; only an explainer
   folder's README uses `figure-<n>`. Images an explainer had under its old name
   (`img/README-<n>`) are removed when it is rendered again.
+- Analyzer: imports in test directories no longer add frameworks to the detected stack
+  (tests of a code generator mentioned Django without the project using it).
 - `kingmadoc --version` no longer crashes on an unusual `direct_url.json`.
 - The explainer index escapes `|`, `[` and `]` in titles, ignores `#` lines in code
   blocks, lists explainers from before the folders (`docs/explain/<slug>.md`), and never

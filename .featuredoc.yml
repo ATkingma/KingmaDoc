@@ -36,6 +36,7 @@ analyzer:
     - "dist"
     - "build"
     - "*.egg-info"
+    - "evals"  # fixture projects for the skill evaluations
 
 # Diagrams included in the plan doc.
 diagrams:

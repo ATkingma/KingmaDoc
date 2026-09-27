@@ -136,3 +136,17 @@ def test_plan_json_outputs_report(tmp_path: Path) -> None:
     assert data == report_to_dict(analyze(tmp_path, AnalyzerConfig(), with_dependencies=True))
     assert data["entry_points"] == ["main.py"]
     assert not (tmp_path / "docs").exists()
+
+
+def test_imports_in_tests_do_not_set_the_stack(tmp_path: Path) -> None:
+    """Tests (and source samples in them) are not the project's stack."""
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_models.py").write_text(
+        'SOURCE = """\nfrom django.db import models\n"""\n', encoding="utf-8"
+    )
+    (tmp_path / "app.py").write_text("import click\n", encoding="utf-8")
+
+    stack = analyze(tmp_path, AnalyzerConfig()).detected_stack
+
+    assert "Django" not in stack
+    assert "Click" in stack

@@ -584,9 +584,14 @@ def _mapping(value: Any) -> Mapping[str, Any]:
 
 
 def _grep_frameworks(root: Path, files: list[Path], max_lines: int) -> set[str]:
-    """Detect frameworks by scanning the first ``max_lines`` lines of source files."""
+    """Detect frameworks by scanning the first ``max_lines`` lines of source files.
+
+    Files in test directories are skipped: what tests import is not the stack.
+    """
     found: set[str] = set()
     for f in files:
+        if _in_test_dir(f):
+            continue
         remaining = {
             name: pattern
             for name, (suffixes, pattern) in GREP_PATTERNS.items()
