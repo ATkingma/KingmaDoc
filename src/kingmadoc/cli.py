@@ -41,6 +41,7 @@ from kingmadoc.plan.generator import (
     render_extra_design,
     render_plan,
 )
+from kingmadoc.plandoc import check_plan, parse_plan, set_status
 from kingmadoc.render import render_file
 from kingmadoc.skills import AGENT_DIRS, install_skills
 from kingmadoc.verify.stub import find_plan, render_verify_stub, verify_output_path
@@ -243,6 +244,67 @@ def verify(slug: str, root: Path, config_path: Path | None, force: bool) -> None
 
     click.echo("verify is a work-in-progress stub: nothing was checked.", err=True)
     click.echo(written)
+
+
+CONFIG_OPTION = click.option(
+    "-c",
+    "--config",
+    "config_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
+)
+
+
+@cli.command()
+@click.argument("slug")
+@ROOT_OPTION
+@CONFIG_OPTION
+def check(slug: str, root: Path, config_path: Path | None) -> None:
+    """Check plan SLUG: its frontmatter and requirement IDs (exit 1 on a problem)."""
+    path, text = _read_plan(root, config_path, slug)
+    problems = check_plan(text, slug=slug)
+    if problems:
+        raise click.ClickException(
+            f"{path} has {len(problems)} problem(s):\n" + "\n".join(f"- {p}" for p in problems)
+        )
+    meta = parse_plan(text)
+    count = len(meta.requirements)
+    click.echo(f"{path}: OK ({meta.status}, {count} requirement{'s' if count != 1 else ''})")
+
+
+@cli.command()
+@click.argument("slug")
+@ROOT_OPTION
+@CONFIG_OPTION
+def approve(slug: str, root: Path, config_path: Path | None) -> None:
+    """Approve plan SLUG (status draft -> approved): the gate before writing code."""
+    path, text = _read_plan(root, config_path, slug)
+    problems = check_plan(text, slug=slug)
+    if problems:
+        raise click.ClickException(
+            f"{path} is not approved; fix it first (kingmadoc check {slug}):\n"
+            + "\n".join(f"- {p}" for p in problems)
+        )
+    status = parse_plan(text).status
+    if status != "draft":
+        raise click.ClickException(f"{path} is already {status}")
+    try:
+        write_document(path, set_status(text, "approved"), overwrite=True)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"{path}: approved")
+
+
+def _read_plan(root: Path, config_path: Path | None, slug: str) -> tuple[Path, str]:
+    try:
+        config = load_config(root, config_path)
+        path = find_plan(root.resolve(), config, slug)
+        return path, path.read_text(encoding="utf-8")
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    except OSError as exc:
+        raise click.ClickException(f"Cannot read the plan: {exc}") from exc
 
 
 @cli.command()

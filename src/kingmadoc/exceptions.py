@@ -39,3 +39,7 @@ class ExplainError(KingmaDocError):
 
 class FactsError(KingmaDocError):
     """Raised when facts about the code cannot be collected (e.g. an unknown git base)."""
+
+
+class PlanFormatError(KingmaDocError):
+    """Raised when a plan doc's frontmatter or requirements are not valid (``kingmadoc check``)."""

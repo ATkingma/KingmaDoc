@@ -22,6 +22,9 @@ few days, **L** ≈ a week or more. Rule IDs (B1, C3, …) refer to
 
 ## WP1. Machine-readable plans
 
+**Status:** done (unreleased): frontmatter, `REQ-n`, `kingmadoc check`, `kingmadoc approve`,
+and the skill's format.
+
 **Goal.** A plan doc that tools can read reliably, not just humans.
 
 **Why.** `verify` (WP2) needs to know what was promised. Scraping Markdown headings

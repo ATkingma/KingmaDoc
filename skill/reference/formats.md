@@ -7,13 +7,20 @@ Use exactly these headings, in this order. Text in `<angle brackets>` is filled 
 ### Plan doc: `docs/features/<slug>-plan.md`
 
 ````markdown
+---
+kingmadoc: 1
+feature: <slug>
+status: draft
+requirements: [REQ-1, <one ID per requirement below>]
+files_expected: [<existing files or folders the user said will change>]
+---
 # Feature: <summary>
 
 |               |                                                                           |
 | ------------- | ------------------------------------------------------------------------- |
 | **Project**   | <project name>                                                            |
 | **Status**    | Draft                                                                     |
-| **Generated** | <ISO date and time, e.g. 2026-09-26T14:05+02:00> by KingmaDoc skill 1.0.0 |
+| **Generated** | <ISO date and time, e.g. 2026-09-26T14:05+02:00> by KingmaDoc skill 1.1.0 |
 
 > Generated before implementation. Fill in every _TODO_ and review everything marked
 > _(inferred)_: it comes from the codebase analysis and is a starting point, not the truth.
@@ -33,6 +40,11 @@ Use exactly these headings, in this order. Text in `<angle brackets>` is filled 
 **Out of scope**
 
 - <from the answers, or> _TODO: what it deliberately does not do._
+
+## Requirements
+
+- **REQ-1**: <WHEN <trigger> THE SYSTEM SHALL <response>, from the acceptance criteria, or>
+  _TODO: WHEN <trigger> THE SYSTEM SHALL <response>._
 
 ## Assumptions
 
@@ -160,7 +172,7 @@ Each section lists `_TODO: …_` bullets for what is not yet known; the dependen
 | ------------- | ------------------------------------------------ |
 | **Plan**      | [`<output_dir>/<slug>-plan.md`](<slug>-plan.md)  |
 | **Status**    | <Matches plan / Deviations found / Not verified> |
-| **Generated** | <ISO date and time> by KingmaDoc skill 1.0.0     |
+| **Generated** | <ISO date and time> by KingmaDoc skill 1.1.0     |
 
 > Verified by an AI agent against the code at <commit hash, or "uncommitted changes">.
 > Review every deviation; the agent reports, it does not decide.

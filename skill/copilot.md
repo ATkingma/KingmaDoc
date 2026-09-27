@@ -1,4 +1,4 @@
-<!-- KingmaDoc 1.0.0 for GitHub Copilot. Generated from skill/SKILL.md by scripts/build_skill_variants.py; do not edit by hand.
+<!-- KingmaDoc 1.1.0 for GitHub Copilot. Generated from skill/SKILL.md by scripts/build_skill_variants.py; do not edit by hand.
      Install as: .github/copilot-instructions.md -->
 
 # KingmaDoc
@@ -113,6 +113,12 @@ the diagrams, but never beyond what the user said or the code shows.
 - Fill every section of the [plan format](#plan-doc-docsfeaturesslug-planmd) in order.
   Scope, assumptions and risks come from the user's answers; anything not covered stays
   a `_TODO: …_` line. Add answered questions under "Answered while planning".
+- **Frontmatter** first (`---` YAML): `kingmadoc: 1`, `feature: <slug>`, `status: draft`,
+  `requirements` listing every ID of the Requirements section, and `files_expected` with
+  the existing files or folders from answer 4 (`[]` if none). Tools read this block.
+- **Requirements**: each acceptance criterion from answer 5 becomes `- **REQ-n**:` in EARS
+  (`WHEN <trigger> THE SYSTEM SHALL <response>`, `IF <condition> THEN THE SYSTEM SHALL …`),
+  numbered from 1; none given: one `_TODO_` requirement.
 - External systems named in answer 3 go into the C4 Context diagram as `System_Ext`.
 - Follow the [diagram rules](#diagram-rules).
 
@@ -126,7 +132,9 @@ the diagrams, but never beyond what the user said or the code shows.
    order. Fill in only what the answers and code support; leave the rest as TODOs.
 2. Show the paths and a three-line summary (scope, biggest risk, open questions count).
 3. Ask the user to reply **yes** (approve), **edit <changes>**, or **stop**. On
-   **edit**, update the doc and ask again. On **yes**, set **Status** to `Approved`.
+   **edit**, update the doc and ask again. On **yes**, run `kingmadoc approve <slug>`
+   (with the CLI; otherwise set `status: approved` in the frontmatter and **Status** to
+   `Approved`). With the CLI, `kingmadoc check <slug>` validates the plan first.
    Do not change any source code before the plan is approved.
 
 ## Mode 2: verify
@@ -142,7 +150,8 @@ the diagrams, but never beyond what the user said or the code shows.
 
 ### Step 2. Read the actual code
 
-1. Read the whole plan doc: scope, assumptions, risks, both diagrams, open questions.
+1. Read the whole plan doc: its frontmatter (`requirements`, `files_expected`), scope,
+   requirements, assumptions, risks, both diagrams, open questions.
 2. Find what changed for this feature: `git log --since="<Generated date>" --stat`
    and `git diff` (including uncommitted changes). Without git, use the modules named
    in the plan and the containers in the C4 Container diagram.
@@ -154,6 +163,8 @@ the diagrams, but never beyond what the user said or the code shows.
 Check each item and record every mismatch as a deviation:
 
 - **Scope**: every in-scope item is implemented; no out-of-scope item was built.
+- **Requirements**: each `REQ-n` is met (name the code or test), partly met, or not met.
+  Files in `files_expected` that were never touched are deviations too.
 - **Architecture**: containers and external systems in the code match the C4
   diagrams (new services, databases, queues or APIs count as deviations).
 - **Assumptions**: still true in the code (e.g. "uses the existing auth module").
@@ -223,13 +234,20 @@ Use exactly these headings, in this order. Text in `<angle brackets>` is filled 
 ### Plan doc: `docs/features/<slug>-plan.md`
 
 ````markdown
+---
+kingmadoc: 1
+feature: <slug>
+status: draft
+requirements: [REQ-1, <one ID per requirement below>]
+files_expected: [<existing files or folders the user said will change>]
+---
 # Feature: <summary>
 
 |               |                                                                           |
 | ------------- | ------------------------------------------------------------------------- |
 | **Project**   | <project name>                                                            |
 | **Status**    | Draft                                                                     |
-| **Generated** | <ISO date and time, e.g. 2026-09-26T14:05+02:00> by KingmaDoc skill 1.0.0 |
+| **Generated** | <ISO date and time, e.g. 2026-09-26T14:05+02:00> by KingmaDoc skill 1.1.0 |
 
 > Generated before implementation. Fill in every _TODO_ and review everything marked
 > _(inferred)_: it comes from the codebase analysis and is a starting point, not the truth.
@@ -249,6 +267,11 @@ Use exactly these headings, in this order. Text in `<angle brackets>` is filled 
 **Out of scope**
 
 - <from the answers, or> _TODO: what it deliberately does not do._
+
+## Requirements
+
+- **REQ-1**: <WHEN <trigger> THE SYSTEM SHALL <response>, from the acceptance criteria, or>
+  _TODO: WHEN <trigger> THE SYSTEM SHALL <response>._
 
 ## Assumptions
 
@@ -376,7 +399,7 @@ Each section lists `_TODO: …_` bullets for what is not yet known; the dependen
 | ------------- | ------------------------------------------------ |
 | **Plan**      | [`<output_dir>/<slug>-plan.md`](<slug>-plan.md)  |
 | **Status**    | <Matches plan / Deviations found / Not verified> |
-| **Generated** | <ISO date and time> by KingmaDoc skill 1.0.0     |
+| **Generated** | <ISO date and time> by KingmaDoc skill 1.1.0     |
 
 > Verified by an AI agent against the code at <commit hash, or "uncommitted changes">.
 > Review every deviation; the agent reports, it does not decide.

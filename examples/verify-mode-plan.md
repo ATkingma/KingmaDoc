@@ -1,10 +1,17 @@
+---
+kingmadoc: 1
+feature: add-a-verify-mode-that-compares-a-plan
+status: draft
+requirements: [REQ-1]
+files_expected: ["src/kingmadoc/cli.py", "src/kingmadoc/verify"]
+---
 # Feature: Add a verify mode that compares a plan doc against the implemented code.
 
 | | |
 |---|---|
 | **Project** | KingmaDoc |
 | **Status** | Draft |
-| **Generated** | 2026-09-26T19:41+02:00 by KingmaDoc 0.2.0.dev0 |
+| **Generated** | 2026-09-27T13:21+02:00 by KingmaDoc 0.2.0.dev42 |
 
 > Generated before implementation. Fill in every _TODO_ and review everything marked
 > _(inferred)_: it comes from the codebase analysis and is a starting point, not the truth.
@@ -24,6 +31,12 @@ Add a verify mode that compares a plan doc against the implemented code.
 **Out of scope**
 
 - _TODO: what it deliberately does not do._
+
+## Requirements
+
+_Rewrite each in EARS: WHEN <trigger> THE SYSTEM SHALL <response>._
+
+- **REQ-1**: verify produces a doc listing deviations from the plan doc and test/lint results
 
 ## Assumptions
 
@@ -85,15 +98,15 @@ C4Container
 
 | Language | Files |
 |---|---|
-| python | 50 |
-| markdown | 15 |
-| jinja | 4 |
-| yaml | 2 |
+| python | 84 |
+| markdown | 25 |
+| jinja | 6 |
+| yaml | 3 |
 | json | 1 |
 | toml | 1 |
 
 <details>
-<summary>File tree (93 files)</summary>
+<summary>File tree (141 files)</summary>
 
 ```text
 KingmaDoc/
@@ -107,16 +120,27 @@ KingmaDoc/
 │   │   ├── bug_report.md
 │   │   └── feature_request.md
 │   └── workflows/
-│       └── ci.yml
+│       ├── ci.yml
+│       └── release.yml
 ├── docs/
 │   ├── conventions.md
 │   ├── index.md
-│   └── roadmap.md
+│   ├── releasing.md
+│   ├── roadmap.md
+│   └── test-plan.md
 ├── examples/
 │   └── verify-mode-plan.md
 ├── scripts/
-│   └── build_skill_variants.py
+│   ├── build_skill_variants.py
+│   └── run_evals.py
 ├── skill/
+│   ├── explaining-code/
+│   │   ├── reference/
+│   │   │   └── …
+│   │   └── SKILL.md
+│   ├── reference/
+│   │   ├── diagram-rules.md
+│   │   └── formats.md
 │   ├── codex.md
 │   ├── copilot.md
 │   ├── cursor.md
@@ -125,6 +149,8 @@ KingmaDoc/
 │   └── kingmadoc/
 │       ├── diagrams/
 │       │   └── …
+│       ├── facts/
+│       │   └── …
 │       ├── plan/
 │       │   └── …
 │       ├── templates/
@@ -132,13 +158,21 @@ KingmaDoc/
 │       ├── verify/
 │       │   └── …
 │       ├── __init__.py
+│       ├── about.py
 │       ├── adr.py
 │       ├── cli.py
 │       ├── config.py
+│       ├── d2_binary.py
 │       ├── documents.py
 │       ├── exceptions.py
+│       ├── explain.py
+│       ├── git.py
 │       ├── naming.py
-│       └── templating.py
+│       ├── plandoc.py
+│       ├── render.py
+│       ├── skills.py
+│       ├── templating.py
+│       └── vscode.py
 ├── tests/
 │   ├── fixtures/
 │   │   ├── backends/
@@ -157,11 +191,21 @@ KingmaDoc/
 │   ├── test_config.py
 │   ├── test_config_poetry.py
 │   ├── test_config_shape.py
+│   ├── test_d2_download.py
+│   ├── test_dependencies.py
+│   ├── test_dependency_graph_model.py
+│   ├── test_design_models.py
 │   ├── test_diagram_backends.py
 │   ├── test_diagrams_mermaid.py
 │   ├── test_documents.py
 │   ├── test_duplicate_names.py
+│   ├── test_evals.py
+│   ├── test_explain.py
+│   ├── test_explain_config.py
+│   ├── test_explain_status.py
 │   ├── test_extra_designs_coverage.py
+│   ├── test_facts.py
+│   ├── test_facts_data_model.py
 │   ├── test_functional_design.py
 │   ├── test_generator.py
 │   ├── test_grep_performance.py
@@ -169,12 +213,20 @@ KingmaDoc/
 │   ├── test_max_lines_per_file.py
 │   ├── test_output_dir.py
 │   ├── test_plan_e2e.py
+│   ├── test_plandoc.py
+│   ├── test_render.py
+│   ├── test_security_domain_designs.py
 │   ├── test_skill.py
+│   ├── test_skill_explaining_code.py
+│   ├── test_skill_models.py
+│   ├── test_skills_install.py
 │   ├── test_source_dirs.py
 │   ├── test_summary_slug_diagram_defaults.py
 │   ├── test_technical_design.py
 │   ├── test_templating_security.py
-│   └── test_verify_stub.py
+│   ├── test_verify_stub.py
+│   ├── test_version.py
+│   └── test_vscode_preview.py
 ├── .featuredoc.yml
 ├── .gitignore
 ├── CHANGELOG.md
@@ -182,7 +234,8 @@ KingmaDoc/
 ├── CONTRIBUTING.md
 ├── LICENSE
 ├── pyproject.toml
-└── README.md
+├── README.md
+└── uv.lock
 ```
 
 </details>

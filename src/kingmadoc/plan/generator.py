@@ -36,6 +36,10 @@ DATA_STORES = frozenset({
     "PostgreSQL", "MySQL", "MariaDB", "MongoDB", "Redis", "Elasticsearch", "SQLite",
 })
 
+# The questions whose answers fill the requirements and files_expected (by prefix).
+ACCEPTANCE_QUESTION = "How will you know it works?"
+MODULES_QUESTION = "Which existing modules will change?"
+
 BASE_QUESTIONS: tuple[str, ...] = (
     "What problem does this feature solve, and for whom?",
     "Who or what triggers it (end user, scheduled job, external system, ...)?",
@@ -105,6 +109,10 @@ class PlanContext:
         answers: ``(question, answer)`` pairs; empty answers are still-open questions.
         diagram_format: ``diagram_format`` from the config (``mermaid``, ``plantuml``, ``d2``).
         diagram_label: Its display name for headings, e.g. ``"Mermaid"``.
+        slug: The feature slug (``<slug>-plan.md``, frontmatter ``feature``).
+        requirements: Requirement texts for ``REQ-1``, ``REQ-2``, ... (from the
+            acceptance criteria; empty: one _TODO_ requirement).
+        files_expected: Existing project files and directories the user named as changing.
     """
 
     feature_description: str
@@ -118,6 +126,9 @@ class PlanContext:
     answers: tuple[tuple[str, str], ...] = ()
     diagram_format: str = "mermaid"
     diagram_label: str = "Mermaid"
+    slug: str = "feature"
+    requirements: tuple[str, ...] = ()
+    files_expected: tuple[str, ...] = ()
 
 
 def build_questions(analysis: CodebaseReport, config: FeatureDocConfig) -> list[str]:
@@ -197,7 +208,56 @@ def build_plan_context(
         answers=tuple(answers),
         diagram_format=config.diagram_format,
         diagram_label=backend.LABEL,
+        slug=feature_slug(description),
+        requirements=requirements_from_answers(answers),
+        files_expected=files_from_answers(answers, report),
     )
+
+
+def requirements_from_answers(answers: Sequence[tuple[str, str]]) -> tuple[str, ...]:
+    """Split the acceptance-criteria answer into one requirement per criterion.
+
+    Criteria are separated by new lines or semicolons; the text is kept as the user wrote
+    it (rewriting it in EARS is the reviewer's job).
+
+    Args:
+        answers: ``(question, answer)`` pairs from the clarifying questions.
+
+    Returns:
+        The requirement texts, in order (empty when the question was not answered).
+    """
+    return tuple(
+        part.strip().rstrip(".").strip()
+        for question, answer in answers
+        if question.startswith(ACCEPTANCE_QUESTION)
+        for part in re.split(r"[;\n]", answer)
+        if part.strip().rstrip(".").strip()
+    )
+
+
+def files_from_answers(
+    answers: Sequence[tuple[str, str]], report: CodebaseReport
+) -> tuple[str, ...]:
+    """Return the paths in the "which modules will change" answer that exist in the project.
+
+    Args:
+        answers: ``(question, answer)`` pairs from the clarifying questions.
+        report: The analysis (its ``files`` are the project's files).
+
+    Returns:
+        Existing files and directories, as POSIX paths relative to the root, in order.
+    """
+    files = {f.as_posix() for f in report.files}
+    dirs = {parent.as_posix() for f in report.files for parent in f.parents if parent.parts}
+    found: dict[str, None] = {}
+    for question, answer in answers:
+        if not question.startswith(MODULES_QUESTION):
+            continue
+        for token in re.split(r"[,;\s]+", answer):
+            path = token.strip("`'\"()").rstrip("/")
+            if path in files or path in dirs:
+                found[path] = None
+    return tuple(found)
 
 
 def render_plan(context: PlanContext, config: FeatureDocConfig) -> str:

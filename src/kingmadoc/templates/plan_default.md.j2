@@ -1,3 +1,10 @@
+---
+kingmadoc: 1
+feature: {{ slug }}
+status: draft
+requirements: [{% for _ in requirements or [""] %}REQ-{{ loop.index }}{{ ", " if not loop.last }}{% endfor %}]
+files_expected: [{% for path in files_expected %}{{ path | tojson }}{{ ", " if not loop.last }}{% endfor %}]
+---
 {% set report = codebase_report %}
 # Feature: {{ feature_summary }}
 
@@ -27,6 +34,18 @@
 **Out of scope**
 
 - _TODO: what it deliberately does not do._
+
+## Requirements
+
+{% if requirements %}
+_Rewrite each in EARS: WHEN <trigger> THE SYSTEM SHALL <response>._
+
+{% for requirement in requirements %}
+- **REQ-{{ loop.index }}**: {{ requirement }}
+{% endfor %}
+{% else %}
+- **REQ-1**: _TODO: WHEN <trigger> THE SYSTEM SHALL <response>._
+{% endif %}
 
 ## Assumptions
 

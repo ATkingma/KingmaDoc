@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Machine-readable plans (roadmap WP1): every plan starts with YAML frontmatter
+  (`kingmadoc: 1`, `feature`, `status`, `requirements`, `files_expected`) and has a
+  "Requirements" section with `REQ-n` IDs (from the acceptance criteria, else a TODO in
+  EARS form); `files_expected` lists the existing paths named as changing.
+  `kingmadoc check <slug>` validates a plan with clear messages; `kingmadoc approve
+  <slug>` sets `status: approved` (the approval gate, now also in the CLI). The
+  `kingmadoc` skill 1.1 writes the same frontmatter and requirements, and verify checks
+  every `REQ-n`.
 - Skill evaluations (roadmap WP5): three scenarios in `evals/` (explain a feature,
   explain a branch, plan a feature) on a small Django fixture, run with
   `python scripts/run_evals.py [--compare] [--record]`; deterministic checks (paths,

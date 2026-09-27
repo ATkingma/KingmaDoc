@@ -130,6 +130,8 @@ More commands:
 
 ```bash
 kingmadoc plan "…" --no-input --stdout   # no questions, print instead of writing
+kingmadoc check add-login                # validate a plan's frontmatter and REQ IDs
+kingmadoc approve add-login              # draft -> approved: the gate before code
 kingmadoc explain new "Checkout"         # folder for a subject: docs/explain/0001-checkout/
 kingmadoc render docs/explain/0001-checkout/README.md   # D2 diagrams -> SVG images
 kingmadoc explain status [--check]      # which explainers the code changed under

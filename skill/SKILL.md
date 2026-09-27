@@ -1,7 +1,7 @@
 ---
 name: kingmadoc
 description: Generates a Feature Design Doc (plan) before a feature is implemented and a Feature Verification Doc afterwards, with Mermaid C4 diagrams inferred from the codebase. Use when the user asks to plan, design, or scope a new feature before writing code, or to verify, review, or check what was built against its plan. Works without installing anything; uses the kingmadoc CLI when it is available.
-version: 1.0.0
+version: 1.1.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -113,6 +113,12 @@ the diagrams, but never beyond what the user said or the code shows.
 - Fill every section of the [plan format](reference/formats.md#plan-doc-docsfeaturesslug-planmd) in order.
   Scope, assumptions and risks come from the user's answers; anything not covered stays
   a `_TODO: …_` line. Add answered questions under "Answered while planning".
+- **Frontmatter** first (`---` YAML): `kingmadoc: 1`, `feature: <slug>`, `status: draft`,
+  `requirements` listing every ID of the Requirements section, and `files_expected` with
+  the existing files or folders from answer 4 (`[]` if none). Tools read this block.
+- **Requirements**: each acceptance criterion from answer 5 becomes `- **REQ-n**:` in EARS
+  (`WHEN <trigger> THE SYSTEM SHALL <response>`, `IF <condition> THEN THE SYSTEM SHALL …`),
+  numbered from 1; none given: one `_TODO_` requirement.
 - External systems named in answer 3 go into the C4 Context diagram as `System_Ext`.
 - Follow the [diagram rules](reference/diagram-rules.md).
 
@@ -126,7 +132,9 @@ the diagrams, but never beyond what the user said or the code shows.
    order. Fill in only what the answers and code support; leave the rest as TODOs.
 2. Show the paths and a three-line summary (scope, biggest risk, open questions count).
 3. Ask the user to reply **yes** (approve), **edit <changes>**, or **stop**. On
-   **edit**, update the doc and ask again. On **yes**, set **Status** to `Approved`.
+   **edit**, update the doc and ask again. On **yes**, run `kingmadoc approve <slug>`
+   (with the CLI; otherwise set `status: approved` in the frontmatter and **Status** to
+   `Approved`). With the CLI, `kingmadoc check <slug>` validates the plan first.
    Do not change any source code before the plan is approved.
 
 ## Mode 2: verify
@@ -142,7 +150,8 @@ the diagrams, but never beyond what the user said or the code shows.
 
 ### Step 2. Read the actual code
 
-1. Read the whole plan doc: scope, assumptions, risks, both diagrams, open questions.
+1. Read the whole plan doc: its frontmatter (`requirements`, `files_expected`), scope,
+   requirements, assumptions, risks, both diagrams, open questions.
 2. Find what changed for this feature: `git log --since="<Generated date>" --stat`
    and `git diff` (including uncommitted changes). Without git, use the modules named
    in the plan and the containers in the C4 Container diagram.
@@ -154,6 +163,8 @@ the diagrams, but never beyond what the user said or the code shows.
 Check each item and record every mismatch as a deviation:
 
 - **Scope**: every in-scope item is implemented; no out-of-scope item was built.
+- **Requirements**: each `REQ-n` is met (name the code or test), partly met, or not met.
+  Files in `files_expected` that were never touched are deviations too.
 - **Architecture**: containers and external systems in the code match the C4
   diagrams (new services, databases, queues or APIs count as deviations).
 - **Assumptions**: still true in the code (e.g. "uses the existing auth module").

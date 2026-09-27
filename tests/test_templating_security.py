@@ -25,7 +25,9 @@ def test_template_in_project_root_is_ignored(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.output
     assert "PWNED" not in result.output
-    assert result.stdout.startswith("# Feature: Add login.\n")
+    # The bundled template: frontmatter, then the title.
+    assert result.stdout.startswith("---\nkingmadoc: 1\n")
+    assert "\n---\n# Feature: Add login.\n" in result.stdout
     assert "## One-sentence summary" in result.stdout
 
 

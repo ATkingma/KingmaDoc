@@ -13,12 +13,12 @@ When you implement a planned rule, update its status here and in the details bel
 | A2 | `SKILL.md` < 500 lines; details in `reference/*.md`, one level deep; TOC if > 100 lines | adopted (partly) | manual |
 | A3 | Skill tells agents to *run* the CLI, not read the source | adopted (partly) | manual |
 | A4 | ≥ 3 eval scenarios in `evals/` before extending the skill | planned | manual |
-| B1 | Requirements as `REQ-n` in EARS notation; tasks/tests reference IDs | planned | manual |
-| B2 | `<slug>-plan.md` starts with machine-readable YAML frontmatter | planned | manual |
+| B1 | Requirements as `REQ-n` in EARS notation; tasks/tests reference IDs | adopted | auto (`kingmadoc check`) |
+| B2 | `<slug>-plan.md` starts with machine-readable YAML frontmatter | adopted | auto (`kingmadoc check`) |
 | B3 | Feature docs are never deleted; `<slug>-verify.md` sits next to `<slug>-plan.md` | planned | manual |
 | B4 | Diagrams are text in fenced blocks (Mermaid default; PlantUML, D2); inferred content is labelled | adopted | manual |
 | B5 | Every Markdown file is linked from `docs/index.md`; all docs in English | adopted | auto (index) |
-| C1 | No code changes before the design doc is approved (`yes` / `edit` / `stop`) | adopted (skill) | manual |
+| C1 | No code changes before the design doc is approved (`yes` / `edit` / `stop`) | adopted (skill, `kingmadoc approve`) | manual |
 | C2 | `plan` asks at most 5 questions | adopted | manual |
 | C3 | `verify` detects build/test/lint commands and stores them in config | planned | manual |
 | D1 | PEP 8 via Ruff; `pathlib` instead of `os.path` | adopted (lint; no formatter yet) | auto |
@@ -92,7 +92,7 @@ observed failure.
 
 ## B. Document conventions
 
-### B1. Numbered requirements in EARS notation — planned
+### B1. Numbered requirements in EARS notation — adopted
 
 Requirements in the design doc use IDs and EARS syntax:
 
@@ -104,7 +104,7 @@ Requirements in the design doc use IDs and EARS syntax:
 Tasks and tests reference these IDs. This is what makes `verify` possible: each REQ-ID
 can be checked against code and tests.
 
-### B2. Machine-readable frontmatter in the plan doc — planned
+### B2. Machine-readable frontmatter in the plan doc — adopted
 
 ```yaml
 ---
@@ -140,8 +140,8 @@ Every Markdown file (except generated `docs/features/` output) is linked from
 
 ### C1. Approval gate before code — adopted (skill)
 
-The skill asks for `yes` / `edit` / `stop` after writing the plan. The CLI only writes
-the doc; the gate is the agent's job.
+The skill asks for `yes` / `edit` / `stop` after writing the plan; `yes` runs
+`kingmadoc approve <slug>`, which sets `status: approved` after `kingmadoc check` passes.
 
 No source files change until the design doc is approved. After generation the agent
 accepts only `yes`, `edit <changes>`, or `stop`. Status moves

@@ -47,7 +47,7 @@ def test_frontmatter() -> None:
 
     assert meta["name"] == "kingmadoc"
     assert re.fullmatch(r"[a-z0-9-]{1,64}", meta["name"])
-    assert meta["version"] == "1.0.0"
+    assert meta["version"] == "1.1.0"
     assert meta["allowed-tools"] == ["Read", "Write", "Glob", "Grep", "Bash"]
     assert 0 < len(meta["description"]) <= 1024
     assert "Use when" in meta["description"]
@@ -103,6 +103,23 @@ def test_plan_format_matches_cli_template(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
 
     assert _headings(_format_block("Plan doc")) == _headings(result.stdout)
+
+
+def test_plan_format_has_the_cli_frontmatter(tmp_path: Path) -> None:
+    """The skill writes the same frontmatter keys as the CLI, so `kingmadoc check` reads both."""
+    result = CliRunner().invoke(
+        cli, ["plan", "Add login.", "--root", str(tmp_path), "--no-input", "--stdout"]
+    )
+    skill_block = _format_block("Plan doc")
+
+    def keys(text: str) -> list[str]:
+        return re.findall(r"^(\w+):", text.split("---\n", 2)[1], re.M)
+
+    assert skill_block.startswith("---\n")
+    assert keys(skill_block) == keys(result.stdout) == [
+        "kingmadoc", "feature", "status", "requirements", "files_expected"
+    ]
+    assert "- **REQ-1**:" in skill_block
 
 
 def test_verify_format_matches_cli_stub() -> None:
