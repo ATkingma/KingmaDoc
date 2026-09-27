@@ -206,3 +206,12 @@ def test_a_corrupt_manifest_is_treated_as_missing(tmp_path: Path) -> None:
     assert json.loads((folder / MANIFEST).read_text(encoding="utf-8"))["skill"] == (
         "explaining-code"
     )
+
+
+def test_the_kingmadoc_skill_brings_its_references(tmp_path: Path) -> None:
+    """SKILL.md links reference/formats.md and reference/diagram-rules.md: both install."""
+    assert _install(tmp_path).exit_code == 0
+
+    folder = tmp_path / ".claude" / "skills" / "kingmadoc"
+    installed = sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*.md"))
+    assert installed == ["SKILL.md", "reference/diagram-rules.md", "reference/formats.md"]

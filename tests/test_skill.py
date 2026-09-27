@@ -13,6 +13,9 @@ from kingmadoc.cli import cli
 from kingmadoc.verify.stub import render_verify_stub
 
 SKILL = Path(__file__).resolve().parents[1] / "skill" / "SKILL.md"
+REFERENCE = SKILL.parent / "reference"
+FORMATS = REFERENCE / "formats.md"
+DIAGRAM_RULES = REFERENCE / "diagram-rules.md"
 
 
 def _skill() -> str:
@@ -31,8 +34,8 @@ def _headings(markdown: str) -> list[str]:
 
 
 def _format_block(title: str) -> str:
-    """The fenced ``markdown`` block that follows the ``### <title>`` heading in SKILL.md."""
-    after = _skill().split(f"### {title}", 1)[1]
+    """The fenced ``markdown`` block after the ``### <title>`` heading in reference/formats.md."""
+    after = FORMATS.read_text(encoding="utf-8").split(f"### {title}", 1)[1]
     match = re.search(r"^(`{3,})markdown\n(.*?)\n\1$", after, re.S | re.M)
     assert match, f"no markdown block after {title!r}"
     return match.group(2)
@@ -64,7 +67,32 @@ def test_required_sections_and_length() -> None:
 
     assert -1 not in positions
     assert positions == sorted(positions)
-    assert len(text.splitlines()) < 400
+    assert len(text.splitlines()) < 250
+
+
+def test_references_are_linked_and_short() -> None:
+    """The formats and diagram rules live in reference/, one level deep, linked from SKILL.md."""
+    text = _skill()
+    for reference in (FORMATS, DIAGRAM_RULES):
+        body = reference.read_text(encoding="utf-8")
+        assert f"(reference/{reference.name})" in text, reference.name
+        assert len(body.splitlines()) < 400, reference.name
+    assert FORMATS.read_text(encoding="utf-8").startswith("## Output format\n")
+    assert DIAGRAM_RULES.read_text(encoding="utf-8").startswith("## Diagram rules\n")
+
+
+def test_links_into_the_references_resolve() -> None:
+    """Every reference/<file>.md#anchor link in SKILL.md points at a heading of that file."""
+    for file, anchor in re.findall(r"\]\(reference/([\w-]+\.md)#([\w-]+)\)", _skill()):
+        text = re.sub(r"^(`{3,}).*?^\1$", "", (REFERENCE / file).read_text(encoding="utf-8"),
+                      flags=re.S | re.M)
+        headings = re.findall(r"^#{1,6} (.+)$", text, re.M)
+        assert anchor in {_anchor(h) for h in headings}, f"{file}#{anchor}"
+
+
+def _anchor(heading: str) -> str:
+    """GitHub's anchor for a heading line."""
+    return re.sub(r"[^\w\- ]", "", heading.strip().lower()).replace(" ", "-")
 
 
 def test_plan_format_matches_cli_template(tmp_path: Path) -> None:
@@ -129,7 +157,7 @@ def test_agent_variants_are_up_to_date() -> None:
     build = _variants_module()
     for variant in build.VARIANTS:
         path = SKILL.parent / variant.filename
-        expected = build.build_variant(variant, _skill())
+        expected = build.build_variant(variant, _skill(), SKILL.parent)
 
         assert path.read_text(encoding="utf-8") == expected, (
             f"{path.name} is stale: run python3 scripts/build_skill_variants.py"
@@ -137,7 +165,11 @@ def test_agent_variants_are_up_to_date() -> None:
 
 
 def test_agent_variants_follow_their_formats() -> None:
-    """Cursor gets rule frontmatter; the always-loaded files get none; no Claude tool names."""
+    """Cursor gets rule frontmatter; the always-loaded files get none; no Claude tool names.
+
+    The variants are single files, so the references are inlined in place of their stubs.
+    """
+    build = _variants_module()
     cursor = (SKILL.parent / "cursor.md").read_text(encoding="utf-8")
     meta = yaml.safe_load(cursor.split("---", 2)[1])
     assert meta == {
@@ -152,4 +184,5 @@ def test_agent_variants_follow_their_formats() -> None:
     for name in ("cursor.md", "codex.md", "copilot.md"):
         text = (SKILL.parent / name).read_text(encoding="utf-8")
         assert not re.search(r"\b(Glob|Grep|allowed-tools)\b", text), name
-        assert _headings(text) == _headings(_skill()), name
+        expanded = build.expand_references(_skill(), SKILL.parent)
+        assert _headings(text) == _headings(expanded), name

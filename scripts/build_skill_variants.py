@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Generate the Cursor, Codex and Copilot variants of ``skill/SKILL.md``.
 
-``skill/SKILL.md`` is the single source. Each variant gets the agent's own header
+``skill/SKILL.md`` (plus ``skill/reference/*.md``) is the single source. The variants are
+single files, so each stub section that links a reference file is replaced by that file.
+Each variant gets the agent's own header
 (Cursor rule frontmatter, or none for AGENTS.md / copilot-instructions.md) and
 agent-neutral wording for Claude Code tool names. Never edit the variants by hand.
 
@@ -13,6 +15,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -82,12 +85,42 @@ def split_frontmatter(text: str) -> tuple[dict, str]:
     return yaml.safe_load(meta), body.lstrip("\n")
 
 
-def build_variant(variant: Variant, skill_text: str) -> str:
+# A stub section in SKILL.md: "## <Title>" whose text links reference/<file>.md.
+_STUB = re.compile(r"^## .+\n(?:(?!#).*\n)*?.*\]\(reference/([\w-]+\.md)\)(?:(?!#).*\n?)*", re.M)
+
+
+def expand_references(skill_text: str, skill_dir: Path) -> str:
+    """Inline ``reference/*.md`` into SKILL.md, for agents that read a single file.
+
+    Each ``## <Title>`` stub that links ``reference/<file>.md`` is replaced by that file
+    (which starts with the same heading), and links into the references become anchors.
+
+    Args:
+        skill_text: Content of ``skill/SKILL.md``.
+        skill_dir: The ``skill/`` directory.
+
+    Returns:
+        The single-file text.
+    """
+    def inline(match: re.Match[str]) -> str:
+        return (skill_dir / "reference" / match.group(1)).read_text(encoding="utf-8") + "\n"
+
+    text = _STUB.sub(inline, skill_text).rstrip("\n") + "\n"
+    text = re.sub(r"\]\(reference/[\w-]+\.md#([\w-]+)\)", r"](#\1)", text)
+    for file in sorted((skill_dir / "reference").glob("*.md")):
+        title = file.read_text(encoding="utf-8").partition("\n")[0].lstrip("#").strip()
+        anchor = re.sub(r"[^\w\- ]", "", title.lower()).replace(" ", "-")
+        text = text.replace(f"](reference/{file.name})", f"](#{anchor})")
+    return text
+
+
+def build_variant(variant: Variant, skill_text: str, skill_dir: Path = SKILL.parent) -> str:
     """Render one variant from the SKILL.md text.
 
     Args:
         variant: Which agent to build for.
         skill_text: Content of ``skill/SKILL.md``.
+        skill_dir: The ``skill/`` directory (for ``reference/``).
 
     Returns:
         The variant's full file content.
@@ -95,7 +128,7 @@ def build_variant(variant: Variant, skill_text: str) -> str:
     Raises:
         ValueError: If a phrase in :data:`NEUTRAL_TOOLS` is missing from SKILL.md.
     """
-    meta, body = split_frontmatter(skill_text)
+    meta, body = split_frontmatter(expand_references(skill_text, skill_dir))
     for old, new in NEUTRAL_TOOLS:
         if old not in body:
             raise ValueError(f"SKILL.md no longer contains {old!r}; update NEUTRAL_TOOLS")
@@ -134,7 +167,7 @@ def main(argv: list[str]) -> int:
     stale = []
     for variant in VARIANTS:
         path = SKILL.parent / variant.filename
-        content = build_variant(variant, skill_text)
+        content = build_variant(variant, skill_text, SKILL.parent)
         if check:
             if not path.is_file() or path.read_text(encoding="utf-8") != content:
                 stale.append(path.name)

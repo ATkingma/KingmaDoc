@@ -98,9 +98,12 @@ def bundled_files(name: str) -> list[tuple[Path, Path]]:
         KingmaDocError: If the skill is unknown or missing from the installation.
     """
     skill_md = bundled_skill(name)
-    if name == "kingmadoc":  # skill/ also holds the other skills and the agent variants
-        return [(Path("SKILL.md"), skill_md)]
     folder = skill_md.parent
+    if name == "kingmadoc":  # skill/ also holds the other skills and the agent variants
+        references = folder / "reference"
+        return [(Path("SKILL.md"), skill_md)] + sorted(
+            (f.relative_to(folder), f) for f in references.rglob("*") if f.is_file()
+        )
     return sorted((f.relative_to(folder), f) for f in folder.rglob("*") if f.is_file())
 
 

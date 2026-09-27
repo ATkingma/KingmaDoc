@@ -96,6 +96,9 @@ the diagrams stay optional through `diagrams:` in the config.
 
 ## WP4. Split the agent skill
 
+**Status:** done (unreleased): `SKILL.md` is 184 lines; formats and diagram rules are
+in `skill/reference/`; the variants inline them.
+
 **Goal.** Room to grow: `skill/SKILL.md` is at 397 of its 400 lines.
 
 **Tasks**

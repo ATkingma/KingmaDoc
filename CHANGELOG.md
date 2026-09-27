@@ -80,6 +80,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `kingmadoc` skill is split (roadmap WP4): `SKILL.md` holds the workflow (184
+  lines), `reference/formats.md` the document formats and `reference/diagram-rules.md`
+  the Mermaid rules; `skills install` copies both, and the Cursor, Codex and Copilot
+  files still contain everything in one file.
 - The version comes from the git tag (`hatch-vcs`): every commit after a release has a
   higher development version (`0.2.0.devN`), so an update is visible and `pipx upgrade`
   sees it.

@@ -22,7 +22,9 @@ Feature Verification Doc afterwards.
 
 - **Using KingmaDoc on a project** → [README: Quick start](../README.md#quick-start) and
   [README: Configuration](../README.md#configuration)
-- **Using KingmaDoc without installing Python** → the agent skill [`skill/SKILL.md`](../skill/SKILL.md),
+- **Using KingmaDoc without installing Python** → the agent skill [`skill/SKILL.md`](../skill/SKILL.md)
+  (its [document formats](../skill/reference/formats.md) and
+  [diagram rules](../skill/reference/diagram-rules.md)),
   or its generated variants for [Cursor](../skill/cursor.md), [Codex](../skill/codex.md) and
   [GitHub Copilot](../skill/copilot.md); for features that already exist:
   [`explaining-code`](../skill/explaining-code/SKILL.md) (formats:

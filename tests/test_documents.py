@@ -106,7 +106,10 @@ def test_variants_check_fails_when_stale(
     skill_dir = tmp_path / "skill"
     shutil.copytree(build.SKILL.parent, skill_dir)
     skill = skill_dir / "SKILL.md"
-    skill.write_text(skill.read_text(encoding="utf-8") + "\nOne more line.\n", encoding="utf-8")
+    # In the body: a stub section at the end is replaced by its reference in the variants.
+    mode = "\n## Mode 1: plan\n"
+    text = skill.read_text(encoding="utf-8").replace(mode, "\nOne more line.\n" + mode)
+    skill.write_text(text, encoding="utf-8")
     before = (skill_dir / "codex.md").read_text(encoding="utf-8")
     monkeypatch.setattr(build, "SKILL", skill)
     monkeypatch.setattr(build, "ROOT", tmp_path)
