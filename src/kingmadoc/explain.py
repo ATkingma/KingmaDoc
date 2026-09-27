@@ -265,7 +265,8 @@ def _entry(number: str, link: str, fallback: str, doc: Path) -> Entry:
 
 
 def _cell(text: str) -> str:
-    """Escape what would end a table cell or a link text."""
+    """One line (CRLF files, U+2028), with what would end a cell or a link escaped."""
+    text = " ".join(text.split())
     return re.sub(r"([\\|\[\]])", r"\\\1", text)
 
 

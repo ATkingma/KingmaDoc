@@ -241,7 +241,7 @@ Use exactly these headings, in this order. Text in `<angle brackets>` is filled 
 ````markdown
 ---
 kingmadoc: 1
-feature: <slug>
+feature: "<slug>"
 status: draft
 requirements: [REQ-1, <one ID per requirement below>]
 files_expected: [<existing files or folders the user said will change>]

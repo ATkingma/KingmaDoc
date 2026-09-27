@@ -164,3 +164,14 @@ def test_approve_refuses_a_broken_plan(tmp_path: Path) -> None:
 
     assert result.exit_code == 1 and "REQ-2" in result.output
     assert path.read_text(encoding="utf-8") == broken
+
+
+def test_a_slug_yaml_would_read_as_a_number_or_bool_stays_a_string(tmp_path: Path) -> None:
+    """Descriptions like "No." or "2024." give slugs YAML reads as False or 2024."""
+    for description, slug in (("No.", "no"), ("2024.", "2024"), ("Null.", "null")):
+        result = CliRunner().invoke(
+            cli, ["plan", description, "--root", str(tmp_path), "--no-input", "--stdout"]
+        )
+
+        assert result.exit_code == 0, result.output
+        assert check_plan(result.stdout, slug=slug) == [], description

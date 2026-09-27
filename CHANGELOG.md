@@ -128,6 +128,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `img/figure-<n>` and overwrite each other's images and D2 sources; only an explainer
   folder's README uses `figure-<n>`. Images an explainer had under its old name
   (`img/README-<n>`) are removed when it is rendered again.
+- Plans: `feature` in the frontmatter is quoted, so slugs YAML reads as something else
+  (`no`, `null`, `2024`) still pass `kingmadoc check`; found by property-based tests.
+- Explainer index: titles and scopes from files with Windows line endings (or other line
+  separators) no longer break the table row.
 - Analyzer: build output of Next.js (`.next/`), Nuxt and SvelteKit is no longer
   analyzed as source.
 - Analyzer: imports in test directories no longer add frameworks to the detected stack

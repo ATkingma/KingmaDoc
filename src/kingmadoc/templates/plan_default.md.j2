@@ -1,6 +1,6 @@
 ---
 kingmadoc: 1
-feature: {{ slug }}
+feature: {{ slug | tojson }}
 status: draft
 requirements: [{% for _ in requirements or [""] %}REQ-{{ loop.index }}{{ ", " if not loop.last }}{% endfor %}]
 files_expected: [{% for path in files_expected %}{{ path | tojson }}{{ ", " if not loop.last }}{% endfor %}]

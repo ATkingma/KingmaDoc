@@ -5,7 +5,7 @@ Markdown text::
 
     ---
     kingmadoc: 1                 # format version
-    feature: password-reset      # the slug, as in <slug>-plan.md
+    feature: "password-reset"    # the slug, as in <slug>-plan.md (quoted: "no", "2024")
     status: draft                # draft | approved | implemented | partial
     requirements: [REQ-1, REQ-2] # defined in the "Requirements" section
     files_expected: [src/auth/reset.py]
@@ -74,7 +74,9 @@ def check_plan(text: str, slug: str | None = None) -> list[str]:
         )
     feature = data.get("feature")
     if "feature" in data and not isinstance(feature, str):
-        problems.append("feature must be the slug, a string")
+        problems.append(
+            f"feature must be the slug as a string; quote it: feature: \"{feature}\""
+        )
     elif slug is not None and feature is not None and feature != slug:
         problems.append(f"feature {feature!r} does not match the file name ({slug}-plan.md)")
     status = data.get("status")

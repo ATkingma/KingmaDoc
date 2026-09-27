@@ -121,3 +121,15 @@ def test_a_hand_written_index_is_not_overwritten(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert (directory / "README.md").read_text(encoding="utf-8") == "# My notes\n"
     assert "not written by KingmaDoc" in result.output
+
+
+def test_an_explainer_with_windows_line_endings_gives_a_clean_index(tmp_path: Path) -> None:
+    """CRLF files: the title and scope carry no carriage return into the index row."""
+    folder = tmp_path / EXPLAIN_DIR / "0001-contact-form"
+    folder.mkdir(parents=True)
+    (folder / "README.md").write_bytes(EXPLAINER.replace("\n", "\r\n").encode("utf-8"))
+
+    text = index_markdown(read_entries(tmp_path / EXPLAIN_DIR))
+
+    assert "\r" not in text
+    assert "[Contact form](0001-contact-form/README.md)" in text
