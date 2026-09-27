@@ -185,3 +185,38 @@ def test_fixture_is_valid_python() -> None:
     """The fixture code compiles (agents read it; it is never run)."""
     for path in (REPO / "evals" / "fixtures").rglob("*.py"):
         compile(textwrap.dedent(path.read_text(encoding="utf-8")), str(path), "exec")
+
+
+def test_an_agent_failure_is_reported_as_such(tmp_path: Path) -> None:
+    """A crashed or limited agent is not a skill failure: its error is recorded and shown."""
+    script = tmp_path / "broken.py"
+    script.write_text(
+        "import json, sys\n"
+        "print(json.dumps({'is_error': True, 'subtype': 'error_max_turns', 'num_turns': 80}))\n"
+        "sys.stderr.write('stopped\\n')\n"
+        "sys.exit(1)\n",
+        encoding="utf-8",
+    )
+    agent = f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} {{request}}"
+
+    info = evals.run_agent(tmp_path, "Explain", agent)
+    text = evals.summary([{
+        "scenario": "s", "variant": "with skill", "agent": info, "checks": [],
+        "passed": 0, "total": 0,
+    }])
+
+    assert info["error"] == "error_max_turns"
+    assert "AGENT ERROR: error_max_turns" in text
+
+
+def test_an_agent_that_does_not_start_shows_its_stderr(tmp_path: Path) -> None:
+    """No JSON at all (e.g. a usage limit): the end of stderr is the error."""
+    script = tmp_path / "limit.py"
+    script.write_text(
+        "import sys\nsys.stderr.write('Usage limit reached\\n')\nsys.exit(1)\n", encoding="utf-8"
+    )
+    agent = f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} {{request}}"
+
+    info = evals.run_agent(tmp_path, "Explain", agent)
+
+    assert info["error"] == "Usage limit reached"

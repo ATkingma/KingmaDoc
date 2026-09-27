@@ -194,15 +194,22 @@ def run_agent(workspace: Path, request: str, agent: str) -> dict[str, Any]:
             command, cwd=workspace, env=env, capture_output=True, text=True,
             timeout=AGENT_TIMEOUT, check=False,
         )
-        output, code = done.stdout, done.returncode
+        output, errors, code = done.stdout, done.stderr, done.returncode
     except subprocess.TimeoutExpired:
-        output, code = "", -1
+        output, errors, code = "", f"timed out after {AGENT_TIMEOUT} s", -1
     info: dict[str, Any] = {"exit_code": code, "seconds": round(time.monotonic() - started)}
+    data: dict[str, Any] = {}
     try:
-        data = json.loads(output)
-        info.update({k: data[k] for k in ("total_cost_usd", "num_turns") if k in data})
+        loaded = json.loads(output)
+        data = loaded if isinstance(loaded, dict) else {}
     except (json.JSONDecodeError, TypeError):
         pass
+    info.update({k: data[k] for k in ("total_cost_usd", "num_turns") if k in data})
+    # Tell an agent that failed (limits, max turns, crash) apart from a skill that failed.
+    if data.get("is_error") or code != 0:
+        tail = [line.strip() for line in errors.splitlines() if line.strip()][-1:]
+        info["error"] = str(data.get("subtype") or "") if data.get("is_error") else ""
+        info["error"] = info["error"] or (tail[0] if tail else f"exit code {code}")
     return info
 
 
@@ -242,6 +249,8 @@ def summary(results: list[dict[str, Any]]) -> str:
             f"{r['scenario']} ({r['variant']}): {r['passed']}/{r['total']} checks"
             f" ({r['agent']['seconds']} s{extra})"
         )
+        if r["agent"].get("error"):
+            lines.append(f"  AGENT ERROR: {r['agent']['error']}")
         lines += [f"  FAIL {c['check']}: {c['detail']}" for c in r["checks"] if not c["ok"]]
     return "\n".join(lines)
 
