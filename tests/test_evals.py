@@ -253,3 +253,18 @@ def test_the_agents_last_words_are_kept(tmp_path: Path) -> None:
 
     assert info["reply"].endswith("Reply yes to approve.")
     assert len(info["reply"]) <= evals.REPLY_CHARS
+
+
+def test_a_limit_message_is_the_error_not_success(tmp_path: Path) -> None:
+    """Claude Code reports a spend limit as is_error with subtype "success": show the text."""
+    script = tmp_path / "limit.py"
+    script.write_text(
+        "import json\nprint(json.dumps({'is_error': True, 'subtype': 'success', "
+        "'result': \"You've hit your monthly spend limit\"}))\n",
+        encoding="utf-8",
+    )
+    agent = f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} {{request}}"
+
+    info = evals.run_agent(tmp_path, "Plan", agent)
+
+    assert info["error"] == "You've hit your monthly spend limit"

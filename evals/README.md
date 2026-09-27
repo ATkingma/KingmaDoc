@@ -32,3 +32,15 @@ scenarios, the checks and the runner with a fake agent.
 Results are saved as JSON in `results/` with `--record`, including the end of the
 agent's reply and why an agent stopped (usage limit, max turns), apart from failed checks. Extend a skill only when a
 recorded result shows a real failure.
+
+## Results so far
+
+| Run | explain-feature | explain-branch | plan-feature |
+| --- | --- | --- | --- |
+| [2026-09-27 11:18](results/2026-09-27T111837Z.json), with skill | 6/6 | 5/5 | 1/3 (asked its questions and stopped) |
+| same run, without skill | 2/6 | 2/5 | 1/3 |
+| [2026-09-27 11:26](results/2026-09-27T112600Z.json), with skill, 3 runs | | | 4/4, 4/4, 4/4 |
+
+After the first run the plan scenario says the user cannot answer now (the skill's
+non-interactive path). The baseline runs of 11:26 hit the account's spend limit and
+did not run; they are not a result.

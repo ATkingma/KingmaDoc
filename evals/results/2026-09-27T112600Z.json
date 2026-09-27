@@ -1,0 +1,219 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "plan-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 61,
+        "total_cost_usd": 0.44138235000000003,
+        "num_turns": 11,
+        "reply": ".\n  - The repo has no tests and no migrations folder, and adding the new status needs a migration.\n- **Open questions (11):** the 5 standard planning questions plus 6 decisions only you can make:\n  - how refunds work for paid orders\n  - whether stock should really be returned\n  - whether there's a cut-off point before shipping\n  - whether anyone gets notified\n  - whether cancelled orders are kept or deleted\n  - whether to record a cancellation reason\n\nWhen you have time, reply **yes** to approve the plan, **edit <changes>** to change it, or **stop**. I won't write any code until it's approved."
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": true,
+          "detail": "docs/features/customers-can-cancel-an-order-that-is-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "plan_check docs/features/*-plan.md",
+          "ok": true,
+          "detail": "valid"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "1 change(s), all allowed"
+        }
+      ],
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "scenario": "plan-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 53,
+        "total_cost_usd": 0.4010224,
+        "num_turns": 10,
+        "reply": "answer them now. The other 4 are:\n  1. Can paid orders be cancelled, and who refunds the customer?\n  2. Should cancelling put the stock back?\n  3. Is a cancellation reason or timestamp needed?\n  4. Can staff cancel orders too, and should the customer be notified?\n- **Changed files:** the list of files expected to change is empty because you haven't confirmed which files will change. The likely ones are `shop/models.py`, `shop/services.py`, `shop/views.py` and `shop/urls.py`.\n\nWhen you're back, reply **yes** to approve, **edit <changes>**, or **stop**. I won't write any code before you approve."
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": true,
+          "detail": "docs/features/customers-can-cancel-an-order-that-is-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "plan_check docs/features/*-plan.md",
+          "ok": true,
+          "detail": "valid"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "1 change(s), all allowed"
+        }
+      ],
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "scenario": "plan-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 1,
+        "seconds": 42,
+        "total_cost_usd": 0.3146844,
+        "num_turns": 6,
+        "reply": "You've hit your monthly spend limit \u00b7 raise it at claude.ai/settings/usage?from=cc_cli_limit_message \u00b7 your session limit resets 3pm (Europe/Amsterdam)",
+        "error": "success"
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": true,
+          "detail": "docs/features/customers-can-cancel-an-order-that-is-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "plan_check docs/features/*-plan.md",
+          "ok": true,
+          "detail": "valid"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "1 change(s), all allowed"
+        }
+      ],
+      "passed": 4,
+      "total": 4
+    },
+    {
+      "scenario": "plan-feature",
+      "variant": "without skill",
+      "agent": {
+        "exit_code": 1,
+        "seconds": 3,
+        "total_cost_usd": 0,
+        "num_turns": 1,
+        "reply": "You've hit your monthly spend limit \u00b7 raise it at claude.ai/settings/usage?from=cc_cli_limit_message \u00b7 your session limit resets 3pm (Europe/Amsterdam)",
+        "error": "success"
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "plan_check docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "0 change(s), all allowed"
+        }
+      ],
+      "passed": 1,
+      "total": 4
+    },
+    {
+      "scenario": "plan-feature",
+      "variant": "without skill",
+      "agent": {
+        "exit_code": 1,
+        "seconds": 3,
+        "total_cost_usd": 0,
+        "num_turns": 1,
+        "reply": "You've hit your monthly spend limit \u00b7 raise it at claude.ai/settings/usage?from=cc_cli_limit_message \u00b7 your session limit resets 3pm (Europe/Amsterdam)",
+        "error": "success"
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "plan_check docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "0 change(s), all allowed"
+        }
+      ],
+      "passed": 1,
+      "total": 4
+    },
+    {
+      "scenario": "plan-feature",
+      "variant": "without skill",
+      "agent": {
+        "exit_code": 1,
+        "seconds": 3,
+        "total_cost_usd": 0,
+        "num_turns": 1,
+        "reply": "You've hit your monthly spend limit \u00b7 raise it at claude.ai/settings/usage?from=cc_cli_limit_message \u00b7 your session limit resets 3pm (Europe/Amsterdam)",
+        "error": "success"
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "plan_check docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "0 change(s), all allowed"
+        }
+      ],
+      "passed": 1,
+      "total": 4
+    }
+  ]
+}

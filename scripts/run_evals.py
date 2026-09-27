@@ -229,8 +229,12 @@ def run_agent(workspace: Path, request: str, agent: str) -> dict[str, Any]:
     # Tell an agent that failed (limits, max turns, crash) apart from a skill that failed.
     if data.get("is_error") or code != 0:
         tail = [line.strip() for line in errors.splitlines() if line.strip()][-1:]
-        info["error"] = str(data.get("subtype") or "") if data.get("is_error") else ""
-        info["error"] = info["error"] or (tail[0] if tail else f"exit code {code}")
+        subtype = str(data.get("subtype") or "")
+        message = str(data.get("result") or "").strip().splitlines()[:1]
+        if data.get("is_error") and subtype and subtype != "success":
+            info["error"] = subtype  # e.g. error_max_turns
+        else:  # a limit or crash: its message says why
+            info["error"] = (message or tail or [f"exit code {code}"])[0]
     return info
 
 
