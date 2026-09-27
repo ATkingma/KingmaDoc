@@ -137,3 +137,15 @@ def test_no_vscode_never_asks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert result.exit_code == 0, result.output
     assert "?" not in result.output
     assert not _settings(tmp_path).exists()
+
+
+def test_no_answer_means_no(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A terminal that closes stdin (EOF) does not fail the install; nothing is written."""
+    from kingmadoc import cli as cli_module
+
+    monkeypatch.setattr(cli_module, "_interactive", lambda: True)
+
+    result = CliRunner().invoke(cli, ["skills", "install", "--root", str(tmp_path)], input="")
+
+    assert result.exit_code == 0, result.output
+    assert not _settings(tmp_path).exists()

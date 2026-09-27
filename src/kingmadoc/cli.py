@@ -606,10 +606,14 @@ def skills_install(root: Path, agent: str, force: bool, vscode: bool | None) -> 
     try:
         result = install_skills(root, agent, force)
         if vscode is None and not preview_enabled(root) and _interactive():
-            vscode = click.confirm(
-                "Make VS Code open explainers (docs/explain/) as a rendered preview, so the "
-                "pictures show right away?", default=True, err=True,
-            )
+            try:
+                vscode = click.confirm(
+                    "Make VS Code open explainers (docs/explain/) as a rendered preview, so "
+                    "the pictures show right away?", default=True, err=True,
+                )
+            except click.Abort:  # stdin closed without an answer: change nothing
+                click.echo("", err=True)
+                vscode = False
         preview = enable_markdown_preview(root) if vscode else None
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc

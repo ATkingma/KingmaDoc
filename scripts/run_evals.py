@@ -195,8 +195,8 @@ def prepare_workspace(scenario: dict[str, Any], target: Path, with_skills: bool)
         _git(target, "commit", "-qm", f"Work on {branch['name']}")
     if with_skills:
         subprocess.run(
-            [_kingmadoc(), "skills", "install", "--root", str(target)],
-            check=True, capture_output=True,
+            [_kingmadoc(), "skills", "install", "--root", str(target), "--no-vscode"],
+            check=True, capture_output=True, stdin=subprocess.DEVNULL,
         )
         # The skills are part of the setup, not a change by the agent.
         _git(target, "add", ".")
