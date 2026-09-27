@@ -1,5 +1,9 @@
 # One document, or functional and technical apart
 
+Contents: Output format: README.md (cover) · Output format: functional.md · 1. Goal and
+users · 2. Context · 3. What users can do · 4. Concepts and rules · 5. Glossary ·
+Couldn't work out (optional, at most three) · Output format: technical.md.
+
 Used when the user asks for the functional and technical side separately ("split it",
 "a functional and a technical document") or `.featuredoc.yml` has
 `explain: {documents: split}`. Otherwise write one document (`README.md`) in the chosen
@@ -39,7 +43,7 @@ in its first line. `kingmadoc render` takes all three files at once.
 | **Scope**        | <feature / branch `<branch>` vs `<base>` / project / part `<path>`>                 |
 | **Stack**        | <languages, frameworks, data stores>                                                |
 | **Entry points** | <`path`, …>                                                                         |
-| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 5.5.0 (split) |
+| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 5.6.0 (split) |
 
 <at most three plain sentences: what it is, for whom, what it does>
 

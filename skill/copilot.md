@@ -130,7 +130,8 @@ the diagrams, but never beyond what the user said or the code shows.
    `<slug>-technical-design.md`
    ([format](#technical-design-doc-docsfeaturesslug-technical-designmd)), in that
    order. Fill in only what the answers and code support; leave the rest as TODOs.
-2. Show the paths and a three-line summary (scope, biggest risk, open questions count).
+2. Show the paths and a three-line summary (scope, biggest risk, open questions count);
+   do not paste the plan into the chat, and do not narrate while you work.
 3. Ask the user to reply **yes** (approve), **edit <changes>**, or **stop**. On
    **edit**, update the doc and ask again. On **yes**, run `kingmadoc approve <slug>`
    (with the CLI; otherwise set `status: approved` in the frontmatter and **Status** to

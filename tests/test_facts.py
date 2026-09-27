@@ -180,3 +180,16 @@ def test_routes_services_and_js_modules_are_reported(tmp_path: Path) -> None:
     assert data["routes"][0]["path"] == "/"
     assert data["services"][0]["contract"] == "IContactNotifier"
     assert data["js_dependencies"] == [["web/app/page", "web/components/footer"]]
+
+
+def test_only_prints_the_asked_sections(tmp_path: Path) -> None:
+    """--only routes,data: just those sections (fewer tokens for an agent)."""
+    root = _repo(tmp_path)
+
+    result = _facts(root, "--only", "routes,data")
+    bad = _facts(root, "--only", "nope")
+
+    assert result.exit_code == 0, result.output
+    headings = [line for line in result.output.splitlines() if line.startswith("## ")]
+    assert headings == ["## Routes and access", "## Data model"]
+    assert bad.exit_code == 2 and "project" in bad.output

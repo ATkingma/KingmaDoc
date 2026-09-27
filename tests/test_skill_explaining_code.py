@@ -236,3 +236,28 @@ def test_reading_the_code_starts_from_the_facts() -> None:
     assert "kingmadoc explain facts" in step
     assert "--base" in step
     assert "never contradict" in step
+
+
+def test_the_skill_keeps_the_agents_context_small() -> None:
+    """Quiet work, references on demand, a subagent for big codebases, a short hand-over."""
+    text = re.sub(r"\s+", " ", _read(SKILL))
+    efficient = text.split("## Working efficiently", 1)[1].split("## Step 1", 1)[0]
+    hand_over = text.split("## Step 6.", 1)[1]
+
+    assert "only to ask" in efficient and "hand over" in efficient
+    assert "subagent" in efficient and "--only" in efficient
+    assert "table of contents" in efficient
+    assert "at most five lines" in hand_over
+    assert "and the figures" not in hand_over
+
+
+def test_long_references_start_with_their_contents() -> None:
+    """A reference over 100 lines lists its sections first, so a partial read shows them."""
+    for path in sorted((SKILL.parent / "reference").glob("*.md")):
+        lines = _read(path).splitlines()
+        if len(lines) <= 100:
+            continue
+        head = re.sub(r"\s+", " ", " ".join(lines[:12]))
+        assert "Contents:" in head, path.name
+        for section in re.findall(r"^## (.+)$", _read(path).split("````", 1)[0], re.M):
+            assert section.split(".")[0] in head or section in head, f"{path.name}: {section}"

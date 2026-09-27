@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from kingmadoc.facts.branch import BranchChanges
@@ -71,61 +73,105 @@ def collect_facts(
     )
 
 
-def facts_markdown(facts: Facts) -> str:
+def facts_markdown(facts: Facts, only: frozenset[str] | None = None) -> str:
     """Write the facts as Markdown, for an agent (or a person) to draw from.
 
     Args:
         facts: From :func:`collect_facts`.
+        only: Section names (:data:`FACT_SECTIONS`) to include; None for all.
 
     Returns:
         The Markdown text.
     """
-    report = facts.report
     at = f" at commit {facts.commit}" if facts.commit else ""
     lines = [
         f"# Facts: {facts.project}",
         "",
         f"Read from the code{at} by `kingmadoc explain facts`. Draw from these facts; do not",
         "contradict them. Everything else still comes from reading the code.",
-        "",
+    ]
+    for name, render in _SECTIONS.items():
+        if only is not None and name not in only:
+            continue
+        section = render(facts)
+        if section:
+            lines += ["", *section]
+    return "\n".join(lines) + "\n"
+
+
+def _project(facts: Facts) -> list[str]:
+    report = facts.report
+    return [
         "## Project",
         "",
         f"- Stack: {', '.join(report.detected_stack) or 'not detected'}",
         f"- Entry points: {_codes(report.entry_points) or 'none found'}",
         f"- Source folders: {_codes(p.as_posix() for p in report.source_dirs) or 'none found'}",
         f"- Tests: {_codes(report.test_dirs) or 'none found'}",
-        "",
-        "## Project references",
-        "",
     ]
-    lines += _edges(facts.project_references, "no .NET project references")
-    lines += ["", "## Python module dependencies", ""]
-    lines += _edges(report.module_dependencies or (), "none (or no Python)")
-    lines += ["", "## JavaScript/TypeScript module dependencies", ""]
-    lines += _edges(facts.js_dependencies, "none (or no JavaScript/TypeScript)")
-    lines += ["", "## Routes and access", ""]
-    if facts.routes:
-        lines += ["| Method | Path | Handler | Access |", "| --- | --- | --- | --- |"]
-        for r in facts.routes[:MAX_LISTED]:
-            handler = f"`{r.handler}`" if "/" in r.handler else r.handler
-            lines.append(f"| {r.method} | `{r.path}` | {handler} | {r.access} |")
-        if len(facts.routes) > MAX_LISTED:
-            lines.append(f"| | … {len(facts.routes) - MAX_LISTED} more (see --json) | | |")
-    else:
-        lines.append("_none found (ASP.NET, Next.js, Django, FastAPI, Flask, Express)._")
-    lines += ["", "## Services (dependency injection)", ""]
-    lines += [f"- {sv.contract} → {sv.implementation} ({sv.lifetime}, `{sv.source}`)"
-              for sv in facts.services] or ["_none found (.NET registrations)._"]
-    lines += ["", "## Data model"]
+
+
+def _references(facts: Facts) -> list[str]:
+    return ["## Project references", "",
+            *_edges(facts.project_references, "no .NET project references")]
+
+
+def _python(facts: Facts) -> list[str]:
+    return ["## Python module dependencies", "",
+            *_edges(facts.report.module_dependencies or (), "none (or no Python)")]
+
+
+def _js(facts: Facts) -> list[str]:
+    return ["## JavaScript/TypeScript module dependencies", "",
+            *_edges(facts.js_dependencies, "none (or no JavaScript/TypeScript)")]
+
+
+def _routes(facts: Facts) -> list[str]:
+    lines = ["## Routes and access", ""]
+    if not facts.routes:
+        return [*lines, "_none found (ASP.NET, Next.js, Django, FastAPI, Flask, Express)._"]
+    lines += ["| Method | Path | Handler | Access |", "| --- | --- | --- | --- |"]
+    for r in facts.routes[:MAX_LISTED]:
+        handler = f"`{r.handler}`" if "/" in r.handler else r.handler
+        lines.append(f"| {r.method} | `{r.path}` | {handler} | {r.access} |")
+    if len(facts.routes) > MAX_LISTED:
+        lines.append(f"| | … {len(facts.routes) - MAX_LISTED} more (see --json) | | |")
+    return lines
+
+
+def _services(facts: Facts) -> list[str]:
+    return ["## Services (dependency injection)", "",
+            *([f"- {sv.contract} → {sv.implementation} ({sv.lifetime}, `{sv.source}`)"
+               for sv in facts.services] or ["_none found (.NET registrations)._"])]
+
+
+def _data(facts: Facts) -> list[str]:
+    lines = ["## Data model"]
     if not facts.entities:
-        lines += ["", "_none found (EF Core, Prisma, Django, SQLAlchemy, TypeORM)._"]
+        return [*lines, "", "_none found (EF Core, Prisma, Django, SQLAlchemy, TypeORM)._"]
     for entity in facts.entities:
         lines += ["", f"### {entity.name} ({entity.orm}, `{entity.source}`)", ""]
         lines += [f"- {f.name}: {f.type}" for f in entity.fields]
         lines += [f"- {r.name} → {r.target} ({r.kind})" for r in entity.relations]
-    if facts.branch:
-        lines += ["", *_branch(facts.branch)]
-    return "\n".join(lines) + "\n"
+    return lines
+
+
+def _branch_section(facts: Facts) -> list[str]:
+    return _branch(facts.branch) if facts.branch else []
+
+
+_SECTIONS: Mapping[str, Callable[[Facts], list[str]]] = MappingProxyType({
+    "project": _project,
+    "references": _references,
+    "python": _python,
+    "js": _js,
+    "routes": _routes,
+    "services": _services,
+    "data": _data,
+    "branch": _branch_section,
+})
+# The section names `kingmadoc explain facts --only` accepts, in output order.
+FACT_SECTIONS: tuple[str, ...] = tuple(_SECTIONS)
 
 
 def facts_to_dict(facts: Facts) -> dict[str, Any]:

@@ -1,5 +1,8 @@
 # The C4 model (Simon Brown)
 
+Contents: Abstractions · The seven diagrams · Notation rules · Drawing C4 in D2 ·
+Mistakes to avoid · Review checklist.
+
 Every C4 figure in an explainer follows this file. It sums up the C4 model as defined
 by its creator at [c4model.com](https://c4model.com): the abstractions, the seven
 diagram types, the notation rules and the review checklist. C4 shows static structure,

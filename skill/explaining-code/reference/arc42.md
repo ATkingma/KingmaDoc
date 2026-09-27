@@ -1,5 +1,11 @@
 # Format: arc42 (default)
 
+Contents: Output format · What changed (branch only) · 1. Introduction and goals · 2.
+Constraints · 3. Context and scope · 4. Solution strategy · 5. Building block view · 6.
+Runtime view · 7. Deployment view · 8. Cross-cutting concepts · 9. Architecture
+decisions · 10. Quality requirements · 11. Risks and technical debt · 12. Glossary ·
+Appendix: where to find what · Couldn't work out (optional, at most three).
+
 The default explainer format (`explain: {format: arc42}` in `.featuredoc.yml`): the
 twelve sections of the arc42 architecture template, each a figure or a table with a short
 explanation. Follow the rules in `../SKILL.md` (numbered figures, tables that decode
@@ -57,7 +63,7 @@ Text in `<angle brackets>` is filled in; leave out subsections marked optional.
 | **Scope**        | <feature / branch `<branch>` vs `<base>` / project / part `<path>`>                 |
 | **Stack**        | <languages, frameworks, data stores>                                                |
 | **Entry points** | <`path`, …>                                                                         |
-| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 5.5.0 (arc42) |
+| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 5.6.0 (arc42) |
 
 ## What changed (branch only)
 

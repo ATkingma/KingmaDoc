@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Fewer tokens for agents: `kingmadoc render` prints one line per document
+  (`--verbose` lists every image), `kingmadoc explain facts --only routes,data` prints
+  only the sections asked for, and `explaining-code` 5.6 works quietly, loads reference
+  sections on demand (each long reference starts with its contents), lets a subagent
+  read a big codebase and return a compact summary, fixes a figure by editing its
+  `.d2`, and hands over in at most five lines. The `kingmadoc` skill does not paste the
+  plan into the chat either.
 - `kingmadoc skills install` asks in a terminal whether VS Code should open explainers
   as a rendered preview (default yes); `--vscode` / `--no-vscode` answer up front, and
   agents or pipes only get a tip. `kingmadoc render` says how to see the pictures

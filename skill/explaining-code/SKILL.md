@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: "Explains existing code with rendered diagrams (C4 in Simon Brown's notation; UML sequence, state, class, activity, use case; ER; data flow) and short tables, as an arc42 or compact C4 document, one file or split into functional and technical. Fixes code blindness, e.g. after an agent wrote the code. Scope: a feature, a branch or PR, a whole project, or a folder, service or module. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
-version: 5.5.0
+version: 5.6.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -53,6 +53,27 @@ Rules:
 - Point to code in the tables (`path`), not after every sentence.
 - Never invent. If something essential cannot be worked out, ask at most three
   questions (Step 6).
+
+## Working efficiently
+
+The context window is shared with the user's work; keep what you load and say small.
+
+- **Work quietly.** No running commentary, no file contents, D2 sources or draft text in
+  the chat. Speak only to ask (Step 1, at most three questions in Step 6) or to hand
+  over (Step 6).
+- **Load on demand.** Read the format file you write, and in
+  [reference/c4-model.md](reference/c4-model.md) and
+  [reference/models.md](reference/models.md) only the sections of the models you draw:
+  each reference starts with a table of contents.
+- **Facts before files.** `kingmadoc explain facts --only <sections>` (e.g.
+  `routes,data`) gives just the part you need; read source files only for what the facts
+  cannot show.
+- **Big codebase** (several services, or more than about 100 source files): let a
+  subagent read the code if your agent can run one (in Claude Code: the Explore agent),
+  and have it return a compact list of containers, components, flows and data with
+  their paths (about 1,500 tokens), not the files themselves.
+- **Fix, don't rewrite.** When a diagram fails to render or needs a change, edit its
+  `img/*.d2` file and render again; do not re-read or rewrite the whole document.
 
 ## Step 1. Pin down the scope, the format and the documents
 
@@ -211,7 +232,9 @@ on the PATH: `kingmadoc render` does not need it.
 
 Go through the checklist of each figure's model (end of
 [reference/c4-model.md](reference/c4-model.md) and [reference/models.md](reference/models.md))
-and fix what fails. Then show the path, the one-paragraph summary and the figures (check the document embeds the
-images). Ask the "Couldn't work out" questions, at most three, and update the explainer
-with the answers. In VS Code, mention that `kingmadoc skills install --vscode` makes
-explainers open as a rendered preview; do not run it without the user's consent.
+and fix what fails; check that the document embeds every image. Then hand over in at most five lines:
+the path, one or two sentences on what the system is, the number of figures, and the
+"Couldn't work out" questions (at most three), which you then answer into the explainer.
+Do not paste the explainer or its figures into the chat. If VS Code opens it as text,
+say once that Ctrl+Shift+V shows the pictures, or `kingmadoc skills install --vscode`
+always does; never run that without the user's consent.

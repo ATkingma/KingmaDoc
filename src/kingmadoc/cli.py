@@ -28,7 +28,7 @@ from kingmadoc.explain import (
     read_entries,
 )
 from kingmadoc.facts.branch import branch_changes
-from kingmadoc.facts.collect import collect_facts, facts_markdown, facts_to_dict
+from kingmadoc.facts.collect import FACT_SECTIONS, collect_facts, facts_markdown, facts_to_dict
 from kingmadoc.git import short_head
 from kingmadoc.plan.analyzer import (
     TEST_DIR_NAMES,
@@ -437,7 +437,8 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
 @click.option(
     "--light", is_flag=True, help="Light images only (by default they follow dark mode too)."
 )
-def render_command(documents: tuple[Path, ...], light: bool) -> None:
+@click.option("--verbose", is_flag=True, help="Print every image path (default: one line).")
+def render_command(documents: tuple[Path, ...], light: bool, verbose: bool) -> None:
     """Render the D2 diagrams in DOCUMENTS to SVG images and embed them.
 
     Images go to img/<document>-<n>.svg next to each document (img/figure-<n>.svg for a
@@ -463,8 +464,16 @@ def render_command(documents: tuple[Path, ...], light: bool) -> None:
                     )
             if not images:
                 click.echo(f"No D2 diagrams in {document}", err=True)
+            if verbose:
+                for image in images:
+                    click.echo(image)
+            elif images:
+                first, last = (i.relative_to(document.parent).as_posix()
+                               for i in (images[0], images[-1]))
+                span = first if len(images) == 1 else f"{first} … {last}"
+                noun = "image" if len(images) == 1 else "images"
+                click.echo(f"{document}: {len(images)} {noun} ({span})")
             for image in images:
-                click.echo(image)
                 if not light:
                     source = image.with_suffix(".d2")
                     for warning in dark_mode_warnings(source.read_text(encoding="utf-8")):
@@ -508,8 +517,17 @@ def explain_new(name: str, root: Path) -> None:
     help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
 )
 @click.option("--base", default=None, help="Also show what this branch changed since BASE.")
+@click.option(
+    "--only",
+    default=None,
+    callback=lambda _ctx, _param, value: _sections(value),
+    help=f"Only these sections, comma-separated: {', '.join(FACT_SECTIONS)}.",
+)
 @click.option("--json", "as_json", is_flag=True, help="Print the facts as JSON.")
-def explain_facts(root: Path, config_path: Path | None, base: str | None, as_json: bool) -> None:
+def explain_facts(
+    root: Path, config_path: Path | None, base: str | None, only: frozenset[str] | None,
+    as_json: bool,
+) -> None:
     """Print what can be read from the code without guessing, to explain it from.
 
     The stack, the project references (.NET), the Python module dependencies, the data
@@ -527,7 +545,7 @@ def explain_facts(root: Path, config_path: Path | None, base: str | None, as_jso
     if as_json:
         click.echo(json.dumps(facts_to_dict(facts), indent=2, ensure_ascii=False))
     else:
-        click.echo(facts_markdown(facts), nl=False)
+        click.echo(facts_markdown(facts, only), nl=False)
 
 
 @explain_group.command("status")
@@ -562,6 +580,19 @@ def explain_status(root: Path, check: bool) -> None:
             click.echo(f"{label}: up to date (since {result.commit})")
     if check and outdated:
         raise SystemExit(1)
+
+
+def _sections(value: str | None) -> frozenset[str] | None:
+    if value is None:
+        return None
+    asked = frozenset(part.strip() for part in value.split(",") if part.strip())
+    unknown = sorted(asked - set(FACT_SECTIONS))
+    if unknown or not asked:
+        raise click.BadParameter(
+            f"unknown section(s) {', '.join(unknown) or '(none)'}; choose from "
+            + ", ".join(FACT_SECTIONS)
+        )
+    return asked
 
 
 def _write_explain_index(directory: Path) -> None:

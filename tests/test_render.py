@@ -170,11 +170,23 @@ def _wrapper(tmp_path: Path, d2: list[str]) -> Path:
 
 
 def test_cli_renders_with_the_configured_binary(tmp_path: Path, d2: list[str]) -> None:
-    """KINGMADOC_D2 points at the binary; the CLI prints the images it wrote."""
+    """KINGMADOC_D2 points at the binary; one short line per document (agents read it)."""
     doc = _doc(tmp_path)
     wrapper = _wrapper(tmp_path, d2)
 
     result = CliRunner().invoke(cli, ["render", str(doc)], env={"KINGMADOC_D2": str(wrapper)})
+
+    assert result.exit_code == 0, result.output
+    assert result.stdout.splitlines() == [f"{doc}: 2 images (img/shop-1.svg … img/shop-2.svg)"]
+
+
+def test_cli_render_verbose_lists_every_image(tmp_path: Path, d2: list[str]) -> None:
+    """--verbose prints each image path, as before."""
+    doc = _doc(tmp_path)
+
+    result = CliRunner().invoke(
+        cli, ["render", "--verbose", str(doc)], env={"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+    )
 
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [

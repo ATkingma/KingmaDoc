@@ -1,5 +1,11 @@
 # Models beyond C4: pick them by what the code has
 
+Contents: Which model for which code · Rules for every model · Sequence diagram (UML) ·
+State machine (UML) · ER diagram (crow's foot) · Class diagram and domain model (UML) ·
+Package diagram · Activity diagram with swimlanes (UML / BPMN style) · Use case diagram
+(UML) · Data flow diagram with trust boundaries · Event flow (event storming colours) ·
+Context map (DDD) · Review checklist.
+
 C4 ([c4-model.md](c4-model.md)) shows structure, deployment and runtime. Everything
 else (data, lifecycles, processes, domain, security-relevant data flows) needs its own
 model. Pick models from the signals in the code; skip a model whose signal is weak and
