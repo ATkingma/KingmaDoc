@@ -8,9 +8,9 @@ Package imports (``react``) are left out.
 from __future__ import annotations
 
 import json
-import posixpath
 import re
 from collections.abc import Mapping
+from pathlib import PurePosixPath
 
 from kingmadoc.plan.dependencies import collapse
 
@@ -60,12 +60,12 @@ def _resolve(
     spec: str, importer: str, aliases: list[tuple[str, str, str]], names: Mapping[str, str]
 ) -> str | None:
     if spec.startswith("."):
-        base = posixpath.normpath(posixpath.join(posixpath.dirname(importer), spec))
+        base = _join(_parent(importer), spec)
     else:
         base = ""
         for scope, prefix, target in aliases:
             if spec.startswith(prefix) and importer.startswith(scope):
-                base = posixpath.normpath(posixpath.join(target, spec[len(prefix):]))
+                base = _join(target, spec[len(prefix):])
                 break
         if not base:
             return None
@@ -79,19 +79,19 @@ def _aliases(sources: Mapping[str, str]) -> list[tuple[str, str, str]]:
     """``(scope folder, import prefix, target folder)`` from every tsconfig/jsconfig."""
     found = []
     for path, text in sources.items():
-        if posixpath.basename(path) not in CONFIG_FILES:
+        if PurePosixPath(path).name not in CONFIG_FILES:
             continue
-        folder = posixpath.dirname(path)
+        folder = _parent(path)
         options = _json(text).get("compilerOptions", {})
         if not isinstance(options, dict):
             continue
-        base = posixpath.normpath(posixpath.join(folder, str(options.get("baseUrl", "."))))
+        base = _join(folder, str(options.get("baseUrl", ".")))
         paths = options.get("paths", {})
         for pattern, targets in (paths.items() if isinstance(paths, dict) else []):
             if not (isinstance(targets, list) and targets and isinstance(targets[0], str)):
                 continue
             prefix = pattern.removesuffix("*")
-            target = posixpath.normpath(posixpath.join(base, targets[0].removesuffix("*")))
+            target = _join(base, targets[0].removesuffix("*"))
             scope = f"{folder}/" if folder else ""
             found.append((scope, prefix, target if target != "." else ""))
     # Longest prefix first, so "@/components/" wins over "@/".
@@ -136,6 +136,23 @@ def _without_comments(text: str) -> str:
             out.append(char)
         i += 1
     return "".join(out)
+
+
+def _parent(path: str) -> str:
+    parent = PurePosixPath(path).parent.as_posix()
+    return "" if parent == "." else parent
+
+
+def _join(folder: str, relative: str) -> str:
+    """``folder/relative`` with ``.`` and ``..`` resolved ("." for the project root)."""
+    parts: list[str] = []
+    for part in PurePosixPath(folder, relative).parts:
+        if part == "..":
+            if parts:
+                parts.pop()
+        elif part != ".":
+            parts.append(part)
+    return "/".join(parts) or "."
 
 
 def _strip(path: str) -> str:
