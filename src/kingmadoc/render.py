@@ -32,6 +32,7 @@ from kingmadoc.explain import EXPLAINER_FILE, index_path
 D2_TIMEOUT = 60
 # Pixels around each image; D2's default of 100 wastes space in a document.
 D2_PAD = 20
+IMAGE_MODE = 0o644
 # D2's own dark theme; the SVG switches to it when the viewer uses dark mode.
 D2_DARK_THEME = 200
 
@@ -88,6 +89,8 @@ def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
         for name, source, svg in zip(names, sources, rendered, strict=True):
             write_document(image_dir / f"{name}.d2", source.rstrip("\n") + "\n", overwrite=True)
             os.replace(svg, image_dir / f"{name}.svg")
+            # d2 writes its output private (0600); images are for everyone who reads docs.
+            (image_dir / f"{name}.svg").chmod(IMAGE_MODE)
     _remove_stale_files(image_dir, stem, set(names))
     _remove_renamed_files(image_dir, path, items, set(names))
 
@@ -96,6 +99,72 @@ def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
         text = text[: item.start()] + _embed(alt, name) + text[item.end() :]
     write_document(path, text, overwrite=True)
     return [image_dir / f"{name}.svg" for name in names]
+
+
+def dark_mode_warnings(source: str) -> list[str]:
+    """Find styles in a D2 diagram that break when the image shows in dark mode.
+
+    The images carry a dark theme; fixed colours do not follow it. Warned about: a fixed
+    ``font-color`` without a fill (dark text on the dark background), a white fill (a
+    white box whose labels turn light), and a ``sequence_diagram`` in a labelled
+    container (its key shows as a heading).
+
+    Args:
+        source: The D2 source.
+
+    Returns:
+        One message per problem (empty when there is none).
+    """
+    warnings = []
+    for match in re.finditer(r"\bfont-color: *[^;}\n]+", source):
+        block = _enclosing_map(source, match.start())
+        fill = re.search(r"\bfill: *\"?([^;}\n\"]+)", block)
+        if not fill or fill.group(1).strip() == "transparent":
+            warnings.append(f"{_key(source, match.start())}: font-color without a fill stays "
+                            "dark on the dark background; remove the font-color")
+    for match in re.finditer(r"\bfill: *\"?(?:#fff\b|#ffffff|white)\"?", source, re.I):
+        warnings.append(f"{_key(source, match.start())}: a white fill stays white while the "
+                        "text on it turns light; use fill: transparent")
+    for match in re.finditer(r"^( +)shape: *sequence_diagram", source, re.M):
+        opening = source[: match.start()].rstrip().rsplit("\n", 1)[-1]
+        if not re.search(r':\s*""\s*\{$', opening):
+            warnings.append(f"{_key(source, match.start())}: a sequence_diagram in a labelled "
+                            "container shows its key as a heading; label it \"\" or move it up")
+    return warnings
+
+
+def _enclosing_map(source: str, position: int) -> str:
+    """The innermost ``{...}`` around ``position``."""
+    depth, start = 0, position
+    while start > 0:
+        start -= 1
+        if source[start] == "}":
+            depth += 1
+        elif source[start] == "{":
+            if depth == 0:
+                break
+            depth -= 1
+    depth, end = 0, position
+    while end < len(source):
+        if source[end] == "{":
+            depth += 1
+        elif source[end] == "}":
+            if depth == 0:
+                break
+            depth -= 1
+        end += 1
+    return source[start : end + 1]
+
+
+def _key(source: str, position: int) -> str:
+    """The shape a style belongs to: the key on its line, else the enclosing map's key."""
+    line = source[source.rfind("\n", 0, position) + 1 : position]
+    key = re.match(r"\s*([\w.-]+)\s*:", line)
+    if key and key.group(1) not in ("style", "shape"):
+        return f"`{key.group(1)}`"
+    opening = source[: source.rfind("{", 0, position)].rsplit("\n", 1)[-1]
+    key = re.match(r"\s*([\w.-]+)\s*:", opening)
+    return f"`{key.group(1)}`" if key else "a shape"
 
 
 def _source(item: re.Match[str], doc: Path) -> str:

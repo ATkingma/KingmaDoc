@@ -49,7 +49,7 @@ from kingmadoc.plan.generator import (
     render_plan,
 )
 from kingmadoc.plandoc import check_plan, generated_at, parse_plan, set_status
-from kingmadoc.render import render_file
+from kingmadoc.render import dark_mode_warnings, render_file
 from kingmadoc.skills import AGENT_DIRS, install_skills
 from kingmadoc.verify.changes import detect_changes
 from kingmadoc.verify.commands import MARKER_FILES, detect_commands, run_check
@@ -446,15 +446,29 @@ def render_command(documents: tuple[Path, ...], light: bool) -> None:
     """
     try:
         d2 = ensure_d2(lambda message: click.echo(message, err=True))
+        hinted = False
         for document in documents:
             images = render_file(document, d2, dark=not light)
             index = index_path(document)
             if index is not None:
                 _write_explain_index(index.parent)
+                project = index.parent.parent.parent
+                if images and not hinted and not preview_enabled(project):
+                    hinted = True
+                    click.echo(
+                        "VS Code shows the pictures in the preview: open the file and press "
+                        "Ctrl+Shift+V (macOS: Cmd+Shift+V), or run `kingmadoc skills install "
+                        "--vscode` to always open explainers as a preview.",
+                        err=True,
+                    )
             if not images:
                 click.echo(f"No D2 diagrams in {document}", err=True)
             for image in images:
                 click.echo(image)
+                if not light:
+                    source = image.with_suffix(".d2")
+                    for warning in dark_mode_warnings(source.read_text(encoding="utf-8")):
+                        click.echo(f"{source}: {warning} (dark mode)", err=True)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -578,17 +592,24 @@ def skills_group() -> None:
     "--force", is_flag=True, help="Also replace skill files you edited locally."
 )
 @click.option(
-    "--vscode",
-    is_flag=True,
-    help="Also make VS Code open explainers as a rendered preview (.vscode/settings.json).",
+    "--vscode/--no-vscode",
+    default=None,
+    help="Make VS Code open explainers as a rendered preview (.vscode/settings.json), or "
+    "not. Without either, a terminal asks; other runs only print a tip.",
 )
-def skills_install(root: Path, agent: str, force: bool, vscode: bool) -> None:
+def skills_install(root: Path, agent: str, force: bool, vscode: bool | None) -> None:
     """Install the KingmaDoc skills into the project for AGENT (Agent Skills standard).
 
-    With --vscode, also makes VS Code open docs/explain/ as a rendered preview.
+    Also offers to make VS Code open docs/explain/ as a rendered preview, so the pictures
+    show right away (asked in a terminal; --vscode / --no-vscode decide up front).
     """
     try:
         result = install_skills(root, agent, force)
+        if vscode is None and not preview_enabled(root) and _interactive():
+            vscode = click.confirm(
+                "Make VS Code open explainers (docs/explain/) as a rendered preview, so the "
+                "pictures show right away?", default=True, err=True,
+            )
         preview = enable_markdown_preview(root) if vscode else None
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -600,11 +621,16 @@ def skills_install(root: Path, agent: str, force: bool, vscode: bool) -> None:
         click.echo(f"{len(result.up_to_date)} skill file(s) already up to date.", err=True)
     if preview:
         click.echo(preview, err=True)
-    elif not preview_enabled(root):
+    elif vscode is None and not preview_enabled(root):
         click.echo(
             "Tip: --vscode makes VS Code open explainers (docs/explain/) as a rendered preview.",
             err=True,
         )
+
+
+def _interactive() -> bool:
+    """A person at a terminal (not an agent or a pipe) can answer a question."""
+    return sys.stdin.isatty()
 
 
 def main() -> None:

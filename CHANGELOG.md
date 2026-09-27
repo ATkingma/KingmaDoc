@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `kingmadoc skills install` asks in a terminal whether VS Code should open explainers
+  as a rendered preview (default yes); `--vscode` / `--no-vscode` answer up front, and
+  agents or pipes only get a tip. `kingmadoc render` says how to see the pictures
+  (Ctrl+Shift+V) while that setting is missing.
+
+### Fixed
+
+- Dark mode: the C4 style of `explaining-code` (5.5) set black title text and white
+  boundaries and nodes, which were unreadable or glaring in dark mode. Titles and
+  labels now follow the theme and boundaries are transparent; `kingmadoc render` warns
+  about such styles in existing diagrams (fixed text colour without a fill, white
+  fills, a `sequence_diagram` whose container key shows as a heading).
+- `kingmadoc render`: images get normal file permissions (0644) instead of D2's private
+  0600.
+
 ## [0.2.0] - 2026-09-27
 
 Explain existing code with pictures, machine-readable plans, and a `verify` that

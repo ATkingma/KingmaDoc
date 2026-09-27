@@ -103,13 +103,13 @@ classes: {
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
-  boundary: {style: {fill: "#ffffff"; stroke: "#444444"; stroke-dash: 4; font-color: "#444444"}}
-  node: {style: {fill: "#ffffff"; stroke: "#888888"; font-color: "#000000"}}
+  boundary: {style: {fill: transparent; stroke: "#888888"; stroke-dash: 4}}
+  node: {style: {fill: transparent; stroke: "#888888"}}
 }
 title: "[System Context] Webshop" {
   shape: text
   near: top-center
-  style: {font-size: 24; bold: true; font-color: "#000000"}
+  style: {font-size: 24; bold: true}
 }
 vars: {
   d2-legend: {
@@ -152,7 +152,7 @@ classes: {
   external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}}
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  boundary: {style: {fill: "#ffffff"; stroke: "#444444"; stroke-dash: 4; font-color: "#444444"}}
+  boundary: {style: {fill: transparent; stroke: "#888888"; stroke-dash: 4}}
 }
 title: "[Container] Webshop" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 vars: {
@@ -210,7 +210,7 @@ classes: {
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
-  boundary: {style: {fill: "#ffffff"; stroke: "#444444"; stroke-dash: 4; font-color: "#444444"}}
+  boundary: {style: {fill: transparent; stroke: "#888888"; stroke-dash: 4}}
 }
 title: "[Component] Webshop - API" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 vars: {
@@ -259,7 +259,7 @@ instances they run; infrastructure (proxy, DNS) only when the code configures it
 classes: {
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  node: {style: {fill: "#ffffff"; stroke: "#888888"; font-color: "#000000"}}
+  node: {style: {fill: transparent; stroke: "#888888"}}
 }
 title: "[Deployment] Webshop - production" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 vars: {

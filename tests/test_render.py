@@ -24,6 +24,8 @@ if "BAD" in text:
     sys.stderr.write("err: failed to compile: connection missing destination\\n")
     sys.exit(1)
 open(target, "w", encoding="utf-8").write("<svg>" + text.strip() + "</svg>")
+import os
+os.chmod(target, 0o600)  # like the real d2: the output is private
 """
 
 DOC = """\
@@ -358,3 +360,57 @@ def test_cli_light_option(tmp_path: Path, d2: list[str], monkeypatch: pytest.Mon
 
     assert result.exit_code == 0, result.output
     assert calls == [False]
+
+
+def test_dark_mode_problems_are_reported() -> None:
+    """render warns about styles that break in dark mode (it does not change the source)."""
+    from kingmadoc.render import dark_mode_warnings
+
+    source = (
+        'title: "T" {shape: text; style: {bold: true; font-color: "#000000"}}\n'
+        'b: "Boundary" {style: {fill: "#ffffff"; stroke: "#444"}}\n'
+        'seq: {\n  shape: sequence_diagram\n}\n'
+        'ok: "Box" {style: {fill: "#438dd5"; font-color: "#ffffff"}}\n'
+        'see: "Through" {style: {fill: transparent}}\n'
+    )
+
+    warnings = dark_mode_warnings(source)
+
+    assert len(warnings) == 3, warnings
+    assert any("font-color" in w and "title" in w for w in warnings)
+    assert any("white" in w for w in warnings)
+    assert any("sequence_diagram" in w and "seq" in w for w in warnings)
+
+
+def test_cli_render_prints_the_dark_mode_warnings(tmp_path: Path, d2: list[str]) -> None:
+    """The warning names the figure, so the agent knows which .d2 file to fix."""
+    doc = _doc(tmp_path, '# T\n\n```d2\nt: "T" {style: {font-color: "#000000"}}\n```\n')
+
+    result = CliRunner().invoke(
+        cli, ["render", str(doc)], env={"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "shop-1.d2" in result.stderr and "dark mode" in result.stderr
+
+
+def test_rendering_an_explainer_points_at_the_preview(tmp_path: Path, d2: list[str]) -> None:
+    """While VS Code would open explainers as text, render says how to see the pictures."""
+    doc = tmp_path / "docs" / "explain" / "0001-shop" / "README.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text(DOC, encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli, ["render", str(doc)], env={"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Ctrl+Shift+V" in result.stderr and "--vscode" in result.stderr
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
+def test_images_are_readable_by_everyone(tmp_path: Path, d2: list[str]) -> None:
+    """Images come out of a private temp dir; they get normal file modes (0644)."""
+    images = render_file(_doc(tmp_path), d2)
+
+    assert all(p.stat().st_mode & 0o777 == 0o644 for p in images)

@@ -284,6 +284,37 @@ def test_filled_shapes_stay_readable_in_dark_mode(path: Path) -> None:
             if re.match(r'\s*[\w.]+: ""', line):
                 if match.group(1).strip() == "black" and "stroke" not in block:
                     problems.append(f"black dot without stroke: {line.strip()} {block}")
-            elif "font-color" not in block:
+            elif "font-color" not in block and match.group(1).strip() != "transparent":
                 problems.append(f"fill without font-color: {line.strip()} {block}")
     assert not problems, "\n".join(problems)
+
+
+@pytest.mark.parametrize("path", ALL_FILES, ids=lambda p: p.name)
+def test_text_on_the_background_follows_the_theme(path: Path) -> None:
+    """A fixed text colour only on a fixed fill; boxes that hold other shapes stay see-through.
+
+    Black title text or a white boundary look right on white and wrong in dark mode: the
+    boundary stays white while the labels inside it turn light.
+    """
+    problems = []
+    for source in _examples(_read(path)):
+        for match in re.finditer(r"\bfont-color: *[^;}\n]+", source):
+            start, end = _enclosing_map(source, match.start())
+            block = source[start:end]
+            fill = re.search(r"\bfill: *([^;}\n]+)", block)
+            if not fill or fill.group(1).strip().strip('"') == "transparent":
+                line = source[source.rfind("\n", 0, match.start()) + 1 : match.start()]
+                problems.append(f"font-color without a fill: {line.strip()} {block}")
+        for fill in re.finditer(r"\bfill: *\"?(#fff\b|#ffffff|white)\"?", source, re.I):
+            problems.append(f"white fill (use transparent): {fill.group(0)}")
+    assert not problems, "\n".join(problems)
+
+
+@pytest.mark.parametrize("path", ALL_FILES, ids=lambda p: p.name)
+def test_a_sequence_diagram_has_no_stray_label(path: Path) -> None:
+    """shape: sequence_diagram at the top level, or in a container labelled "" (else its
+    key, e.g. "seq", shows as a heading)."""
+    for source in _examples(_read(path)):
+        for match in re.finditer(r"^( +)shape: sequence_diagram", source, re.M):
+            opening = source[: match.start()].rstrip().rsplit("\n", 1)[-1]
+            assert re.search(r':\s*""\s*\{$', opening), f"{path.name}: {opening.strip()}"

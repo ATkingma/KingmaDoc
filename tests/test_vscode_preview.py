@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from kingmadoc.cli import cli
@@ -103,3 +104,36 @@ def test_no_tip_when_the_preview_is_already_set_up(tmp_path: Path) -> None:
 
     assert again.exit_code == 0, again.output
     assert "Tip" not in again.output
+
+
+def test_an_interactive_install_asks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """In a terminal, skills install asks whether to set up the preview (default yes)."""
+    from kingmadoc import cli as cli_module
+
+    monkeypatch.setattr(cli_module, "_interactive", lambda: True)
+    other = tmp_path / "other"
+    other.mkdir()
+    runner = CliRunner()
+
+    yes = runner.invoke(cli, ["skills", "install", "--root", str(tmp_path)], input="\n")
+    no = runner.invoke(cli, ["skills", "install", "--root", str(other)], input="n\n")
+
+    assert yes.exit_code == 0, yes.output
+    assert "rendered preview" in yes.output and _settings(tmp_path).is_file()
+    assert no.exit_code == 0, no.output
+    assert not _settings(other).exists()
+
+
+def test_no_vscode_never_asks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """--no-vscode: no question and no settings file, also in a terminal."""
+    from kingmadoc import cli as cli_module
+
+    monkeypatch.setattr(cli_module, "_interactive", lambda: True)
+
+    result = CliRunner().invoke(
+        cli, ["skills", "install", "--root", str(tmp_path), "--no-vscode"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "?" not in result.output
+    assert not _settings(tmp_path).exists()

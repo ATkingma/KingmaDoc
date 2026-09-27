@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: "Explains existing code with rendered diagrams (C4 in Simon Brown's notation; UML sequence, state, class, activity, use case; ER; data flow) and short tables, as an arc42 or compact C4 document, one file or split into functional and technical. Fixes code blindness, e.g. after an agent wrote the code. Scope: a feature, a branch or PR, a whole project, or a folder, service or module. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
-version: 5.4.0
+version: 5.5.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -138,6 +138,9 @@ Write every diagram in **D2** (Step 5 turns them into images).
    says: e.g. arc42 section 6 for flows and lifecycles, section 8 for data and domain.
 4. **Readable in dark mode:** the images follow the viewer's light or dark theme. Give
    every shape you fill (`fill:`) a `font-color` too, and black dots a grey `stroke`.
+   Never set a `font-color` without a fill (titles, labels: the theme picks the colour),
+   and never fill white: boundaries and nodes are `fill: transparent`. Put
+   `shape: sequence_diagram` at the top level, or give its container the label `""`.
 
 For a **branch**, mark changes by border, so the C4 colours stay meaningful, and add
 both to the legend:

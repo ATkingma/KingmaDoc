@@ -45,10 +45,12 @@ them are updated; files you edited are kept (`--force` replaces them too).
 
 Nothing else to install: the first `kingmadoc render` downloads the D2 diagram renderer by
 itself (pinned version, checksum-verified; `KINGMADOC_D2_DOWNLOAD=0` turns that off).
-`kingmadoc skills install --vscode` also makes VS Code open explainers (`docs/explain/`)
-as a rendered preview, so you see the pictures right away (it adds one setting to
-`.vscode/settings.json`, only when you pass `--vscode`; Visual Studio shows a preview by
-default).
+VS Code opens a `.md` file as text, which shows no pictures. `kingmadoc skills install`
+asks whether VS Code should open explainers (`docs/explain/`) as a rendered preview
+instead, so you see the pictures right away (one setting in `.vscode/settings.json`;
+`--vscode` / `--no-vscode` answer up front). Without it, press Ctrl+Shift+V in an
+explainer. Visual Studio shows a preview by default. The pictures follow VS Code's light
+or dark theme.
 
 ### pip
 
