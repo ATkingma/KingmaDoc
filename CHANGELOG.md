@@ -7,148 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-27
+
+Explain existing code with pictures, machine-readable plans, and a `verify` that
+compares the code with its plan. Upgrading from 0.1.1:
+
+- Update with `pipx reinstall kingmadoc` (or, once on PyPI, `pipx upgrade kingmadoc`),
+  then run `kingmadoc skills install` again; it updates the skills without `--force`.
+- Plans now start with YAML frontmatter and have a "Requirements" section. Plans from
+  0.1.x have neither: `kingmadoc check` says so, and `verify` reports them as
+  "Not verified". Regenerate the plan, or add the frontmatter by hand
+  (`skill/reference/formats.md`).
+- `kingmadoc verify` now compares the code with the plan and changes the plan's status
+  (`implemented` / `partial`); it runs project commands only with `--run-checks`.
+- `.vscode/settings.json` is only written with `skills install --vscode`.
+- Python API: `skills.install_skills` returns an `InstallResult`; `verify.stub` is
+  replaced by `verify.locate` (`find_plan`) and `verify.report` (`render_verify`).
+
 ### Added
 
-- `kingmadoc verify <slug>` compares the code with its plan (roadmap WP2) instead of
-  writing a placeholder: the files changed since the plan (git, including uncommitted
-  work), expected files never touched, changes outside `files_expected`, `REQ-n` no test
-  or commit message mentions, containers added or gone, and code written while the plan
-  was still draft. Build, test and lint commands (from `verify:` in `.featuredoc.yml`,
-  or detected: Makefile, npm, Cargo, Go, .NET, pytest, Ruff) run only with
-  `--run-checks`, without a shell and with a timeout. The plan's status becomes
-  `implemented` or `partial`. `--force` overwrites an existing verify doc.
-- Machine-readable plans (roadmap WP1): every plan starts with YAML frontmatter
-  (`kingmadoc: 1`, `feature`, `status`, `requirements`, `files_expected`) and has a
-  "Requirements" section with `REQ-n` IDs (from the acceptance criteria, else a TODO in
-  EARS form); `files_expected` lists the existing paths named as changing.
-  `kingmadoc check <slug>` validates a plan with clear messages; `kingmadoc approve
-  <slug>` sets `status: approved` (the approval gate, now also in the CLI). The
-  `kingmadoc` skill 1.1 writes the same frontmatter and requirements, and verify checks
-  every `REQ-n`.
-- Skill evaluations (roadmap WP5): three scenarios in `evals/` (explain a feature,
-  explain a branch, plan a feature) on a small Django fixture, run with
-  `python scripts/run_evals.py [--compare] [--record]`; deterministic checks (paths,
-  headings, pictures only, at most three questions, no source code changed).
-- `kingmadoc explain facts [--base REF] [--json]` (roadmap WP12 task 3): what can be read
-  from the code without guessing, for the agent to draw from: the stack, the references
-  between .NET projects (`.csproj`), the Python module dependencies, the data model from
-  ORM code (EF Core, Prisma, Django, SQLAlchemy, TypeORM; tests are left out) and, with
-  `--base`, the branch's commits and changed files with line counts (uncommitted work
-  included). `explaining-code` 5.3 starts from it. It also lists the routes with
-  their access rules (ASP.NET controllers and minimal APIs with `[Authorize]`,
-  `[AllowAnonymous]`, rate limiting; Next.js app and pages router; Django with
-  `login_required`; FastAPI with `Depends`; Flask; Express middleware), the .NET
-  services registered for dependency injection, and the JavaScript/TypeScript module
-  dependencies (relative imports and `tsconfig` `paths` aliases such as `@/`, merged
-  into folders above 25 modules); `explaining-code` 5.4 uses them.
-- `kingmadoc explain status`: per explainer, the files changed since the commit in its
-  **Based on** row (committed or not), limited to the files it names in code spans (or
-  the whole project); `--check` exits with 1 when one is outdated, for CI.
-  `explaining-code` runs it before explaining a subject again.
-- `kingmadoc render` images follow the viewer's dark mode: each SVG also carries D2's
-  dark theme (`--light` renders light only). `explaining-code` 5.2 gives every filled
-  shape a text colour and black dots a grey border, so they stay readable in dark mode;
-  a test checks every example.
-- `explaining-code` 5.1 triggers on more requests: how something works, what a PR or
-  commit changed, onboarding, walkthroughs, architecture or UML diagrams of existing
-  code; the request may be in any language.
-- `explaining-code` 5.0: real C4 diagrams in Simon Brown's notation (system context,
-  container, component, code, landscape, dynamic, deployment; title, legend, element
-  type, technology and description, labelled one-way arrows, one colour palette) and
-  the other models the code calls for, picked from a decision table: UML sequence,
-  state machine, class and domain model, package, activity with swimlanes, use case,
-  ER (crow's foot), data flow with trust boundaries, event flow and DDD context map.
-  Every model has notation rules and a checklist the agent goes through; tests check
-  that every example follows its rules and compiles.
-- `explain.documents`: `single` (default) or `split`, which writes a cover `README.md`,
-  a `functional.md` and a `technical.md`; the user can also ask for it.
-- One folder per explained subject: `docs/explain/<NNNN>-<name>/README.md` plus its
-  `img/`, with a unique ID that is never reused. `kingmadoc explain new "<name>"` picks
-  or reuses the folder and keeps the index `docs/explain/README.md` up to date (so does
-  `kingmadoc render`); a README's images are named `img/figure-<n>.svg`.
-  `explaining-code` 4.1 writes there.
-- `kingmadoc skills install` updates skill files an earlier KingmaDoc installed without
-  `--force`; only files edited locally need `--force`. A `.kingmadoc-skill.json`
-  manifest per skill folder records what was installed; files a skill no longer ships
-  are removed when unchanged.
-- `kingmadoc --version` shows the installed git commit (`0.2.0.dev0 (git 29244f7)`)
-  or `(editable)`, so an update is visible; the version is now `0.2.0.dev0`.
-- Design models (roadmap WP8): each extra design document contains design models
-  (sections), selected per document with `extra_designs.<document>.models`
-  (default: all models of that document).
-- `extra_designs.domain_design`: domain model diagram and event storming.
-- `extra_designs.security_design`: STRIDE threat model with the elements KingmaDoc
-  detected, and a "who may do what" permissions matrix.
-- `technical_design`: a module dependency graph derived from the imports between the
-  project's own Python modules (merged into packages above 25 modules).
-- `kingmadoc analyze` reports `module_dependencies` (also in `--json`).
-- Agent skill `explaining-code`: explains existing code with pictures, for a feature, a
-  branch (what it changed), a whole project or a part of one. Writes `docs/explain/*.md`
-  with the big picture, one sequence diagram per main action, the building blocks, the
-  data and a where-to-find-what table; no audit or risk list, at most three questions.
-- `kingmadoc render <doc>`: renders the D2 diagrams in a Markdown document to SVG images
-  next to it and replaces each diagram with its image; the D2 source moves to
-  `img/*.d2` next to the image, so the document shows only pictures. D2 is
-  downloaded automatically on first use (pinned, SHA-256-verified; opt out with
-  `KINGMADOC_D2_DOWNLOAD=0`), so nothing has to be installed besides KingmaDoc.
-- `kingmadoc skills install [--agent claude|cursor|codex|copilot]`: installs the bundled
-  agent skills into the project; with `--vscode` it also makes VS Code open
-  `docs/explain/*.md` as a rendered preview (never without asking).
-- `explaining-code` 4.0: writes an arc42 document by default (C4 levels 1-4, runtime
-  and deployment views, decisions, glossary; quality and risks only as documented), or
-  the compact C4 format with `explain.format: c4`. Every figure is numbered and
-  decoded by a parts or arrows table instead of prose.
-- `explain.format` in `.featuredoc.yml` (`arc42` default, or `c4`).
+**Explain existing code** (agent skill `explaining-code` 5.4, roadmap WP12)
+
+- Explains a feature, a branch (what it changed), a project or a part of one with
+  pictures: an arc42 document by default, or the compact C4 format
+  (`explain.format: c4`); one document, or functional and technical apart
+  (`explain.documents: split`). No audit or risk list; at most three questions.
+- Real C4 diagrams in Simon Brown's notation, plus the models the code calls for, picked
+  from a decision table: UML sequence, state machine, class and domain model, package,
+  activity with swimlanes, use case, ER, data flow with trust boundaries, event flow and
+  DDD context map. Tests check that every example follows its notation and compiles.
+- One folder per subject, `docs/explain/<NNNN>-<name>/`, with an ID that is never
+  reused: `kingmadoc explain new "<name>"` picks or reuses it and keeps the index
+  `docs/explain/README.md` up to date.
+- `kingmadoc explain facts [--base REF] [--json]`: what can be read from the code
+  without guessing, for the agent to draw from: the stack, project references (.NET),
+  Python and JavaScript/TypeScript module dependencies, routes with their access rules
+  (ASP.NET, Next.js, Django, FastAPI, Flask, Express), .NET services, the data model
+  (EF Core, Prisma, Django, SQLAlchemy, TypeORM) and, with `--base`, a branch's commits
+  and changed files.
+- `kingmadoc explain status [--check]`: which explainers the code changed under since
+  the commit they are based on.
+
+**Pictures**
+
+- `kingmadoc render <doc>`: turns the D2 diagrams in a Markdown document into SVG images
+  next to it; the document shows only the pictures, the sources go to `img/*.d2`. The
+  images follow the viewer's dark mode (`--light` for light only). D2 is downloaded on
+  first use (pinned, SHA-256-verified; `KINGMADOC_D2_DOWNLOAD=0` to opt out).
+
+**Plans and verification** (roadmap WP1, WP2)
+
+- Plans start with YAML frontmatter (`kingmadoc: 1`, `feature`, `status`,
+  `requirements`, `files_expected`) and have a "Requirements" section with `REQ-n` IDs
+  from the acceptance criteria. `kingmadoc check <slug>` validates a plan;
+  `kingmadoc approve <slug>` sets `status: approved`, the gate before code.
+- `kingmadoc verify <slug>` compares the code with its plan: the files changed since
+  the plan (git, including uncommitted work), expected files never touched, changes
+  outside the plan, `REQ-n` no test or commit mentions, containers added or gone, and
+  code written before approval. Build, test and lint (from `verify:` in the config, or
+  detected) run only with `--run-checks`. The plan's status becomes `implemented` or
+  `partial`.
+- Design documents: design models per document (`extra_designs.<document>.models`),
+  `domain_design` (domain model, event storming) and `security_design` (STRIDE threat
+  model, permissions matrix); `technical_design` gets a module dependency graph, and
+  `kingmadoc analyze` reports `module_dependencies`.
+
+**Installing and updating**
+
+- `kingmadoc skills install [--agent claude|cursor|codex|copilot]` installs both
+  skills into the project and updates them later without `--force` (only local edits
+  need it); `--vscode` makes VS Code open explainers as a rendered preview.
+- `kingmadoc --version` shows the installed git commit (`0.2.0 (git 1a2b3c4)`).
+
+**Development**
+
+- Skill evaluations (roadmap WP5): scenarios in `evals/`, run with
+  `python scripts/run_evals.py --compare --record`.
 
 ### Changed
 
-- The `kingmadoc` skill is split (roadmap WP4): `SKILL.md` holds the workflow (184
-  lines), `reference/formats.md` the document formats and `reference/diagram-rules.md`
-  the Mermaid rules; `skills install` copies both, and the Cursor, Codex and Copilot
-  files still contain everything in one file.
 - The version comes from the git tag (`hatch-vcs`): every commit after a release has a
-  higher development version (`0.2.0.devN`), so an update is visible and `pipx upgrade`
-  sees it.
-- Release workflow: pushing a `v*` tag builds, tests and publishes to PyPI with trusted
-  publishing and creates the GitHub release (`docs/releasing.md`).
-- Quality (roadmap WP7): branch coverage with a 90 % minimum in CI, property-based
-  tests (Hypothesis) for the slug, summary, plan, explainer index and code parsers, and
-  the architecture rules E1/E5 as `import-linter` contracts (`lint-imports` in CI).
-- Supply chain: committed `uv.lock` (checked in CI), `pip-audit` in CI, and Ruff's `S`
-  (security) rules.
-- API: `skills.install_skills` returns an `InstallResult` (`written`, `up_to_date`,
-  `removed`) instead of a `(written, up_to_date)` tuple.
-
-### Security
-
-- `kingmadoc skills install`: paths in a skill folder's `.kingmadoc-skill.json` (which is
-  repository content) can no longer point outside that folder; a crafted manifest could
-  make the install delete files elsewhere.
+  higher development version, so updates of a git install are visible.
+- Release workflow: a `v*` tag builds, tests and publishes to PyPI (trusted
+  publishing) and creates the GitHub release (`docs/releasing.md`).
+- The `kingmadoc` skill (1.1) is split into `SKILL.md` and `reference/`
+  (formats, diagram rules); the Cursor, Codex and Copilot files still hold everything.
+- Quality: branch coverage with a 90 % minimum, property-based tests (Hypothesis),
+  `import-linter` contracts for the architecture rules, `uv.lock`, `pip-audit` and
+  Ruff's security rules in CI.
+- API: `skills.install_skills` returns an `InstallResult`; `verify.stub` is replaced by
+  `verify.locate` and `verify.report`.
 
 ### Fixed
 
-- `kingmadoc render`: a `README.md` and an `index.md` in one folder no longer share
-  `img/figure-<n>` and overwrite each other's images and D2 sources; only an explainer
-  folder's README uses `figure-<n>`. Images an explainer had under its old name
-  (`img/README-<n>`) are removed when it is rendered again.
-- Plans: `feature` in the frontmatter is quoted, so slugs YAML reads as something else
-  (`no`, `null`, `2024`) still pass `kingmadoc check`; found by property-based tests.
-- Explainer index: titles and scopes from files with Windows line endings (or other line
-  separators) no longer break the table row.
+- Analyzer: imports in test directories no longer add frameworks to the detected stack.
 - Analyzer: build output of Next.js (`.next/`), Nuxt and SvelteKit is no longer
   analyzed as source.
-- Analyzer: imports in test directories no longer add frameworks to the detected stack
-  (tests of a code generator mentioned Django without the project using it).
-- `kingmadoc --version` no longer crashes on an unusual `direct_url.json`.
-- The explainer index escapes `|`, `[` and `]` in titles, ignores `#` lines in code
-  blocks, lists explainers from before the folders (`docs/explain/<slug>.md`), and never
-  overwrites a `docs/explain/README.md` that KingmaDoc did not write.
-- `kingmadoc skills install` only shows the `--vscode` tip while the setting is missing.
-- `kingmadoc render` no longer fails with "Invalid cross-device link" (Errno 18) when
-  the system temp dir is on another disk than the project.
-- `explaining-code` never asks the user to install D2 (`kingmadoc render` downloads it)
-  and tells an outdated install to update with `pipx reinstall kingmadoc` instead of
-  `pipx install --force`, which fails on recent pipx versions.
 
 ## [0.1.1] - 2026-09-26
 
@@ -254,6 +208,7 @@ Internal milestone; never published. Its contents first shipped in 0.1.1.
   example plan doc (`examples/verify-mode-plan.md`).
 - CI on Python 3.11–3.13 on Linux, macOS and Windows.
 
-[Unreleased]: https://github.com/ATkingma/KingmaDoc/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/ATkingma/KingmaDoc/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ATkingma/KingmaDoc/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/ATkingma/KingmaDoc/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ATkingma/KingmaDoc/releases/tag/v0.1.0
