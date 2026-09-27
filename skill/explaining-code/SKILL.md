@@ -197,7 +197,7 @@ on the PATH: `kingmadoc render` does not need it.
 
 - A diagram D2 rejects: fix it and run again.
 - `kingmadoc` has no `render` command: it is outdated; ask the user to update it with
-  `pipx reinstall kingmadoc` (or `pip install -U kingmadoc`), then render.
+  `pipx upgrade kingmadoc` (installed from GitHub: `pipx reinstall kingmadoc`), then render.
 - `kingmadoc` is not installed at all: render with `d2` if it happens to be available
   (save each diagram as `img/figure-<n>.d2` in the subject's folder, run
   `d2 --pad 20 <that>.d2 <that>.svg`, and replace the block with

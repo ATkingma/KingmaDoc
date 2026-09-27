@@ -21,16 +21,17 @@ for Claude Code, Cursor, Codex or GitHub Copilot.
 Requires Python 3.11+.
 
 ```bash
-pipx install git+https://github.com/ATkingma/KingmaDoc
+pipx install kingmadoc      # from PyPI
+pipx upgrade kingmadoc      # later: update to the newest release
 ```
 
-Once KingmaDoc is published on PyPI, this becomes `pipx install kingmadoc`, and
-`pipx upgrade kingmadoc` updates it.
-
-To update a git install to the latest commit, run `pipx reinstall kingmadoc`;
-`kingmadoc --version` then shows the new version and commit (every commit has a higher
-version, e.g. `0.2.0.dev43 (git 1a2b3c4)`). (`pipx install --force` fails on recent pipx
-versions with "Failed to create virtual environment" and keeps the old version.)
+For the latest commit instead of a release, install from GitHub with
+`pipx install git+https://github.com/ATkingma/KingmaDoc` and update it with
+`pipx reinstall kingmadoc`; `kingmadoc --version` then shows the commit
+(`0.2.1.dev3 (git 1a2b3c4)`). (`pipx install --force` fails on recent pipx versions with
+"Failed to create virtual environment" and keeps the old version.) An install from
+before 0.2.0 came from GitHub: `pipx uninstall kingmadoc && pipx install kingmadoc`
+switches it to the releases.
 
 Then, in your project, install the agent skills; that's all:
 
@@ -52,7 +53,7 @@ default).
 ### pip
 
 ```bash
-pip install git+https://github.com/ATkingma/KingmaDoc   # into the current environment
+pip install kingmadoc   # into the current environment
 ```
 
 ### Markdown-only (no Python)

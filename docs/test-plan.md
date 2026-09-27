@@ -23,9 +23,9 @@ every problem in the [results table](#results) at the end.
 - [ ] Install the CLI (Python 3.11+) and check the version:
 
   ```bash
-  pipx install git+https://github.com/ATkingma/KingmaDoc   # first time
-  pipx reinstall kingmadoc                                 # update to the latest commit
-  kingmadoc --version                                      # shows the installed commit
+  pipx install kingmadoc      # first time (a release from PyPI)
+  pipx upgrade kingmadoc      # update to the newest release
+  kingmadoc --version         # shows the version (and the commit for a git install)
   ```
 
   Do not update with `pipx install --force`: recent pipx versions (uv backend) fail with

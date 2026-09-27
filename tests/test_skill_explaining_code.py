@@ -149,11 +149,11 @@ def test_each_subject_gets_its_own_folder() -> None:
 
 
 def test_skill_never_sends_the_user_to_install_d2() -> None:
-    """render downloads D2 itself; updating uses `pipx reinstall` (pipx --force can fail)."""
+    """render downloads D2 itself; updating uses `pipx upgrade` (a git install: `pipx reinstall`; --force can fail)."""
     text = _read(SKILL)
 
     assert "Never ask the user to install D2" in text
-    assert "pipx reinstall kingmadoc" in text
+    assert "pipx upgrade kingmadoc" in text and "pipx reinstall kingmadoc" in text
     assert "install --force" not in text
 
 
