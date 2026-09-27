@@ -111,6 +111,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sees it.
 - Release workflow: pushing a `v*` tag builds, tests and publishes to PyPI with trusted
   publishing and creates the GitHub release (`docs/releasing.md`).
+- Quality (roadmap WP7): branch coverage with a 90 % minimum in CI, property-based
+  tests (Hypothesis) for the slug, summary, plan, explainer index and code parsers, and
+  the architecture rules E1/E5 as `import-linter` contracts (`lint-imports` in CI).
 - Supply chain: committed `uv.lock` (checked in CI), `pip-audit` in CI, and Ruff's `S`
   (security) rules.
 - API: `skills.install_skills` returns an `InstallResult` (`written`, `up_to_date`,

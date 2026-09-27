@@ -37,10 +37,10 @@ When you implement a planned rule, update its status here and in the details bel
 | F3 | Walk directories with `os.scandir`, not `Path.iterdir` + `is_*()` | planned | manual |
 | F4 | Every limit/constant has a one-line reason | planned | manual |
 | G1 | Test suite passes | adopted | auto |
-| G2 | Branch coverage with a CI minimum | planned | manual |
-| G3 | Property-based tests (Hypothesis) for parsers and transformers | planned | manual |
+| G2 | Branch coverage with a CI minimum | adopted (90 %) | auto (CI) |
+| G3 | Property-based tests (Hypothesis) for parsers and transformers | adopted | auto (tests) |
 | G4 | Mutation testing (mutmut) once the codebase grows | planned | manual |
-| G5 | Architecture contracts in `import-linter` | planned | manual |
+| G5 | Architecture contracts in `import-linter` | adopted | auto (CI) |
 | G6 | Decisions recorded as MADR ADRs in `docs/adr/` | planned | manual |
 | G7 | Dependency security (`pip-audit`, Ruff `S`) and committed `uv.lock` | planned | manual |
 | G8 | Conventional Commits, SemVer, `CHANGELOG.md` | planned | manual |
@@ -312,12 +312,12 @@ Rule: correctness and decisions must be demonstrable, not assumed.
 
 `pytest` passes before a change is done. Tests cover error paths of every exception.
 
-### G2. Branch coverage — planned
+### G2. Branch coverage — adopted
 
 `pytest --cov=kingmadoc --cov-branch --cov-fail-under=85`. Line coverage alone is a
 floor, not proof that tests check anything.
 
-### G3. Property-based tests — planned
+### G3. Property-based tests — adopted
 
 Use Hypothesis for functions that parse, validate, or transform input: `parse_config`,
 `slugify`, `make_alias`, Mermaid escaping, `render_tree`. Properties state invariants
@@ -329,7 +329,7 @@ counterexamples.
 Once the codebase grows, run `mutmut` periodically to measure whether tests notice
 broken code. Not on every commit (slow).
 
-### G5. Architecture contracts — planned
+### G5. Architecture contracts — adopted
 
 Encode E1/E5 in `import-linter` so CI fails on a layering violation:
 

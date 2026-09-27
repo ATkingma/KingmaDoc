@@ -34,7 +34,10 @@ Issues = "https://github.com/ATkingma/KingmaDoc/issues"
 Changelog = "https://github.com/ATkingma/KingmaDoc/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.16", "mypy>=2.0", "types-PyYAML"]
+dev = [
+    "pytest>=8.0", "pytest-cov>=6.0", "hypothesis>=6.100", "ruff>=0.16", "mypy>=2.0",
+    "types-PyYAML", "import-linter>=2.1",
+]
 
 [project.scripts]
 kingmadoc = "kingmadoc.cli:main"
@@ -88,3 +91,42 @@ files = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+# Branch coverage (G2); CI fails below the minimum (measured on one job).
+[tool.coverage.run]
+branch = true
+source = ["kingmadoc"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
+
+# Architecture contracts (G5, conventions E1/E5), checked by `lint-imports` in CI.
+[tool.importlinter]
+root_package = "kingmadoc"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Modes are independent (E5)"
+type = "independence"
+modules = ["kingmadoc.plan", "kingmadoc.verify"]
+
+[[tool.importlinter.contracts]]
+name = "Diagrams know no mode (E5)"
+type = "forbidden"
+source_modules = ["kingmadoc.diagrams"]
+forbidden_modules = ["kingmadoc.plan", "kingmadoc.verify", "kingmadoc.facts"]
+
+[[tool.importlinter.contracts]]
+name = "Only the CLI imports click, and nothing imports the CLI (E1)"
+type = "forbidden"
+source_modules = [
+    "kingmadoc.plan", "kingmadoc.verify", "kingmadoc.facts", "kingmadoc.diagrams",
+    "kingmadoc.about", "kingmadoc.adr", "kingmadoc.config", "kingmadoc.d2_binary",
+    "kingmadoc.documents", "kingmadoc.exceptions", "kingmadoc.explain", "kingmadoc.git",
+    "kingmadoc.naming", "kingmadoc.plandoc", "kingmadoc.render", "kingmadoc.skills",
+    "kingmadoc.templating", "kingmadoc.vscode",
+]
+forbidden_modules = ["click", "kingmadoc.cli"]
+allow_indirect_imports = true

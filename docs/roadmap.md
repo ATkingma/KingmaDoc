@@ -156,6 +156,9 @@ it.
 
 Small, independent items; pick them up when touching the related code.
 
+**Status:** branch coverage (minimum 90 %), Hypothesis tests and `import-linter` done
+(unreleased); `ruff format` and `os.scandir` open.
+
 - Adopt `ruff format` (D1 lint is adopted; formatting would touch about half the files).
 - Walk directories with `os.scandir` (F3).
 - Branch coverage with a CI minimum (G2).
