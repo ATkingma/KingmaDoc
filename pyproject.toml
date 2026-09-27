@@ -26,6 +26,8 @@ dependencies = [
     "click>=8.1",
     "jinja2>=3.1",
     "pyyaml>=6.0",
+    # SVG -> PNG for rendered diagrams (offline, wheels for every platform).
+    "resvg-py>=0.5,<0.6",
 ]
 
 [project.urls]
@@ -88,6 +90,10 @@ select = ["E", "W", "F", "I", "UP", "B", "S"]
 strict = true
 files = ["src"]
 
+[[tool.mypy.overrides]]
+module = ["resvg_py"]  # ships no type information
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
@@ -125,7 +131,7 @@ source_modules = [
     "kingmadoc.plan", "kingmadoc.verify", "kingmadoc.facts", "kingmadoc.diagrams",
     "kingmadoc.about", "kingmadoc.adr", "kingmadoc.config", "kingmadoc.d2_binary",
     "kingmadoc.documents", "kingmadoc.exceptions", "kingmadoc.explain", "kingmadoc.git",
-    "kingmadoc.naming", "kingmadoc.plandoc", "kingmadoc.render", "kingmadoc.skills",
+    "kingmadoc.naming", "kingmadoc.plandoc", "kingmadoc.raster", "kingmadoc.render", "kingmadoc.skills",
     "kingmadoc.templating", "kingmadoc.vscode",
 ]
 forbidden_modules = ["click", "kingmadoc.cli"]

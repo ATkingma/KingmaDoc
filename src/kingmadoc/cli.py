@@ -49,7 +49,7 @@ from kingmadoc.plan.generator import (
     render_plan,
 )
 from kingmadoc.plandoc import check_plan, generated_at, parse_plan, set_status
-from kingmadoc.render import diagram_warnings, render_file
+from kingmadoc.render import IMAGE_FORMATS, diagram_warnings, render_file
 from kingmadoc.skills import AGENT_DIRS, install_skills
 from kingmadoc.verify.changes import detect_changes
 from kingmadoc.verify.commands import MARKER_FILES, detect_commands, run_check
@@ -61,7 +61,11 @@ from kingmadoc.verify.deviations import (
 )
 from kingmadoc.verify.locate import find_plan, verify_output_path
 from kingmadoc.verify.report import render_verify, verify_status
-from kingmadoc.vscode import enable_markdown_preview, preview_enabled
+from kingmadoc.vscode import (
+    enable_markdown_preview,
+    enable_user_markdown_preview,
+    preview_enabled,
+)
 
 ROOT_OPTION = click.option(
     "--root",
@@ -438,18 +442,29 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
     "--light", is_flag=True, help="Light images only (by default they follow dark mode too)."
 )
 @click.option("--verbose", is_flag=True, help="Print every image path (default: one line).")
-def render_command(documents: tuple[Path, ...], light: bool, verbose: bool) -> None:
-    """Render the D2 diagrams in DOCUMENTS to SVG images and embed them.
+@click.option(
+    "--format",
+    "image_format",
+    type=click.Choice(IMAGE_FORMATS),
+    default="png",
+    show_default=True,
+    help="What the document links: png shows in every Markdown viewer; svg follows dark mode.",
+)
+def render_command(
+    documents: tuple[Path, ...], light: bool, verbose: bool, image_format: str
+) -> None:
+    """Render the D2 diagrams in DOCUMENTS to images and embed them.
 
-    Images go to img/<document>-<n>.svg next to each document (img/figure-<n>.svg for a
-    README.md), their D2 sources to img/*.d2. D2 is downloaded once (pinned,
-    checksum-verified) unless it is on PATH or in KINGMADOC_D2. Prints the image paths.
+    Each diagram becomes img/<document>-<n>.png (linked: every Markdown viewer shows it)
+    and .svg (sharp, follows dark mode; --format svg links it instead), with its D2 source
+    in img/*.d2; a README.md's images are img/figure-<n>. D2 is downloaded once (pinned,
+    checksum-verified) unless it is on PATH or in KINGMADOC_D2.
     """
     try:
         d2 = ensure_d2(lambda message: click.echo(message, err=True))
         hinted = False
         for document in documents:
-            images = render_file(document, d2, dark=not light)
+            images = render_file(document, d2, dark=not light, image_format=image_format)
             index = index_path(document)
             if index is not None:
                 _write_explain_index(index.parent)
@@ -459,7 +474,7 @@ def render_command(documents: tuple[Path, ...], light: bool, verbose: bool) -> N
                     click.echo(
                         "VS Code shows the pictures in the preview: open the file and press "
                         "Ctrl+Shift+V (macOS: Cmd+Shift+V), or run `kingmadoc skills install "
-                        "--vscode` to always open explainers as a preview.",
+                        "--vscode-user` to always open explainers as a preview.",
                         err=True,
                     )
             if not images:
@@ -474,9 +489,10 @@ def render_command(documents: tuple[Path, ...], light: bool, verbose: bool) -> N
                 noun = "image" if len(images) == 1 else "images"
                 click.echo(f"{document}: {len(images)} {noun} ({span})")
             for image in images:
-                source = image.with_suffix(".d2")
+                source = image.with_suffix(".d2")  # next to the .png and .svg
                 for warning in diagram_warnings(source.read_text(encoding="utf-8")):
-                    if light and warning.endswith("(dark mode)"):
+                    dark_mode = not light and image_format == "svg"
+                    if not dark_mode and warning.endswith("(dark mode)"):
                         continue
                     click.echo(f"{source}: {warning}", err=True)
     except KingmaDocError as exc:
@@ -626,10 +642,18 @@ def skills_group() -> None:
 @click.option(
     "--vscode/--no-vscode",
     default=None,
-    help="Make VS Code open explainers as a rendered preview (.vscode/settings.json), or "
-    "not. Without either, a terminal asks; other runs only print a tip.",
+    help="Make VS Code open this project's explainers as a rendered preview "
+    "(.vscode/settings.json; only when this folder is the open workspace), or not.",
 )
-def skills_install(root: Path, agent: str, force: bool, vscode: bool | None) -> None:
+@click.option(
+    "--vscode-user",
+    is_flag=True,
+    help="Make VS Code open explainers as a rendered preview in every folder (user "
+    "settings). Without a VS Code option, a terminal asks; other runs print a tip.",
+)
+def skills_install(
+    root: Path, agent: str, force: bool, vscode: bool | None, vscode_user: bool
+) -> None:
     """Install the KingmaDoc skills into the project for AGENT (Agent Skills standard).
 
     Also offers to make VS Code open docs/explain/ as a rendered preview, so the pictures
@@ -637,16 +661,21 @@ def skills_install(root: Path, agent: str, force: bool, vscode: bool | None) -> 
     """
     try:
         result = install_skills(root, agent, force)
-        if vscode is None and not preview_enabled(root) and _interactive():
+        asked = vscode is None and not vscode_user
+        if asked and not preview_enabled(root) and _interactive():
             try:
-                vscode = click.confirm(
+                vscode_user = click.confirm(
                     "Make VS Code open explainers (docs/explain/) as a rendered preview, so "
-                    "the pictures show right away?", default=True, err=True,
+                    "the pictures show right away? (VS Code user settings)",
+                    default=True, err=True,
                 )
             except click.Abort:  # stdin closed without an answer: change nothing
                 click.echo("", err=True)
-                vscode = False
-        preview = enable_markdown_preview(root) if vscode else None
+        preview = None
+        if vscode_user:
+            preview = enable_user_markdown_preview()
+        elif vscode:
+            preview = enable_markdown_preview(root)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
     for path in result.written:
@@ -657,9 +686,10 @@ def skills_install(root: Path, agent: str, force: bool, vscode: bool | None) -> 
         click.echo(f"{len(result.up_to_date)} skill file(s) already up to date.", err=True)
     if preview:
         click.echo(preview, err=True)
-    elif vscode is None and not preview_enabled(root):
+    elif asked and not preview_enabled(root):
         click.echo(
-            "Tip: --vscode makes VS Code open explainers (docs/explain/) as a rendered preview.",
+            "Tip: --vscode-user makes VS Code open explainers (docs/explain/) as a rendered "
+            "preview, with the pictures.",
             err=True,
         )
 

@@ -7,7 +7,12 @@ import pytest
 from click.testing import CliRunner
 
 from kingmadoc.cli import cli
-from kingmadoc.vscode import EDITOR_ID, PREVIEW_PATTERN, enable_markdown_preview
+from kingmadoc.vscode import (
+    EDITOR_ID,
+    PREVIEW_PATTERN,
+    enable_markdown_preview,
+    user_settings_path,
+)
 
 SETTING = "workbench.editorAssociations"
 
@@ -109,19 +114,22 @@ def test_no_tip_when_the_preview_is_already_set_up(tmp_path: Path) -> None:
 def test_an_interactive_install_asks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """In a terminal, skills install asks whether to set up the preview (default yes)."""
     from kingmadoc import cli as cli_module
+    from kingmadoc import vscode
 
     monkeypatch.setattr(cli_module, "_interactive", lambda: True)
-    other = tmp_path / "other"
-    other.mkdir()
     runner = CliRunner()
 
+    yes_user = tmp_path / "yes.json"
+    monkeypatch.setattr(vscode, "user_settings_path", lambda platform=None: yes_user)
     yes = runner.invoke(cli, ["skills", "install", "--root", str(tmp_path)], input="\n")
-    no = runner.invoke(cli, ["skills", "install", "--root", str(other)], input="n\n")
+    no_user = tmp_path / "no.json"
+    monkeypatch.setattr(vscode, "user_settings_path", lambda platform=None: no_user)
+    no = runner.invoke(cli, ["skills", "install", "--root", str(tmp_path)], input="n\n")
 
     assert yes.exit_code == 0, yes.output
-    assert "rendered preview" in yes.output and _settings(tmp_path).is_file()
+    assert "rendered preview" in yes.output and yes_user.is_file()
     assert no.exit_code == 0, no.output
-    assert not _settings(other).exists()
+    assert not no_user.exists() and not _settings(tmp_path).exists()
 
 
 def test_no_vscode_never_asks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -149,3 +157,58 @@ def test_no_answer_means_no(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
     assert result.exit_code == 0, result.output
     assert not _settings(tmp_path).exists()
+
+
+def test_user_settings_path_per_platform(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Linux, macOS and Windows keep VS Code's user settings in different places."""
+    monkeypatch.setenv("APPDATA", str(tmp_path / "AppData"))
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+    assert user_settings_path("linux") == tmp_path / ".config/Code/User/settings.json"
+    assert user_settings_path("darwin") == (
+        tmp_path / "Library/Application Support/Code/User/settings.json"
+    )
+    assert user_settings_path("win32") == tmp_path / "AppData/Code/User/settings.json"
+
+
+def test_vscode_user_writes_the_user_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """--vscode-user works however the file is opened (a loose file, another folder)."""
+    from kingmadoc import vscode
+
+    user = tmp_path / "user" / "settings.json"
+    user.parent.mkdir()
+    user.write_text('{"editor.fontSize": 14}\n', encoding="utf-8")
+    monkeypatch.setattr(vscode, "user_settings_path", lambda platform=None: user)
+    project = tmp_path / "project"
+    project.mkdir()
+
+    result = CliRunner().invoke(
+        cli, ["skills", "install", "--root", str(project), "--vscode-user"]
+    )
+
+    assert result.exit_code == 0, result.output
+    data = json.loads(user.read_text(encoding="utf-8"))
+    assert data["editor.fontSize"] == 14
+    assert data[SETTING][PREVIEW_PATTERN] == EDITOR_ID
+    assert not _settings(project).exists()
+    assert vscode.preview_enabled(project)  # the user setting counts too
+
+
+def test_the_terminal_question_sets_up_the_user_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Yes in a terminal writes the user setting: the only one that always applies."""
+    from kingmadoc import cli as cli_module
+    from kingmadoc import vscode
+
+    user = tmp_path / "user.json"
+    monkeypatch.setattr(vscode, "user_settings_path", lambda platform=None: user)
+    monkeypatch.setattr(cli_module, "_interactive", lambda: True)
+
+    result = CliRunner().invoke(cli, ["skills", "install", "--root", str(tmp_path)], input="y\n")
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(user.read_text(encoding="utf-8"))[SETTING][PREVIEW_PATTERN] == EDITOR_ID

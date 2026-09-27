@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `kingmadoc render` links a PNG for each diagram, so the pictures show in every
+  Markdown preview (VS Code, Visual Studio, Rider, GitHub, GitLab, Bitbucket; several
+  block or mishandle SVG). The PNG is made offline with resvg (`resvg-py`, a small
+  wheel for every platform) using D2's own embedded fonts; the SVG (dark mode) and the
+  `.d2` source stay next to it, and `--format svg` links the SVG as before.
+  `explaining-code` 5.8 no longer lets the agent convert images itself.
+- `kingmadoc skills install --vscode-user`: VS Code opens explainers as a preview in
+  every folder (user settings); the question in a terminal sets that up.
 - Tidier diagrams: `kingmadoc render` lays figures out with ELK (straight,
   right-angled arrows with fewer crossings; a diagram that sets its own
   `layout-engine` keeps it) and warns about more than 12 arrows or two arrows between

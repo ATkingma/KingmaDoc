@@ -27,12 +27,15 @@ from pathlib import Path
 from kingmadoc.documents import write_document
 from kingmadoc.exceptions import RenderError
 from kingmadoc.explain import EXPLAINER_FILE, index_path
+from kingmadoc.raster import svg_to_png
 
 # Seconds per diagram; D2's own default is 120, but diagrams in docs are small.
 D2_TIMEOUT = 60
 # Pixels around each image; D2's default of 100 wastes space in a document.
 D2_PAD = 20
 IMAGE_MODE = 0o644
+# What `kingmadoc render` links in the document (PNG shows in every Markdown viewer).
+IMAGE_FORMATS: tuple[str, ...] = ("png", "svg")
 # D2's own dark theme; the SVG switches to it when the viewer uses dark mode.
 D2_DARK_THEME = 200
 # Straight, right-angled arrows (see _layout_args); bundled with D2 like dagre.
@@ -57,8 +60,15 @@ _LEGACY = re.compile(
 _HEADING = re.compile(r"^#{1,6} +(.+?) *$", re.M)
 
 
-def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
-    """Render every D2 diagram in a Markdown file to an SVG and embed only the images.
+def render_file(
+    path: Path, d2: Sequence[str], dark: bool = True, image_format: str = "png"
+) -> list[Path]:
+    """Render every D2 diagram in a Markdown file to images and embed only the images.
+
+    Each diagram becomes ``img/<name>.svg`` (with a dark theme) and, for
+    ``image_format="png"``, ``img/<name>.png`` too; the document links the chosen format.
+    PNG shows in every Markdown viewer (VS Code, Visual Studio, Rider, GitHub, GitLab,
+    Bitbucket); several block or mishandle SVG.
 
     All diagrams are rendered before anything is written: if one fails, neither the
     document nor any file in ``img/`` changes.
@@ -66,7 +76,8 @@ def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
     Args:
         path: The Markdown document.
         d2: Command that runs D2 (see :func:`kingmadoc.d2_binary.ensure_d2`).
-        dark: Also embed a dark theme, used when the viewer is in dark mode.
+        dark: Also embed a dark theme in the SVG, used when the viewer is in dark mode.
+        image_format: What the document links: one of :data:`IMAGE_FORMATS`.
 
     Returns:
         The written image paths, in document order (empty if there are no diagrams).
@@ -80,6 +91,8 @@ def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
     if not items:
         return []
 
+    if image_format not in IMAGE_FORMATS:
+        raise RenderError(f"Unknown image format {image_format!r}; use {', '.join(IMAGE_FORMATS)}")
     image_dir = path.parent / "img"
     sources = [_source(item, path) for item in items]
     stem = _image_stem(path)
@@ -91,20 +104,27 @@ def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
             _render(source, Path(tmp), n, path, [*d2, *_theme_args(dark), *_layout_args(source)])
             for n, source in enumerate(sources, start=1)
         ]
+        if image_format == "png":
+            for svg in rendered:
+                svg.with_suffix(".png").write_bytes(svg_to_png(svg.read_text(encoding="utf-8")))
         image_dir.mkdir(parents=True, exist_ok=True)
         for name, source, svg in zip(names, sources, rendered, strict=True):
             write_document(image_dir / f"{name}.d2", source.rstrip("\n") + "\n", overwrite=True)
-            os.replace(svg, image_dir / f"{name}.svg")
-            # d2 writes its output private (0600); images are for everyone who reads docs.
-            (image_dir / f"{name}.svg").chmod(IMAGE_MODE)
+            for suffix in (".svg", ".png") if image_format == "png" else (".svg",):
+                target = image_dir / f"{name}{suffix}"
+                os.replace(svg.with_suffix(suffix), target)
+                # d2 writes its output private (0600); images are for everyone.
+                target.chmod(IMAGE_MODE)
+            if image_format == "svg":
+                (image_dir / f"{name}.png").unlink(missing_ok=True)
     _remove_stale_files(image_dir, stem, set(names))
     _remove_renamed_files(image_dir, path, items, set(names))
 
     for item, name in zip(reversed(items), reversed(names), strict=True):
         alt = _nearest_heading(text, item.start()) or "Diagram"
-        text = text[: item.start()] + _embed(alt, name) + text[item.end() :]
+        text = text[: item.start()] + _embed(alt, name, image_format) + text[item.end() :]
     write_document(path, text, overwrite=True)
-    return [image_dir / f"{name}.svg" for name in names]
+    return [image_dir / f"{name}.{image_format}" for name in names]
 
 
 def diagram_warnings(source: str) -> list[str]:
@@ -264,9 +284,9 @@ def _theme_args(dark: bool) -> list[str]:
     return ["--dark-theme", str(D2_DARK_THEME)] if dark else []
 
 
-def _embed(alt: str, name: str) -> str:
+def _embed(alt: str, name: str, image_format: str) -> str:
     alt = alt.replace("[", "(").replace("]", ")")
-    return f"<!-- kingmadoc:diagram img/{name}.d2 -->\n![{alt}](img/{name}.svg)"
+    return f"<!-- kingmadoc:diagram img/{name}.d2 -->\n![{alt}](img/{name}.{image_format})"
 
 
 def _nearest_heading(text: str, position: int) -> str | None:
@@ -298,13 +318,13 @@ def _remove_renamed_files(
         name = Path(ref).stem if ref else ""
         if name in keep or not own.fullmatch(name):
             continue
-        for suffix in (".svg", ".d2"):
+        for suffix in (".svg", ".png", ".d2"):
             (image_dir / f"{name}{suffix}").unlink(missing_ok=True)
 
 
 def _remove_stale_files(image_dir: Path, stem: str, keep: set[str]) -> None:
     """Delete images and sources of this document's diagrams that no longer exist."""
-    pattern = re.compile(rf"({re.escape(stem)}-\d+)\.(svg|d2)")
+    pattern = re.compile(rf"({re.escape(stem)}-\d+)\.(svg|png|d2)")
     for file in image_dir.iterdir():
         match = pattern.fullmatch(file.name)
         if match and match.group(1) not in keep:

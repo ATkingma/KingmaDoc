@@ -14,7 +14,8 @@ from kingmadoc.cli import cli
 from kingmadoc.exceptions import RenderError
 from kingmadoc.render import render_file
 
-# Stand-in for the d2 binary: "d2 [--pad N] in.d2 out.svg". Fails on sources containing BAD.
+# Stand-in for the d2 binary: "d2 [--pad N] in.d2 out.svg" writes a valid SVG with the
+# source in a comment (so it can be turned into a PNG). Fails on sources containing BAD.
 FAKE_D2 = """\
 import sys
 import tempfile
@@ -23,7 +24,10 @@ text = open(source, encoding="utf-8").read()
 if "BAD" in text:
     sys.stderr.write("err: failed to compile: connection missing destination\\n")
     sys.exit(1)
-open(target, "w", encoding="utf-8").write("<svg>" + text.strip() + "</svg>")
+open(target, "w", encoding="utf-8").write(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><!--'
+    + text.strip() + "--></svg>"
+)
 import os
 os.chmod(target, 0o600)  # like the real d2: the output is private
 """
@@ -69,18 +73,19 @@ def _doc(tmp_path: Path, text: str = DOC) -> Path:
 def test_diagrams_become_images_and_their_source_moves_out(
     tmp_path: Path, d2: list[str]
 ) -> None:
-    """Each D2 block becomes an SVG; the document keeps only the image (source in img/)."""
+    """Each D2 block becomes a PNG (linked) and an SVG; the document keeps only the image."""
     doc = _doc(tmp_path)
 
     images = render_file(doc, d2)
 
     img = doc.parent / "img"
-    assert images == [img / "shop-1.svg", img / "shop-2.svg"]
-    assert (img / "shop-1.svg").read_text(encoding="utf-8") == "<svg>browser -> api: POST</svg>"
+    assert images == [img / "shop-1.png", img / "shop-2.png"]
+    assert (img / "shop-1.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    assert "browser -> api: POST" in (img / "shop-1.svg").read_text(encoding="utf-8")
     assert (img / "shop-1.d2").read_text(encoding="utf-8") == "browser -> api: POST\n"
     text = doc.read_text(encoding="utf-8")
-    assert "![Overview](img/shop-1.svg)" in text
-    assert "![How it works](img/shop-2.svg)" in text
+    assert "![Overview](img/shop-1.png)" in text
+    assert "![How it works](img/shop-2.png)" in text
     assert "```d2" not in text and "<details>" not in text
     assert "<!-- kingmadoc:diagram img/shop-1.d2 -->" in text  # invisible in previews
     assert "```mermaid\nflowchart TD" in text  # other diagram languages are left alone
@@ -96,7 +101,7 @@ def test_rendering_twice_changes_nothing(tmp_path: Path, d2: list[str]) -> None:
 
     assert doc.read_text(encoding="utf-8") == first
     assert sorted(p.name for p in (doc.parent / "img").iterdir()) == [
-        "shop-1.d2", "shop-1.svg", "shop-2.d2", "shop-2.svg",
+        "shop-1.d2", "shop-1.png", "shop-1.svg", "shop-2.d2", "shop-2.png", "shop-2.svg",
     ]
 
 
@@ -108,9 +113,7 @@ def test_edited_source_updates_the_image(tmp_path: Path, d2: list[str]) -> None:
 
     render_file(doc, d2)
 
-    assert (doc.parent / "img" / "shop-2.svg").read_text(encoding="utf-8") == (
-        "<svg>api -> db: upsert</svg>"
-    )
+    assert "api -> db: upsert" in (doc.parent / "img" / "shop-2.svg").read_text("utf-8")
 
 
 def test_removed_diagram_removes_its_image(tmp_path: Path, d2: list[str]) -> None:
@@ -121,7 +124,21 @@ def test_removed_diagram_removes_its_image(tmp_path: Path, d2: list[str]) -> Non
     doc.write_text("# Explainer\n\n```d2\nx -> y\n```\n", encoding="utf-8")
     render_file(doc, d2)
 
-    assert sorted(p.name for p in (doc.parent / "img").iterdir()) == ["shop-1.d2", "shop-1.svg"]
+    assert sorted(p.name for p in (doc.parent / "img").iterdir()) == [
+        "shop-1.d2", "shop-1.png", "shop-1.svg",
+    ]
+
+
+def test_svg_format_links_the_svg(tmp_path: Path, d2: list[str]) -> None:
+    """--format svg: the document links the SVG (it follows dark mode) and no PNG is kept."""
+    doc = _doc(tmp_path)
+    render_file(doc, d2)
+
+    images = render_file(doc, d2, image_format="svg")
+
+    assert [p.name for p in images] == ["shop-1.svg", "shop-2.svg"]
+    assert "![Overview](img/shop-1.svg)" in doc.read_text(encoding="utf-8")
+    assert not list((doc.parent / "img").glob("*.png"))
 
 
 def test_a_broken_diagram_changes_nothing(tmp_path: Path, d2: list[str]) -> None:
@@ -177,7 +194,7 @@ def test_cli_renders_with_the_configured_binary(tmp_path: Path, d2: list[str]) -
     result = CliRunner().invoke(cli, ["render", str(doc)], env={"KINGMADOC_D2": str(wrapper)})
 
     assert result.exit_code == 0, result.output
-    assert result.stdout.splitlines() == [f"{doc}: 2 images (img/shop-1.svg … img/shop-2.svg)"]
+    assert result.stdout.splitlines() == [f"{doc}: 2 images (img/shop-1.png … img/shop-2.png)"]
 
 
 def test_cli_render_verbose_lists_every_image(tmp_path: Path, d2: list[str]) -> None:
@@ -190,8 +207,8 @@ def test_cli_render_verbose_lists_every_image(tmp_path: Path, d2: list[str]) -> 
 
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [
-        str(doc.parent / "img" / "shop-1.svg"),
-        str(doc.parent / "img" / "shop-2.svg"),
+        str(doc.parent / "img" / "shop-1.png"),
+        str(doc.parent / "img" / "shop-2.png"),
     ]
 
 
@@ -222,7 +239,7 @@ def test_older_folded_source_format_is_converted(tmp_path: Path, d2: list[str]) 
 
     text = doc.read_text(encoding="utf-8")
     assert "<details>" not in text and "```d2" not in text
-    assert "![Data](img/shop-1.svg)" in text
+    assert "![Data](img/shop-1.png)" in text
     assert (doc.parent / "img" / "shop-1.d2").read_text(encoding="utf-8") == "user -> order\n"
 
 
@@ -237,15 +254,15 @@ def test_missing_source_file_is_an_error(tmp_path: Path, d2: list[str]) -> None:
 
 
 def test_readme_explainer_images_are_named_figure(tmp_path: Path, d2: list[str]) -> None:
-    """An explainer folder's README.md gets img/figure-<n>.svg, not img/README-<n>.svg."""
+    """An explainer folder's README.md gets img/figure-<n>.png, not img/README-<n>.png."""
     doc = tmp_path / "docs" / "explain" / "0001-shop" / "README.md"
     doc.parent.mkdir(parents=True)
     doc.write_text(DOC, encoding="utf-8")
 
     images = render_file(doc, d2)
 
-    assert [p.name for p in images] == ["figure-1.svg", "figure-2.svg"]
-    assert "![Overview](img/figure-1.svg)" in doc.read_text(encoding="utf-8")
+    assert [p.name for p in images] == ["figure-1.png", "figure-2.png"]
+    assert "![Overview](img/figure-1.png)" in doc.read_text(encoding="utf-8")
 
 
 def test_rendering_an_explainer_updates_the_index(tmp_path: Path, d2: list[str]) -> None:
@@ -282,7 +299,7 @@ def test_works_when_the_temp_dir_is_on_another_disk(
 
     images = render_file(doc, d2)
 
-    assert [p.name for p in images] == ["shop-1.svg", "shop-2.svg"]
+    assert [p.name for p in images] == ["shop-1.png", "shop-2.png"]
     assert sorted(p.name for p in doc.parent.iterdir()) == ["img", "shop.md"]  # no leftovers
 
 
@@ -300,7 +317,8 @@ def test_readme_and_index_in_one_folder_keep_their_own_images(
 
     names = sorted(p.name for p in (docs / "img").iterdir())
     assert names == [
-        "README-1.d2", "README-1.svg", "index-1.d2", "index-1.svg", "index-2.d2", "index-2.svg"
+        "README-1.d2", "README-1.png", "README-1.svg", "index-1.d2", "index-1.png",
+        "index-1.svg", "index-2.d2", "index-2.png", "index-2.svg",
     ]
 
 
@@ -317,7 +335,9 @@ def test_images_under_an_old_name_are_removed(tmp_path: Path, d2: list[str]) -> 
 
     render_file(folder / "README.md", d2)
 
-    assert sorted(p.name for p in (folder / "img").iterdir()) == ["figure-1.d2", "figure-1.svg"]
+    assert sorted(p.name for p in (folder / "img").iterdir()) == [
+        "figure-1.d2", "figure-1.png", "figure-1.svg",
+    ]
     assert (folder / "img" / "figure-1.d2").read_text(encoding="utf-8") == "a -> b\n"
 
 
@@ -362,7 +382,9 @@ def test_cli_light_option(tmp_path: Path, d2: list[str], monkeypatch: pytest.Mon
 
     calls: list[bool] = []
     monkeypatch.setattr(
-        cli_module, "render_file", lambda path, cmd, dark=True: calls.append(dark) or []
+        cli_module,
+        "render_file",
+        lambda path, cmd, dark=True, **_: calls.append(dark) or [],
     )
     doc = _doc(tmp_path)
 
@@ -398,9 +420,8 @@ def test_cli_render_prints_the_dark_mode_warnings(tmp_path: Path, d2: list[str])
     """The warning names the figure, so the agent knows which .d2 file to fix."""
     doc = _doc(tmp_path, '# T\n\n```d2\nt: "T" {style: {font-color: "#000000"}}\n```\n')
 
-    result = CliRunner().invoke(
-        cli, ["render", str(doc)], env={"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
-    )
+    env = {"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+    result = CliRunner().invoke(cli, ["render", "--format", "svg", str(doc)], env=env)
 
     assert result.exit_code == 0, result.output
     assert "shop-1.d2" in result.stderr and "dark mode" in result.stderr
@@ -469,3 +490,16 @@ def test_crowded_diagrams_are_reported() -> None:
     assert any("13 arrows" in w for w in diagram_warnings(crowded))
     assert any("`api` and `db`" in w for w in diagram_warnings(twice))
     assert diagram_warnings("a -> b: x\nb -> c: y\n") == []
+
+
+def test_cli_format_svg_and_the_dark_mode_warnings(tmp_path: Path, d2: list[str]) -> None:
+    """PNG (default) is light, so dark-mode warnings only matter with --format svg."""
+    doc = _doc(tmp_path, '# T\n\n```d2\nt: "T" {style: {font-color: "#000000"}}\n```\n')
+    env = {"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+
+    png = CliRunner().invoke(cli, ["render", str(doc)], env=env)
+    svg = CliRunner().invoke(cli, ["render", "--format", "svg", str(doc)], env=env)
+
+    assert png.exit_code == 0 and "dark mode" not in png.stderr, png.output
+    assert svg.exit_code == 0 and "dark mode" in svg.stderr, svg.output
+    assert "![T](img/shop-1.svg)" in doc.read_text(encoding="utf-8")
