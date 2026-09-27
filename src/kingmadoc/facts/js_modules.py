@@ -26,12 +26,14 @@ _IMPORT = re.compile(
 )
 
 
-def js_dependencies(sources: Mapping[str, str], max_nodes: int = MAX_NODES) -> tuple[Edge, ...]:
+def js_dependencies(
+    sources: Mapping[str, str], max_nodes: int | None = MAX_NODES
+) -> tuple[Edge, ...]:
     """Return ``(importer, imported)`` pairs between the project's JS/TS modules.
 
     Args:
         sources: Relative POSIX path -> text; JS/TS files and their tsconfig/jsconfig.
-        max_nodes: Merge modules into folders above this many.
+        max_nodes: Merge modules into folders above this many (None: never merge).
 
     Returns:
         Sorted edges between module paths without extension (``frontend/app/page``), or
@@ -50,6 +52,8 @@ def js_dependencies(sources: Mapping[str, str], max_nodes: int = MAX_NODES) -> t
             target = _resolve(spec, path, aliases, names)
             if target and target != importer:
                 edges.add((importer, target))
+    if max_nodes is None:
+        return tuple(sorted(edges))
     merged, _ = collapse(
         [(_dots(a), _dots(b)) for a, b in sorted(edges)], max_nodes=max_nodes
     )

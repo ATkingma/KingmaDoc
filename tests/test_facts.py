@@ -193,3 +193,22 @@ def test_only_prints_the_asked_sections(tmp_path: Path) -> None:
     headings = [line for line in result.output.splitlines() if line.startswith("## ")]
     assert headings == ["## Routes and access", "## Data model"]
     assert bad.exit_code == 2 and "project" in bad.output
+
+
+def test_private_modules_come_from_the_dominator_tree(tmp_path: Path) -> None:
+    """A component only one page uses is private to it; a shared one is not listed."""
+    _write(tmp_path, "web/app/page.tsx", 'import "./hero";\nimport "./footer";\n')
+    _write(tmp_path, "web/app/about/page.tsx", 'import "../footer";\n')
+    _write(tmp_path, "web/app/hero.tsx", 'import "./hero-image";\n')
+    _write(tmp_path, "web/app/hero-image.tsx", "export {};\n")
+    _write(tmp_path, "web/app/footer.tsx", "export {};\n")
+
+    result = _facts(tmp_path, "--only", "private")
+    data = json.loads(_facts(tmp_path, "--json").output)
+
+    assert result.exit_code == 0, result.output
+    assert "## Private modules (dominator tree)" in result.output
+    assert "- `web/app/page` alone leads to: `web/app/hero`" in result.output
+    assert "- `web/app/hero` alone leads to: `web/app/hero-image`" in result.output
+    assert "web/app/footer`" not in result.output.split("## Private", 1)[1]
+    assert ["web/app/hero", ["web/app/hero-image"]] in data["private_modules"]

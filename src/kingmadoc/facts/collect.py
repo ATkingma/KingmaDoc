@@ -10,6 +10,7 @@ from typing import Any
 
 from kingmadoc.facts.branch import BranchChanges
 from kingmadoc.facts.data_model import Entity, data_model
+from kingmadoc.facts.dominators import private_modules
 from kingmadoc.facts.js_modules import CONFIG_FILES, js_dependencies
 from kingmadoc.facts.projects import PROJECT_SUFFIXES, Edge, project_references
 from kingmadoc.facts.routes import Route, routes
@@ -36,6 +37,7 @@ class Facts:
     routes: tuple[Route, ...] = ()
     services: tuple[Service, ...] = ()
     js_dependencies: tuple[Edge, ...] = ()
+    private: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 def collect_facts(
@@ -70,6 +72,9 @@ def collect_facts(
         routes=routes(sources),
         services=services(sources),
         js_dependencies=js_dependencies(sources),
+        private=private_modules(
+            [*(report.module_dependencies or ()), *js_dependencies(sources, max_nodes=None)]
+        ),
     )
 
 
@@ -126,6 +131,19 @@ def _js(facts: Facts) -> list[str]:
             *_edges(facts.js_dependencies, "none (or no JavaScript/TypeScript)")]
 
 
+def _private(facts: Facts) -> list[str]:
+    lines = ["## Private modules (dominator tree)", "",
+             "Every import path from an entry point to these goes through their owner: they",
+             "belong to it (a component boundary), and it is the only reason they exist.", ""]
+    if not facts.private:
+        return [*lines, "_none: every module is shared or imported by an entry point._"]
+    for owner, owned in facts.private[:MAX_LISTED]:
+        lines.append(f"- `{owner}` alone leads to: {', '.join(f'`{m}`' for m in owned)}")
+    if len(facts.private) > MAX_LISTED:
+        lines.append(f"- … {len(facts.private) - MAX_LISTED} more (see --json)")
+    return lines
+
+
 def _routes(facts: Facts) -> list[str]:
     lines = ["## Routes and access", ""]
     if not facts.routes:
@@ -165,6 +183,7 @@ _SECTIONS: Mapping[str, Callable[[Facts], list[str]]] = MappingProxyType({
     "references": _references,
     "python": _python,
     "js": _js,
+    "private": _private,
     "routes": _routes,
     "services": _services,
     "data": _data,
@@ -195,6 +214,7 @@ def facts_to_dict(facts: Facts) -> dict[str, Any]:
         "project_references": [list(e) for e in facts.project_references],
         "module_dependencies": [list(e) for e in report.module_dependencies or ()],
         "js_dependencies": [list(e) for e in facts.js_dependencies],
+        "private_modules": [[owner, list(owned)] for owner, owned in facts.private],
         "routes": [asdict(r) for r in facts.routes],
         "services": [asdict(sv) for sv in facts.services],
         "data_model": [asdict(e) for e in facts.entities],

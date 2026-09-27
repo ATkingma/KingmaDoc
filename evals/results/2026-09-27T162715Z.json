@@ -1,0 +1,95 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 94,
+        "total_cost_usd": 0.6629856000000001,
+        "num_turns": 12,
+        "reply": "aren't caught.\n5. Paying is a separate call, `POST /orders/<id>/pay/`. It only changes the status from `new` to `paid` and doesn't contact any payment provider. It only finds the customer's own orders, and paying an order that isn't `new` returns 409.\n6. The `shipped` status exists, but no code ever sets it.\n\n**Couldn't work out:** how users log in. There's no login route, and `settings.py` sets no `MIDDLEWARE`, so it's unclear where `request.user` comes from. If you tell me the intended setup, I'll add it to the explainer.\n\nTo see the diagrams in VS Code, open the file and press Ctrl+Shift+V."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "6 images"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "1 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "14 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 93,
+        "total_cost_usd": 0.6364946500000002,
+        "num_turns": 12,
+        "reply": " the status from `new` to `paid`. If the order isn't `new`, the caller gets 409. No payment provider is involved.\n\nStock is taken off when the order is placed, not when it's paid.\n\n**Things the code doesn't explain** (listed at the end of the explainer; tell me the answers and I'll add them):\n- **How do users log in?** `@login_required` needs session and authentication middleware, but `shop/settings.py` sets no `MIDDLEWARE` and there's no login route.\n- **What sets `shipped`, and what creates `Customer` rows?** No code does either.\n\nIn VS Code, Ctrl+Shift+V opens the preview with the pictures."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "6 images"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "2 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "14 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    }
+  ]
+}

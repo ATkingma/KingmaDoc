@@ -4,7 +4,7 @@ Contents: Which model for which code · Rules for every model · Sequence diagra
 State machine (UML) · ER diagram (crow's foot) · Class diagram and domain model (UML) ·
 Package diagram · Activity diagram with swimlanes (UML / BPMN style) · Use case diagram
 (UML) · Data flow diagram with trust boundaries · Event flow (event storming colours) ·
-Context map (DDD) · Review checklist.
+Context map (DDD) · Algorithm (flowchart, trace table, formula) · Review checklist.
 
 C4 ([c4-model.md](c4-model.md)) shows structure, deployment and runtime. Everything
 else (data, lifecycles, processes, domain, security-relevant data flows) needs its own
@@ -28,6 +28,7 @@ never invent content to fill one. Keep the whole explainer to about eight figure
 | Several services or modules with their own model, adapters, upstream APIs         | Context map (DDD)                       | technical  | 3 or 8        |
 | Logins, tokens, personal data, payments, uploads, webhooks                        | Data flow diagram with trust boundaries | technical  | 8             |
 | A complex function with more than three branches, a batch job with retries        | Flowchart                               | technical  | 6             |
+| An algorithm: pathfinding, scheduling, pricing, ranking, recursion, nested loops    | Algorithm (flowchart + trace + formula) | technical  | 8             |
 
 Tie-breakers: one caller-callee chain is a sequence; several roles taking turns are
 swimlanes; the lifecycle of one thing is a state machine. Prefer one clear figure over
@@ -164,7 +165,9 @@ backend -> diagram: formats {style.stroke-dash: 3}
 
 Rules: `shape: package` per package or module of the project itself (no third-party
 libraries); an arrow means "imports / depends on"; highlight a violated layering rule in
-red and say which rule in the caption.
+red and say which rule in the caption. Group the packages by the private modules of
+`kingmadoc explain facts` (the dominator tree): what only one package leads to belongs
+inside it.
 
 ```d2
 title: "[Package] kingmadoc" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
@@ -303,6 +306,62 @@ catalog -> sales: "U: OHS/PL -> D: CF"
 payments -> sales: "U: OHS -> D: ACL"
 ```
 
+## Algorithm (flowchart, trace table, formula)
+
+Rules: explain what it computes before how. A flowchart of the steps with decisions as
+diamonds and every exit labelled (`yes`/`no`, or the condition); at most 15 lines of
+pseudocode (`text` block) in the code's names; the formula it evaluates as a display
+formula (`$$ … $$`, rendered by GitHub and VS Code); the invariant that holds after
+every step, in one sentence; time and space in O-notation, saying what *n* is; and a
+trace table on a small input, one row per step, one column per variable. Numbers in
+the trace come from running or reading the code, never from memory.
+
+```d2
+title: "[Algorithm] Shortest route (Dijkstra)" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
+start: "dist[start] = 0, all others ∞; queue = {start}" {shape: rectangle}
+empty: "queue empty?" {shape: diamond}
+pick: "take the node u with the smallest dist" {shape: rectangle}
+goal: "u is the goal?" {shape: diamond}
+relax: "for each neighbour v: dist[v] = min(dist[v], dist[u] + w(u, v))" {shape: rectangle}
+found: "route found: follow prev[] back" {shape: oval}
+none: "no route" {shape: oval}
+start -> empty
+empty -> none: "yes"
+empty -> pick: "no"
+pick -> goal
+goal -> found: "yes"
+goal -> relax: "no"
+relax -> empty
+```
+
+```text
+dist[start] = 0; queue = {start}
+while queue:
+    u = pop node with smallest dist
+    if u == goal: return path(prev, goal)
+    for v, w in neighbours(u):
+        if dist[u] + w < dist[v]:
+            dist[v] = dist[u] + w; prev[v] = u; push v
+return no route
+```
+
+$$
+d(v) = \min_{(u, v) \in E} \big( d(u) + w(u, v) \big)
+$$
+
+**Invariant:** every node taken from the queue has its final, shortest distance.
+**Complexity:** O((V + E) log V) time with a binary heap, O(V) space; V nodes, E edges.
+
+Trace for the graph A–B (4), A–C (1), C–B (2), from A to B:
+
+| Step | Taken (u) | dist A | dist B | dist C | Queue   |
+| ---- | --------- | ------ | ------ | ------ | ------- |
+| 0    | –         | 0      | ∞      | ∞      | A       |
+| 1    | A         | 0      | 4      | 1      | C, B    |
+| 2    | C         | 0      | 3      | 1      | B       |
+| 3    | B (goal)  | 0      | 3      | 1      | –       |
+
 ## Review checklist
 
 Check every figure against its model's rules above before handing over:
@@ -317,4 +376,6 @@ Check every figure against its model's rules above before handing over:
       dependency; no getters or setters.
 - [ ] Activity: lanes per role, labelled decision exits, start and end.
 - [ ] Data flow: every flow says what data; trust boundaries dashed red.
+- [ ] Algorithm: labelled decision exits, formula, invariant, complexity with *n*
+      defined, and a trace table whose numbers come from the code.
 - [ ] Names match the code; nothing drawn that the code does not have.

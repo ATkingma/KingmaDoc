@@ -113,7 +113,8 @@ kingmadoc explain facts --base main     # a branch: plus its commits and changed
 ```
 
 Draw from them and never contradict them: the project references and module
-dependencies are the arrows between containers and components, the routes and access
+dependencies are the arrows between containers and components, the private modules
+(dominator tree: everything only one module leads to) are its components' boundaries, the routes and access
 table is the source for routes and permissions, the DI services name the components,
 the data model is the ER diagram's source, the changed files are what a branch explains. (No `explain` command: update KingmaDoc, see Step 5.)
 

@@ -236,6 +236,7 @@ def test_reading_the_code_starts_from_the_facts() -> None:
     assert "kingmadoc explain facts" in step
     assert "--base" in step
     assert "never contradict" in step
+    assert "dominator tree" in step
 
 
 def test_the_skill_keeps_the_agents_context_small() -> None:

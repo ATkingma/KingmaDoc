@@ -318,3 +318,16 @@ def test_a_sequence_diagram_has_no_stray_label(path: Path) -> None:
         for match in re.finditer(r"^( +)shape: sequence_diagram", source, re.M):
             opening = source[: match.start()].rstrip().rsplit("\n", 1)[-1]
             assert re.search(r':\s*""\s*\{$', opening), f"{path.name}: {opening.strip()}"
+
+
+def test_algorithm_model_explains_with_formula_trace_and_complexity() -> None:
+    """Flowchart + short pseudocode + formula ($$) + invariant + complexity + trace table."""
+    body = next(b for h, b in MODEL_SECTIONS.items() if h.startswith("Algorithm"))
+    source = _examples(body)[0]
+
+    assert "shape: diamond" in source
+    assert re.search(r'-> \w+: "?(yes|no)', source)
+    assert re.search(r"^\$\$\n.+\n\$\$$", body, re.M), "a display formula in $$ … $$"
+    assert "```text" in body and "Invariant" in body
+    assert re.search(r"\bO\(.+\) time", body)
+    assert re.search(r"^\| Step \|", body, re.M), "a trace table, one row per step"

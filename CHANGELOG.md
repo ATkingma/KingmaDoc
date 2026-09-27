@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agents or pipes only get a tip. `kingmadoc render` says how to see the pictures
   (Ctrl+Shift+V) while that setting is missing.
 
+### Added
+
+- `kingmadoc explain facts` lists private modules from the dominator tree of the module
+  graph (Python and JavaScript/TypeScript): what only one module leads to belongs to
+  it, which shows the real component boundaries. A single entry point is left out.
+- `explaining-code` model "Algorithm": a flowchart, at most 15 lines of pseudocode, the
+  formula as `$$ … $$` (GitHub and VS Code render it), the invariant, the complexity and
+  a trace table on a small input.
+
 ### Fixed
 
 - Dark mode: the C4 style of `explaining-code` (5.5) set black title text and white
