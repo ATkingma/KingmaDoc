@@ -35,6 +35,12 @@ D2_PAD = 20
 IMAGE_MODE = 0o644
 # D2's own dark theme; the SVG switches to it when the viewer uses dark mode.
 D2_DARK_THEME = 200
+# Straight, right-angled arrows (see _layout_args); bundled with D2 like dagre.
+LAYOUT_ENGINE = "elk"
+# Above this many arrows a figure gets hard to follow (render warns).
+MAX_ARROWS = 12
+_ARROW = re.compile(r"^\s*([\w.]+)\s*(<->|->|<-|--)\s*([\w.]+)", re.M)
+_LEGEND = re.compile(r"vars:\s*\{\s*d2-legend:\s*\{.*?^\s*\}\s*^\}", re.S | re.M)
 
 # A diagram is either a fenced d2 block, or a reference written by an earlier render.
 # References may only point into img/ next to the document (no other paths).
@@ -82,7 +88,7 @@ def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
     # across filesystems (EXDEV when /tmp is another disk).
     with tempfile.TemporaryDirectory(dir=path.parent, prefix=".kingmadoc-render-") as tmp:
         rendered = [
-            _render(source, Path(tmp), n, path, [*d2, *_theme_args(dark)])
+            _render(source, Path(tmp), n, path, [*d2, *_theme_args(dark), *_layout_args(source)])
             for n, source in enumerate(sources, start=1)
         ]
         image_dir.mkdir(parents=True, exist_ok=True)
@@ -99,6 +105,49 @@ def render_file(path: Path, d2: Sequence[str], dark: bool = True) -> list[Path]:
         text = text[: item.start()] + _embed(alt, name) + text[item.end() :]
     write_document(path, text, overwrite=True)
     return [image_dir / f"{name}.svg" for name in names]
+
+
+def diagram_warnings(source: str) -> list[str]:
+    """Everything worth fixing in a D2 diagram: dark-mode styles and crowded arrows.
+
+    Args:
+        source: The D2 source.
+
+    Returns:
+        One message per problem (empty when there is none).
+    """
+    return dark_mode_warnings(source) + crowding_warnings(source)
+
+
+def crowding_warnings(source: str) -> list[str]:
+    """Warn about figures whose arrows get hard to follow.
+
+    More than :data:`MAX_ARROWS` arrows, or two arrows between the same two shapes (one
+    arrow with a combined label reads better).
+
+    Args:
+        source: The D2 source.
+
+    Returns:
+        One message per problem.
+    """
+    body = _LEGEND.sub("", source)
+    if "sequence_diagram" in body:
+        return []  # a sequence diagram's arrows are its messages, in order
+    pairs = [(a, b) for a, _, b in _ARROW.findall(body)]
+    warnings = []
+    if len(pairs) > MAX_ARROWS:
+        warnings.append(f"{len(pairs)} arrows (more than {MAX_ARROWS}) are hard to follow; "
+                        "split the figure or combine arrows")
+    seen: dict[frozenset[str], int] = {}
+    for a, b in pairs:
+        seen[frozenset((a, b))] = seen.get(frozenset((a, b)), 0) + 1
+    for pair, count in seen.items():
+        if count > 1 and len(pair) == 2:
+            a, b = sorted(pair)
+            warnings.append(f"{count} arrows between `{a}` and `{b}`; draw one with a "
+                            "combined label")
+    return warnings
 
 
 def dark_mode_warnings(source: str) -> list[str]:
@@ -121,10 +170,10 @@ def dark_mode_warnings(source: str) -> list[str]:
         fill = re.search(r"\bfill: *\"?([^;}\n\"]+)", block)
         if not fill or fill.group(1).strip() == "transparent":
             warnings.append(f"{_key(source, match.start())}: font-color without a fill stays "
-                            "dark on the dark background; remove the font-color")
+                            "dark on the dark background; remove the font-color (dark mode)")
     for match in re.finditer(r"\bfill: *\"?(?:#fff\b|#ffffff|white)\"?", source, re.I):
         warnings.append(f"{_key(source, match.start())}: a white fill stays white while the "
-                        "text on it turns light; use fill: transparent")
+                        "text on it turns light; use fill: transparent (dark mode)")
     for match in re.finditer(r"^( +)shape: *sequence_diagram", source, re.M):
         opening = source[: match.start()].rstrip().rsplit("\n", 1)[-1]
         if not re.search(r':\s*""\s*\{$', opening):
@@ -200,6 +249,15 @@ def _render(source: str, tmp: Path, n: int, doc: Path, d2: Sequence[str]) -> Pat
         detail = detail.replace(str(src), f"diagram {n}")
         raise RenderError(f"D2 could not render diagram {n} in {doc}: {detail}")
     return out
+
+
+def _layout_args(source: str) -> list[str]:
+    """ELK unless the diagram picks its own engine (``vars: {d2-config: {layout-engine}}``).
+
+    ELK routes arrows orthogonally, with fewer crossings than D2's default (dagre, curved
+    splines that run over each other in bigger diagrams).
+    """
+    return [] if "layout-engine" in source else ["--layout", LAYOUT_ENGINE]
 
 
 def _theme_args(dark: bool) -> list[str]:

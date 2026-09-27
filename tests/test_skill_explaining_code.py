@@ -211,8 +211,12 @@ def test_d2_examples_compile(tmp_path: Path, index: int) -> None:
     source = re.sub(r"<([A-Za-z][^<>\n]*)>", r"\1", examples[index])
     (tmp_path / "x.d2").write_text(source, encoding="utf-8")
 
+    # The same options as `kingmadoc render`: the ELK layout and the dark theme.
+    from kingmadoc.render import D2_DARK_THEME, _layout_args
+
     result = subprocess.run(
-        [D2 or "d2", str(tmp_path / "x.d2"), str(tmp_path / "x.svg")],
+        [D2 or "d2", *_layout_args(source), "--dark-theme", str(D2_DARK_THEME),
+         str(tmp_path / "x.d2"), str(tmp_path / "x.svg")],
         capture_output=True, text=True, timeout=60, check=False,
     )
 
@@ -262,3 +266,19 @@ def test_long_references_start_with_their_contents() -> None:
         assert "Contents:" in head, path.name
         for section in re.findall(r"^## (.+)$", _read(path).split("````", 1)[0], re.M):
             assert section.split(".")[0] in head or section in head, f"{path.name}: {section}"
+
+
+def test_arrows_stay_tidy() -> None:
+    """One flow direction, one arrow per pair, at most 12 arrows, short labels."""
+    step = re.sub(r"\s+", " ", _read(SKILL).split("## Step 3.", 1)[1].split("## Step 4.", 1)[0])
+
+    assert "direction: down" in step and "one arrow per pair" in step
+    assert "at most 12 arrows" in step and "six words" in step
+
+
+def test_hand_over_offers_the_vs_code_preview() -> None:
+    """The pictures only show in a preview: ask once, then set it up on yes."""
+    hand_over = re.sub(r"\s+", " ", _read(SKILL).split("## Step 6.", 1)[1])
+
+    assert "kingmadoc skills install --vscode" in hand_over
+    assert "Ask" in hand_over and "on yes" in hand_over

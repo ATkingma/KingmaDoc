@@ -140,6 +140,7 @@ no methods, no types, multiplicities kept.
 
 ```d2
 title: "[Class] Diagram backends" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
 backend: "«interface» DiagramBackend" {
   shape: class
   "+render_context(diagram)": str
@@ -171,6 +172,7 @@ inside it.
 
 ```d2
 title: "[Package] kingmadoc" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
 cli: cli {shape: package}
 plan: plan {shape: package}
 diagrams: diagrams {shape: package}

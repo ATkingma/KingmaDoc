@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: "Explains existing code with rendered diagrams (C4 in Simon Brown's notation; UML sequence, state, class, activity, use case; ER; data flow) and short tables, as an arc42 or compact C4 document, one file or split into functional and technical. Fixes code blindness, e.g. after an agent wrote the code. Scope: a feature, a branch or PR, a whole project, or a folder, service or module. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
-version: 5.6.0
+version: 5.7.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -163,6 +163,12 @@ Write every diagram in **D2** (Step 5 turns them into images).
    Never set a `font-color` without a fill (titles, labels: the theme picks the colour),
    and never fill white: boundaries and nodes are `fill: transparent`. Put
    `shape: sequence_diagram` at the top level, or give its container the label `""`.
+5. **Tidy arrows:** set `direction: down` (people on top, data stores at the bottom;
+   `right` only for timelines and swimlanes), draw one arrow per pair of shapes with a
+   combined label, keep at most 12 arrows per figure (split it otherwise, e.g. one
+   figure per container), label each arrow in at most six words plus `[protocol]`, and
+   point arrows at the shapes inside a boundary, not at the boundary. `kingmadoc render`
+   lays figures out with straight, right-angled arrows (ELK) and warns about crowded ones.
 
 For a **branch**, mark changes by border, so the C4 colours stay meaningful, and add
 both to the legend:
@@ -174,6 +180,7 @@ classes: {
   changed: {style: {stroke: "#ef6c00"; stroke-width: 4}}
 }
 title: "[Container] Webshop - branch feature/invoices" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
 vars: {
   d2-legend: {
     n: New in this branch {class: [container; new]}
@@ -236,6 +243,10 @@ Go through the checklist of each figure's model (end of
 and fix what fails; check that the document embeds every image. Then hand over in at most five lines:
 the path, one or two sentences on what the system is, the number of figures, and the
 "Couldn't work out" questions (at most three), which you then answer into the explainer.
-Do not paste the explainer or its figures into the chat. If VS Code opens it as text,
-say once that Ctrl+Shift+V shows the pictures, or `kingmadoc skills install --vscode`
-always does; never run that without the user's consent.
+Do not paste the explainer or its figures into the chat.
+
+VS Code shows the pictures only in its Markdown preview. If `.vscode/settings.json` does
+not yet open `docs/explain/` as a preview, Ask once: "Should VS Code open explainers
+directly as a preview, with the pictures?" and, on yes, run
+`kingmadoc skills install --vscode` (it adds one setting). Never run it without that yes;
+without it, mention that Ctrl+Shift+V shows the pictures.

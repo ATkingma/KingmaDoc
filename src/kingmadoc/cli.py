@@ -49,7 +49,7 @@ from kingmadoc.plan.generator import (
     render_plan,
 )
 from kingmadoc.plandoc import check_plan, generated_at, parse_plan, set_status
-from kingmadoc.render import dark_mode_warnings, render_file
+from kingmadoc.render import diagram_warnings, render_file
 from kingmadoc.skills import AGENT_DIRS, install_skills
 from kingmadoc.verify.changes import detect_changes
 from kingmadoc.verify.commands import MARKER_FILES, detect_commands, run_check
@@ -474,10 +474,11 @@ def render_command(documents: tuple[Path, ...], light: bool, verbose: bool) -> N
                 noun = "image" if len(images) == 1 else "images"
                 click.echo(f"{document}: {len(images)} {noun} ({span})")
             for image in images:
-                if not light:
-                    source = image.with_suffix(".d2")
-                    for warning in dark_mode_warnings(source.read_text(encoding="utf-8")):
-                        click.echo(f"{source}: {warning} (dark mode)", err=True)
+                source = image.with_suffix(".d2")
+                for warning in diagram_warnings(source.read_text(encoding="utf-8")):
+                    if light and warning.endswith("(dark mode)"):
+                        continue
+                    click.echo(f"{source}: {warning}", err=True)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
 

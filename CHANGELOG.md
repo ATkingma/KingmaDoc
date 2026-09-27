@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Tidier diagrams: `kingmadoc render` lays figures out with ELK (straight,
+  right-angled arrows with fewer crossings; a diagram that sets its own
+  `layout-engine` keeps it) and warns about more than 12 arrows or two arrows between
+  the same shapes. `explaining-code` 5.7: one flow direction, one arrow per pair, at
+  most 12 arrows, labels of at most six words; C4 boundary labels sit top-left in a
+  small font so arrows do not cross them. At hand-over the agent asks whether VS Code
+  should open explainers as a preview (the pictures only show there) and sets it up on
+  yes.
 - Beta channel: every commit on `main` that passes CI is published to PyPI as a
   development version (`0.3.0.devN`); follow it with
   `pipx install --pip-args=--pre kingmadoc` and `pipx upgrade kingmadoc`.

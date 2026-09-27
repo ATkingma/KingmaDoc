@@ -426,3 +426,46 @@ def test_images_are_readable_by_everyone(tmp_path: Path, d2: list[str]) -> None:
     images = render_file(_doc(tmp_path), d2)
 
     assert all(p.stat().st_mode & 0o777 == 0o644 for p in images)
+
+
+def test_images_use_the_elk_layout(
+    tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ELK routes arrows straight and at right angles (dagre curves them over each other)."""
+    commands = _commands(tmp_path, d2, monkeypatch)
+
+    assert commands and all(c[c.index("--layout") + 1] == "elk" for c in commands)
+
+
+def test_a_diagram_that_picks_its_layout_keeps_it(
+    tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """vars.d2-config.layout-engine in the source wins over the default."""
+    import subprocess
+
+    from kingmadoc import render
+
+    seen: list[list[str]] = []
+    real_run = subprocess.run
+
+    def run(command: list[str], **kwargs: object):  # type: ignore[no-untyped-def]
+        seen.append(command)
+        return real_run(command, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(render.subprocess, "run", run)
+    source = "vars: {d2-config: {layout-engine: dagre}}\na -> b\n"
+    render_file(_doc(tmp_path, f"# T\n\n```d2\n{source}```\n"), d2)
+
+    assert seen and "--layout" not in seen[0]
+
+
+def test_crowded_diagrams_are_reported() -> None:
+    """More than 12 arrows, or two arrows between the same pair, make a figure hard to read."""
+    from kingmadoc.render import diagram_warnings
+
+    crowded = "\n".join(f"a{i} -> b{i}: x" for i in range(13))
+    twice = "api -> db: reads\ndb -> api: rows\nweb -> api: calls\n"
+
+    assert any("13 arrows" in w for w in diagram_warnings(crowded))
+    assert any("`api` and `db`" in w for w in diagram_warnings(twice))
+    assert diagram_warnings("a -> b: x\nb -> c: y\n") == []

@@ -106,10 +106,11 @@ classes: {
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
-  boundary: {style: {fill: transparent; stroke: "#888888"; stroke-dash: 4}}
-  node: {style: {fill: transparent; stroke: "#888888"}}
+  boundary: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; stroke-dash: 4; font-size: 15}}
+  node: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; font-size: 15}}
 }
 title: "[System Context] Webshop" {
+direction: down
   shape: text
   near: top-center
   style: {font-size: 24; bold: true}
@@ -155,9 +156,10 @@ classes: {
   external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}}
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  boundary: {style: {fill: transparent; stroke: "#888888"; stroke-dash: 4}}
+  boundary: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; stroke-dash: 4; font-size: 15}}
 }
 title: "[Container] Webshop" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
 vars: {
   d2-legend: {
     p: Person {class: person}
@@ -213,9 +215,10 @@ classes: {
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
-  boundary: {style: {fill: transparent; stroke: "#888888"; stroke-dash: 4}}
+  boundary: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; stroke-dash: 4; font-size: 15}}
 }
 title: "[Component] Webshop - API" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
 vars: {
   d2-legend: {
     c: Container {class: container}
@@ -262,9 +265,10 @@ instances they run; infrastructure (proxy, DNS) only when the code configures it
 classes: {
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  node: {style: {fill: transparent; stroke: "#888888"}}
+  node: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; font-size: 15}}
 }
 title: "[Deployment] Webshop - production" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
 vars: {
   d2-legend: {
     n: Deployment node {class: node}
@@ -298,6 +302,7 @@ classes: {
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
 }
 title: "[Dynamic] Webshop - placing an order" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+direction: down
 vars: {
   d2-legend: {
     p: Person {class: person}

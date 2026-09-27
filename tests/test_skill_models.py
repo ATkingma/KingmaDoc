@@ -331,3 +331,20 @@ def test_algorithm_model_explains_with_formula_trace_and_complexity() -> None:
     assert "```text" in body and "Invariant" in body
     assert re.search(r"\bO\(.+\) time", body)
     assert re.search(r"^\| Step \|", body, re.M), "a trace table, one row per step"
+
+
+def test_c4_boundaries_keep_their_label_out_of_the_arrows() -> None:
+    """Boundary and node labels sit top-left in a small font, so arrows do not cross them."""
+    for line in re.findall(r"^\s*(?:boundary|node): \{.*$", _read(C4_MODEL), re.M):
+        assert "label.near: top-left" in line and "font-size: 15" in line, line
+
+
+@pytest.mark.parametrize("path", ALL_FILES, ids=lambda p: p.name)
+def test_diagrams_flow_down(path: Path) -> None:
+    """Every example with arrows (except sequence diagrams) sets one flow direction:
+    down, or right for timelines and swimlanes."""
+    for source in _examples(_read(path)):
+        if _edges(source) and "sequence_diagram" not in source and "grid-" not in source:
+            assert re.search(r"^direction: (down|right)$", source, re.M), (
+                f"{path.name}:\n{source[:120]}"
+            )
