@@ -34,7 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   between .NET projects (`.csproj`), the Python module dependencies, the data model from
   ORM code (EF Core, Prisma, Django, SQLAlchemy, TypeORM; tests are left out) and, with
   `--base`, the branch's commits and changed files with line counts (uncommitted work
-  included). `explaining-code` 5.3 starts from it.
+  included). `explaining-code` 5.3 starts from it. It also lists the routes with
+  their access rules (ASP.NET controllers and minimal APIs with `[Authorize]`,
+  `[AllowAnonymous]`, rate limiting; Next.js app and pages router; Django with
+  `login_required`; FastAPI with `Depends`; Flask; Express middleware), the .NET
+  services registered for dependency injection, and the JavaScript/TypeScript module
+  dependencies (relative imports and `tsconfig` `paths` aliases such as `@/`, merged
+  into folders above 25 modules); `explaining-code` 5.4 uses them.
 - `kingmadoc explain status`: per explainer, the files changed since the commit in its
   **Based on** row (committed or not), limited to the files it names in code spans (or
   the whole project); `--check` exits with 1 when one is outdated, for CI.
@@ -122,6 +128,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `img/figure-<n>` and overwrite each other's images and D2 sources; only an explainer
   folder's README uses `figure-<n>`. Images an explainer had under its old name
   (`img/README-<n>`) are removed when it is rendered again.
+- Analyzer: build output of Next.js (`.next/`), Nuxt and SvelteKit is no longer
+  analyzed as source.
 - Analyzer: imports in test directories no longer add frameworks to the detected stack
   (tests of a code generator mentioned Django without the project using it).
 - `kingmadoc --version` no longer crashes on an unusual `direct_url.json`.

@@ -8,12 +8,14 @@ from typing import Any
 
 from kingmadoc.facts.branch import BranchChanges
 from kingmadoc.facts.data_model import Entity, data_model
+from kingmadoc.facts.js_modules import CONFIG_FILES, js_dependencies
 from kingmadoc.facts.projects import PROJECT_SUFFIXES, Edge, project_references
+from kingmadoc.facts.routes import Route, routes
+from kingmadoc.facts.services import Service, services
 from kingmadoc.plan.analyzer import TEST_DIR_NAMES, CodebaseReport
 
-# Files the data-model parsers read, and the size above which a file is skipped
-# (generated code, fixtures).
-MODEL_SUFFIXES = (".cs", ".prisma", ".py", ".ts")
+# Files the parsers read, and the size above which a file is skipped (generated code).
+MODEL_SUFFIXES = (".cs", ".prisma", ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 MAX_FILE_BYTES = 512_000
 # Longest list of changed files and dependencies shown in Markdown (JSON has them all).
 MAX_LISTED = 60
@@ -29,6 +31,9 @@ class Facts:
     project_references: tuple[Edge, ...]
     entities: tuple[Entity, ...]
     branch: BranchChanges | None
+    routes: tuple[Route, ...] = ()
+    services: tuple[Service, ...] = ()
+    js_dependencies: tuple[Edge, ...] = ()
 
 
 def collect_facts(
@@ -49,7 +54,9 @@ def collect_facts(
     for relative in report.files:
         if relative.suffix in PROJECT_SUFFIXES:
             manifests[relative.as_posix()] = _read(report.root / relative)
-        elif relative.suffix in MODEL_SUFFIXES and not _is_test(relative):
+        elif (relative.suffix in MODEL_SUFFIXES or relative.name in CONFIG_FILES) and not (
+            _is_test(relative)
+        ):
             sources[relative.as_posix()] = _read(report.root / relative)
     return Facts(
         project=report.root.resolve().name,
@@ -58,6 +65,9 @@ def collect_facts(
         project_references=project_references(manifests),
         entities=data_model(sources),
         branch=branch,
+        routes=routes(sources),
+        services=services(sources),
+        js_dependencies=js_dependencies(sources),
     )
 
 
@@ -91,6 +101,21 @@ def facts_markdown(facts: Facts) -> str:
     lines += _edges(facts.project_references, "no .NET project references")
     lines += ["", "## Python module dependencies", ""]
     lines += _edges(report.module_dependencies or (), "none (or no Python)")
+    lines += ["", "## JavaScript/TypeScript module dependencies", ""]
+    lines += _edges(facts.js_dependencies, "none (or no JavaScript/TypeScript)")
+    lines += ["", "## Routes and access", ""]
+    if facts.routes:
+        lines += ["| Method | Path | Handler | Access |", "| --- | --- | --- | --- |"]
+        for r in facts.routes[:MAX_LISTED]:
+            handler = f"`{r.handler}`" if "/" in r.handler else r.handler
+            lines.append(f"| {r.method} | `{r.path}` | {handler} | {r.access} |")
+        if len(facts.routes) > MAX_LISTED:
+            lines.append(f"| | … {len(facts.routes) - MAX_LISTED} more (see --json) | | |")
+    else:
+        lines.append("_none found (ASP.NET, Next.js, Django, FastAPI, Flask, Express)._")
+    lines += ["", "## Services (dependency injection)", ""]
+    lines += [f"- {sv.contract} → {sv.implementation} ({sv.lifetime}, `{sv.source}`)"
+              for sv in facts.services] or ["_none found (.NET registrations)._"]
     lines += ["", "## Data model"]
     if not facts.entities:
         lines += ["", "_none found (EF Core, Prisma, Django, SQLAlchemy, TypeORM)._"]
@@ -123,6 +148,9 @@ def facts_to_dict(facts: Facts) -> dict[str, Any]:
         "test_dirs": list(report.test_dirs),
         "project_references": [list(e) for e in facts.project_references],
         "module_dependencies": [list(e) for e in report.module_dependencies or ()],
+        "js_dependencies": [list(e) for e in facts.js_dependencies],
+        "routes": [asdict(r) for r in facts.routes],
+        "services": [asdict(sv) for sv in facts.services],
         "data_model": [asdict(e) for e in facts.entities],
         "branch": None if branch is None else {
             "base": branch.base,

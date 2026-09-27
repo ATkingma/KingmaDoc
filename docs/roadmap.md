@@ -197,7 +197,8 @@ three diagram formats, and the skill describes the same structure.
 
 ## WP9. Models derived from the code
 
-**Status:** a (dependency graph, Python) done (unreleased); JS/TS imports and b–g open.
+**Status:** a (dependency graph: Python in `plan`; JS/TS in `kingmadoc explain facts`) done
+(unreleased), plus routes/permissions and .NET services in `explain facts`; b–g open.
 
 **Goal.** The models KingmaDoc can fill in from the code itself; they fight code
 blindness best, so they come first. Each item ships on its own, in this order.

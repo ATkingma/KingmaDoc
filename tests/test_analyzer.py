@@ -150,3 +150,15 @@ def test_imports_in_tests_do_not_set_the_stack(tmp_path: Path) -> None:
 
     assert "Django" not in stack
     assert "Click" in stack
+
+
+def test_framework_build_output_is_not_analyzed(tmp_path: Path) -> None:
+    """.next/ (Next.js), .nuxt/ and .svelte-kit/ hold generated files, not the source."""
+    for folder in (".next/server", ".nuxt", ".svelte-kit"):
+        (tmp_path / folder).mkdir(parents=True)
+        (tmp_path / folder / "chunk.js").write_text("x\n", encoding="utf-8")
+    (tmp_path / "app.js").write_text("x\n", encoding="utf-8")
+
+    report = analyze(tmp_path, AnalyzerConfig())
+
+    assert [f.as_posix() for f in report.files] == ["app.js"]

@@ -23,6 +23,8 @@ from kingmadoc.plan.dependencies import Edge, module_dependencies
 # Always skipped, even if the config's exclude_dirs leaves them out.
 ALWAYS_EXCLUDED_DIRS: tuple[str, ...] = (
     ".git", "node_modules", ".venv", "__pycache__", "dist", "build",
+    # Build output of Next.js and Nuxt, and SvelteKit's generated files.
+    ".next", ".nuxt", ".svelte-kit",
 )
 
 # Config/marker file (name or glob) -> technology it indicates.

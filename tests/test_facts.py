@@ -146,3 +146,37 @@ def test_tests_are_not_part_of_the_data_model(tmp_path: Path) -> None:
     data = json.loads(_facts(tmp_path, "--json").output)
 
     assert [e["name"] for e in data["data_model"]] == ["Real"]
+
+
+def test_routes_services_and_js_modules_are_reported(tmp_path: Path) -> None:
+    """A .NET API with a Next.js front end: routes with access, DI services, TS imports."""
+    _write(tmp_path, "Api/Program.cs", (
+        "builder.Services.AddScoped<IContactNotifier, MailNotifier>();\n"
+        'app.MapGet("/health", () => "OK");\n'
+    ))
+    _write(tmp_path, "Api/Controllers/ContactController.cs", (
+        "[ApiController]\npublic class ContactController : ControllerBase\n{\n"
+        '    [HttpPost("api/contact")]\n    [EnableRateLimiting("contact")]\n'
+        "    public IActionResult Send() => Ok();\n}\n"
+    ))
+    _write(tmp_path, "web/tsconfig.json", '{"compilerOptions": {"paths": {"@/*": ["./*"]}}}')
+    _write(tmp_path, "web/app/page.tsx", 'import Footer from "@/components/footer";\n')
+    _write(tmp_path, "web/components/footer.tsx", "export default function Footer() {}\n")
+    _write(tmp_path, "web/.next/server/app/page.js", 'import x from "./chunk";\n')
+
+    result = _facts(tmp_path)
+    data = json.loads(_facts(tmp_path, "--json").output)
+
+    assert result.exit_code == 0, result.output
+    text = result.output
+    assert "## Routes and access" in text
+    assert "| POST | `/api/contact` | ContactController.Send | rate limit contact |" in text
+    assert "| PAGE | `/` | `web/app/page.tsx` |" in text
+    assert "## Services (dependency injection)" in text
+    assert "- IContactNotifier → MailNotifier (scoped, `Api/Program.cs`)" in text
+    assert "## JavaScript/TypeScript module dependencies" in text
+    assert "- web/app/page → web/components/footer" in text
+    assert ".next" not in text
+    assert data["routes"][0]["path"] == "/"
+    assert data["services"][0]["contract"] == "IContactNotifier"
+    assert data["js_dependencies"] == [["web/app/page", "web/components/footer"]]
