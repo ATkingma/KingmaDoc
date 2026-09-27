@@ -34,9 +34,13 @@ from typing import Any
 
 import yaml
 
+from kingmadoc.plandoc import check_plan
+
 REPO = Path(__file__).resolve().parents[1]
 EVALS = REPO / "evals"
 AGENT_TIMEOUT = 45 * 60
+# How much of the agent's final reply is recorded (its end: the question it stopped on).
+REPLY_CHARS = 600
 ALLOWED_TOOLS = ",".join([
     "Read", "Write", "Edit", "Glob", "Grep", "Skill",
     "Bash(kingmadoc:*)", "Bash(git log:*)", "Bash(git diff:*)", "Bash(git status:*)",
@@ -117,12 +121,27 @@ def check_unchanged_outside(workspace: Path, allowed: list[str]) -> tuple[bool, 
     return not outside, ", ".join(outside) or f"{len(changed)} change(s), all allowed"
 
 
+def check_plan_check(workspace: Path, pattern: str) -> tuple[bool, str]:
+    """Every matching plan passes `kingmadoc check` (frontmatter and REQ IDs)."""
+    files = sorted(workspace.glob(pattern))
+    if not files:
+        return False, f"nothing at {pattern}"
+    problems = [
+        f"{_rel(workspace, f)}: {problem}"
+        for f in files
+        for problem in check_plan(f.read_text(encoding="utf-8", errors="replace"),
+                                  slug=f.name.removesuffix("-plan.md"))
+    ]
+    return not problems, "; ".join(problems) or "valid"
+
+
 CHECKS: dict[str, Check] = {
     "exists": check_exists,
     "contains": check_contains,
     "pictures_only": check_pictures_only,
     "max_questions": check_max_questions,
     "unchanged_outside": check_unchanged_outside,
+    "plan_check": check_plan_check,
 }
 
 
@@ -205,6 +224,8 @@ def run_agent(workspace: Path, request: str, agent: str) -> dict[str, Any]:
     except (json.JSONDecodeError, TypeError):
         pass
     info.update({k: data[k] for k in ("total_cost_usd", "num_turns") if k in data})
+    if isinstance(data.get("result"), str):
+        info["reply"] = data["result"][-REPLY_CHARS:]
     # Tell an agent that failed (limits, max turns, crash) apart from a skill that failed.
     if data.get("is_error") or code != 0:
         tail = [line.strip() for line in errors.splitlines() if line.strip()][-1:]
@@ -252,6 +273,8 @@ def summary(results: list[dict[str, Any]]) -> str:
         if r["agent"].get("error"):
             lines.append(f"  AGENT ERROR: {r['agent']['error']}")
         lines += [f"  FAIL {c['check']}: {c['detail']}" for c in r["checks"] if not c["ok"]]
+        if r["passed"] < r["total"] and r["agent"].get("reply"):
+            lines.append(f"  REPLY (end): {' '.join(r['agent']['reply'].split())[-200:]}")
     return "\n".join(lines)
 
 
@@ -262,6 +285,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--compare", action="store_true", help="Also run without skills.")
     parser.add_argument("--without-skill", action="store_true", help="Only the baseline.")
     parser.add_argument("--record", action="store_true", help="Save to evals/results/.")
+    parser.add_argument("--repeat", type=int, default=1, metavar="N",
+                        help="Run each scenario N times (agents vary between runs).")
     parser.add_argument("--keep", type=Path, help="Copy each final workspace here.")
     parser.add_argument("--check-only", type=Path, metavar="DIR",
                         help="Only run the checks of one scenario on DIR.")
@@ -283,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
         run_scenario(name, scenario, args.agent, with_skills, args.keep)
         for name, scenario in scenarios.items()
         for with_skills in variants
+        for _ in range(max(args.repeat, 1))
     ]
     print(summary(results))
     if args.record:

@@ -8,7 +8,7 @@ skills installed (roadmap WP5).
 | --- | --- | --- | --- |
 | [explain-feature](scenarios/explain-feature.yml) | `explaining-code` | Explain how placing an order works | explainer in `docs/explain/0001-*/`, arc42 headings, pictures only, at most three questions, no code changed |
 | [explain-branch](scenarios/explain-branch.yml) | `explaining-code` | Explain what `feature/discount` changed | "What changed" about the discount, pictures only, no code changed |
-| [plan-feature](scenarios/plan-feature.yml) | `kingmadoc` | Plan cancelling an order, don't build it | plan in `docs/features/`, plan headings, no code changed (the approval gate) |
+| [plan-feature](scenarios/plan-feature.yml) | `kingmadoc` | Plan cancelling an order, don't build it | plan in `docs/features/`, plan headings, passes `kingmadoc check`, no code changed (the approval gate) |
 
 The fixture is `fixtures/shop` (a small Django shop); `fixtures/shop-discount` is laid
 over it on the branch.
@@ -18,6 +18,7 @@ over it on the branch.
 ```bash
 python scripts/run_evals.py                          # all scenarios, with the skills
 python scripts/run_evals.py --compare --record       # with and without; save the results
+python scripts/run_evals.py plan-feature --repeat 3  # agents vary: run it three times
 python scripts/run_evals.py explain-feature --keep /tmp/evals   # keep the workspaces
 python scripts/run_evals.py explain-feature --check-only DIR    # only check a workspace
 ```
@@ -28,5 +29,6 @@ read-only `git` and `ls`; the `kingmadoc` of this checkout is first on its `PATH
 per scenario and variant, so it is not part of CI; `tests/test_evals.py` tests the
 scenarios, the checks and the runner with a fake agent.
 
-Results are saved as JSON in `results/` with `--record`. Extend a skill only when a
+Results are saved as JSON in `results/` with `--record`, including the end of the
+agent's reply and why an agent stopped (usage limit, max turns), apart from failed checks. Extend a skill only when a
 recorded result shows a real failure.

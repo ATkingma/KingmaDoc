@@ -1,9 +1,12 @@
 # kingmadoc plan mode: a plan doc before the code, and no code written.
+# The request says the user cannot answer now: the skill's non-interactive path (write
+# the plan with the questions under "Open questions", then ask for approval). Asking
+# first and stopping is right interactively, but leaves nothing to check here.
 skill: kingmadoc
 fixture: shop
 request: >-
   Plan a new feature for this shop: customers can cancel an order that is not shipped
-  yet. Write the plan only; do not implement it.
+  yet. I can't answer questions right now, so write the plan first; do not implement it.
 checks:
   - exists: docs/features/*-plan.md
   - contains:
@@ -11,6 +14,8 @@ checks:
       text:
         - "## One-sentence summary"
         - "## Scope (in / out)"
+        - "## Requirements"
         - "## C4 Context"
         - "## Open questions"
+  - plan_check: docs/features/*-plan.md
   - unchanged_outside: [docs/, .claude/, .featuredoc.yml]

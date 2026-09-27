@@ -220,3 +220,36 @@ def test_an_agent_that_does_not_start_shows_its_stderr(tmp_path: Path) -> None:
     info = evals.run_agent(tmp_path, "Explain", agent)
 
     assert info["error"] == "Usage limit reached"
+
+
+def test_plan_check_uses_kingmadoc_check(tmp_path: Path) -> None:
+    """plan_check passes a plan with valid frontmatter and REQ IDs, and fails a broken one."""
+    features = tmp_path / "docs" / "features"
+    features.mkdir(parents=True)
+    good = (
+        "---\nkingmadoc: 1\nfeature: cancel-order\nstatus: draft\nrequirements: [REQ-1]\n"
+        "files_expected: []\n---\n# Feature: Cancel\n\n## Requirements\n\n- **REQ-1**: x\n"
+    )
+    (features / "cancel-order-plan.md").write_text(good, encoding="utf-8")
+
+    ok, _ = evals.check_plan_check(tmp_path, "docs/features/*-plan.md")
+    (features / "cancel-order-plan.md").write_text(good.replace("[REQ-1]", "[]"), "utf-8")
+    broken, detail = evals.check_plan_check(tmp_path, "docs/features/*-plan.md")
+
+    assert ok and not broken
+    assert "REQ-1" in detail
+
+
+def test_the_agents_last_words_are_kept(tmp_path: Path) -> None:
+    """The end of the agent's reply is recorded, to see why a check failed."""
+    script = tmp_path / "talk.py"
+    script.write_text(
+        "import json\nprint(json.dumps({'result': 'x' * 900 + ' Reply yes to approve.'}))\n",
+        encoding="utf-8",
+    )
+    agent = f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} {{request}}"
+
+    info = evals.run_agent(tmp_path, "Plan", agent)
+
+    assert info["reply"].endswith("Reply yes to approve.")
+    assert len(info["reply"]) <= evals.REPLY_CHARS

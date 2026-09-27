@@ -1,0 +1,229 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "explain-branch",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 63,
+        "total_cost_usd": 0.5595714,
+        "num_turns": 12
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "2 images"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "1 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "6 change(s), all allowed"
+        }
+      ],
+      "passed": 5,
+      "total": 5
+    },
+    {
+      "scenario": "explain-branch",
+      "variant": "without skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 20,
+        "total_cost_usd": 0.2098032,
+        "num_turns": 9
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/README.md"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/*.md"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "0 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "0 change(s), all allowed"
+        }
+      ],
+      "passed": 2,
+      "total": 5
+    },
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 129,
+        "total_cost_usd": 0.8683489000000001,
+        "num_turns": 17
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "6 images"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "3 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "14 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "scenario": "explain-feature",
+      "variant": "without skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 25,
+        "total_cost_usd": 0.2078922,
+        "num_turns": 7
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/README.md"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/*.md"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "0 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "0 change(s), all allowed"
+        }
+      ],
+      "passed": 2,
+      "total": 6
+    },
+    {
+      "scenario": "plan-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 19,
+        "total_cost_usd": 0.256375,
+        "num_turns": 7
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "0 change(s), all allowed"
+        }
+      ],
+      "passed": 1,
+      "total": 3
+    },
+    {
+      "scenario": "plan-feature",
+      "variant": "without skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 27,
+        "total_cost_usd": 0.21728939999999997,
+        "num_turns": 9
+      },
+      "checks": [
+        {
+          "check": "exists docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "contains docs/features/*-plan.md",
+          "ok": false,
+          "detail": "nothing at docs/features/*-plan.md"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/, .featuredoc.yml]",
+          "ok": true,
+          "detail": "0 change(s), all allowed"
+        }
+      ],
+      "passed": 1,
+      "total": 3
+    }
+  ]
+}
