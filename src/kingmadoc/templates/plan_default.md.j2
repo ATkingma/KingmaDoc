@@ -105,6 +105,26 @@ _Disabled in `.featuredoc.yml` (`diagrams`)._
 {% endif %}
 {% endfor %}
 
+## Data flow diagram ({{ diagram_label }})
+
+Where the feature's data comes from, what transforms it and where it is stored.
+
+{% if data_flow_diagram %}
+_TODO: data flow diagram (external entities, numbered processes, data stores), or "Not applicable: <reason>."._
+{% else %}
+_Disabled in `.featuredoc.yml` (`diagrams`)._
+{% endif %}
+
+## State diagram ({{ diagram_label }})
+
+The states of the object whose lifecycle the feature changes.
+
+{% if state_diagram %}
+_TODO: state diagram (initial state, states, `event [guard] / action` transitions), or "Not applicable: <reason>."._
+{% else %}
+_Disabled in `.featuredoc.yml` (`diagrams`)._
+{% endif %}
+
 ## Open questions
 
 {% set open = answers | rejectattr(1) | map(attribute=0) | list %}

@@ -8,7 +8,7 @@
 - **Always labeled**:
   - C4 and `sequenceDiagram`: the first line after the diagram type is `title <text>`
     (`System Context: <project>`, `Containers: <project>`);
-  - `classDiagram`, `erDiagram` and `flowchart` have no `title` line; put frontmatter
+  - `classDiagram`, `erDiagram`, `flowchart` and `stateDiagram-v2` have no `title` line; put frontmatter
     before the diagram type instead: `---`, `title: "<text>"`, `---` (quote the
     title: an unquoted `:` breaks the YAML and the render);
   - every element has a quoted label: `Person(alias, "Label", "Description")`,
@@ -54,9 +54,72 @@ C4Context
     Rel(shop, sendgrid, "Sends email via")
 ```
 
-`diagrams` in `.featuredoc.yml` [`c4_context`, `c4_container`, `class`, `sequence`]
+`diagrams` in `.featuredoc.yml` [`c4_context`, `c4_container`, `class`, `sequence`,
+`data_flow`, `state`]
 selects the diagrams. If one is disabled, keep its section and replace the diagram with
 this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
+
+## Data flow diagram
+
+Yourdon/DeMarco style (Gane-Sarson draws the same with other shapes) as a `flowchart LR`:
+
+- **External entity** (person or system outside the scope): rectangle `user[User]`.
+- **Process** (transforms data): circle with a number and a verb phrase,
+  `p1((1. Validate order))`.
+- **Data store** (data at rest): `d1[("D1 Orders")]`, named with a noun, numbered `D1`.
+- **Data flow**: an arrow labelled with the **data** (a noun: `order`, `invoice`), never an
+  action; every arrow has a label.
+- Rules: every flow starts or ends at a process (never entity → entity, entity → store
+  or store → store); every process has at least one input and one output (no black
+  holes, no miracles) and its output can be made from its input (no grey holes); a
+  store is both written and read somewhere, or it is outside the feature; no control
+  flow, loops or decisions (that is the sequence or state diagram).
+- **Levels**: the Context diagram is level 0; this is level 1 for the feature. The flows
+  in and out must balance with the Context diagram (same external systems, same data).
+- Mark new or changed processes and flows _(inferred)_ or from the answers, as usual.
+
+```mermaid
+---
+title: "Data flow: place order"
+---
+flowchart LR
+    user[Customer] -- order --> p1((1. Validate order))
+    p1 -- valid order --> p2((2. Store order))
+    p2 -- order --> d1[("D1 Orders")]
+    p2 -- confirmation --> user
+```
+
+## State diagram
+
+UML 2 state machine as `stateDiagram-v2`, for the one object whose lifecycle the feature
+changes (an order, a job, a document):
+
+- **States** are conditions, named with an adjective or past participle (`Draft`,
+  `Paid`, `Cancelled`), never an action (`Pay`).
+- One initial `[*] --> <state>` (unlabelled); final `<state> --> [*]` only where the
+  object's life really ends.
+- **Transitions**: `A --> B : event [guard] / action`; event, guard and action are each
+  optional, but every transition has at least the event. Guards leaving the same state
+  on the same event must not overlap; use `state check <<choice>>` for a decision.
+- Every state is reachable from the initial state, and every non-final state has a way
+  out (no dead ends unless intended).
+- Composite states (`state Active { … }`) only when they remove repeated transitions;
+  keep it to about ten states.
+- New states and transitions from the answers or "Planned changes"; existing ones from
+  the code are _(inferred)_.
+
+```mermaid
+---
+title: "States: Order"
+---
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Placed : submit [cart not empty]
+    Placed --> Paid : payment received / send receipt
+    Placed --> Cancelled : cancel
+    Paid --> [*]
+    Cancelled --> [*]
+```
 
 ## Rendering
 
@@ -75,7 +138,8 @@ or `off` (no image; the ` ```mermaid ` block stays in the document).
   `<output_dir>/diagrams/<slug>-<diagram>.mmd`.
 
 1. Write each diagram to `<output_dir>/diagrams/<slug>-<diagram>.mmd` (`<diagram>`:
-   `c4-context`, `c4-container`, `class`, `sequence-current`, `sequence-new`) and run:
+   `c4-context`, `c4-container`, `class`, `sequence-current`, `sequence-new`,
+   `data-flow`, `state`) and run:
    `npx -y @mermaid-js/mermaid-cli -i <that>.mmd -o <tmp>.png -s 2 -b white -t default -p <puppeteer.json>`
    (`-t default`: Mermaid's normal theme; newer versions otherwise colour every shape).
 2. Set `PUPPETEER_SKIP_DOWNLOAD=true`, and let `puppeteer.json` point at an installed

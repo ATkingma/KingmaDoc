@@ -105,6 +105,8 @@ class PlanContext:
         c4_container: Fenced C4 Container block ("" if disabled in the config).
         class_diagram: Whether the class diagram section is enabled.
         sequence_diagram: Whether the sequence diagram sections are enabled.
+        data_flow_diagram: Whether the data flow diagram section is enabled.
+        state_diagram: Whether the state diagram section is enabled.
         generated_at: When the doc was generated.
         version: KingmaDoc version that generated it.
         project_name: Project name (config, or the root directory name).
@@ -133,6 +135,8 @@ class PlanContext:
     files_expected: tuple[str, ...] = ()
     class_diagram: bool = True
     sequence_diagram: bool = True
+    data_flow_diagram: bool = True
+    state_diagram: bool = True
 
 
 def build_questions(analysis: CodebaseReport, config: FeatureDocConfig) -> list[str]:
@@ -217,6 +221,8 @@ def build_plan_context(
         files_expected=files_from_answers(answers, report),
         class_diagram="class" in config.diagrams,
         sequence_diagram="sequence" in config.diagrams,
+        data_flow_diagram="data_flow" in config.diagrams,
+        state_diagram="state" in config.diagrams,
     )
 
 

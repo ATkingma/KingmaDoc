@@ -93,6 +93,18 @@ The classes this feature touches and their direct collaborators.
 
 <sequenceDiagram of the flow after the change>
 
+## Data flow diagram (Mermaid)
+
+Where the feature's data comes from, what transforms it and where it is stored.
+
+<flowchart DFD, or _Not applicable: <reason>._>
+
+## State diagram (Mermaid)
+
+The states of <the object whose lifecycle the feature changes>.
+
+<stateDiagram-v2, or _Not applicable: <reason>._>
+
 ## Open questions
 
 - [ ] <each unanswered clarifying question>
@@ -140,6 +152,9 @@ Omit "**Answered while planning**" when nothing was answered.
   result, with real classes as participants and real method names as messages;
   `activate`/`deactivate` for nested calls, `alt`/`opt` for branches. In **Current**,
   a `Note` marks where it goes wrong.
+- **Data flow diagram** and **State diagram**: rules in
+  [diagram-rules.md](diagram-rules.md#data-flow-diagram); _Not applicable: <reason>._ when
+  the feature moves no data between parts, or has no object with a lifecycle.
 - **Open changes**: when an uncommitted change or stash touches the feature, also list
   it under Open questions.
 - `language` in `.featuredoc.yml` [`en`]: headings stay English (the CLI's), but fixed

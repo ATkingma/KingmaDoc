@@ -53,8 +53,8 @@ brackets); ignore the file if it is absent:
 - `analyzer.exclude_dirs` [`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`,
   `dist`, `build`, `*.egg-info`, tool caches], `analyzer.max_files` [`5000`],
   `analyzer.tree_depth` [`3`].
-- `diagrams` [`c4_context`, `c4_container`, `class`, `sequence`]: which sections get
-  a diagram.
+- `diagrams` [`c4_context`, `c4_container`, `class`, `sequence`, `data_flow`, `state`]:
+  which sections get a diagram.
 - `diagrams_png` [`embed`]: `embed`, `file` or `off`; see
   [Rendering](#rendering).
 - `language` [`en`]: language of fixed sentences, notes and captions (headings stay English).
@@ -240,7 +240,7 @@ Show the user the path, the number of deviations, and any failing check.
 - **Always labeled**:
   - C4 and `sequenceDiagram`: the first line after the diagram type is `title <text>`
     (`System Context: <project>`, `Containers: <project>`);
-  - `classDiagram`, `erDiagram` and `flowchart` have no `title` line; put frontmatter
+  - `classDiagram`, `erDiagram`, `flowchart` and `stateDiagram-v2` have no `title` line; put frontmatter
     before the diagram type instead: `---`, `title: "<text>"`, `---` (quote the
     title: an unquoted `:` breaks the YAML and the render);
   - every element has a quoted label: `Person(alias, "Label", "Description")`,
@@ -286,9 +286,72 @@ C4Context
     Rel(shop, sendgrid, "Sends email via")
 ```
 
-`diagrams` in `.featuredoc.yml` [`c4_context`, `c4_container`, `class`, `sequence`]
+`diagrams` in `.featuredoc.yml` [`c4_context`, `c4_container`, `class`, `sequence`,
+`data_flow`, `state`]
 selects the diagrams. If one is disabled, keep its section and replace the diagram with
 this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
+
+## Data flow diagram
+
+Yourdon/DeMarco style (Gane-Sarson draws the same with other shapes) as a `flowchart LR`:
+
+- **External entity** (person or system outside the scope): rectangle `user[User]`.
+- **Process** (transforms data): circle with a number and a verb phrase,
+  `p1((1. Validate order))`.
+- **Data store** (data at rest): `d1[("D1 Orders")]`, named with a noun, numbered `D1`.
+- **Data flow**: an arrow labelled with the **data** (a noun: `order`, `invoice`), never an
+  action; every arrow has a label.
+- Rules: every flow starts or ends at a process (never entity → entity, entity → store
+  or store → store); every process has at least one input and one output (no black
+  holes, no miracles) and its output can be made from its input (no grey holes); a
+  store is both written and read somewhere, or it is outside the feature; no control
+  flow, loops or decisions (that is the sequence or state diagram).
+- **Levels**: the Context diagram is level 0; this is level 1 for the feature. The flows
+  in and out must balance with the Context diagram (same external systems, same data).
+- Mark new or changed processes and flows _(inferred)_ or from the answers, as usual.
+
+```mermaid
+---
+title: "Data flow: place order"
+---
+flowchart LR
+    user[Customer] -- order --> p1((1. Validate order))
+    p1 -- valid order --> p2((2. Store order))
+    p2 -- order --> d1[("D1 Orders")]
+    p2 -- confirmation --> user
+```
+
+## State diagram
+
+UML 2 state machine as `stateDiagram-v2`, for the one object whose lifecycle the feature
+changes (an order, a job, a document):
+
+- **States** are conditions, named with an adjective or past participle (`Draft`,
+  `Paid`, `Cancelled`), never an action (`Pay`).
+- One initial `[*] --> <state>` (unlabelled); final `<state> --> [*]` only where the
+  object's life really ends.
+- **Transitions**: `A --> B : event [guard] / action`; event, guard and action are each
+  optional, but every transition has at least the event. Guards leaving the same state
+  on the same event must not overlap; use `state check <<choice>>` for a decision.
+- Every state is reachable from the initial state, and every non-final state has a way
+  out (no dead ends unless intended).
+- Composite states (`state Active { … }`) only when they remove repeated transitions;
+  keep it to about ten states.
+- New states and transitions from the answers or "Planned changes"; existing ones from
+  the code are _(inferred)_.
+
+```mermaid
+---
+title: "States: Order"
+---
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Placed : submit [cart not empty]
+    Placed --> Paid : payment received / send receipt
+    Placed --> Cancelled : cancel
+    Paid --> [*]
+    Cancelled --> [*]
+```
 
 ## Rendering
 
@@ -307,7 +370,8 @@ or `off` (no image; the ` ```mermaid ` block stays in the document).
   `<output_dir>/diagrams/<slug>-<diagram>.mmd`.
 
 1. Write each diagram to `<output_dir>/diagrams/<slug>-<diagram>.mmd` (`<diagram>`:
-   `c4-context`, `c4-container`, `class`, `sequence-current`, `sequence-new`) and run:
+   `c4-context`, `c4-container`, `class`, `sequence-current`, `sequence-new`,
+   `data-flow`, `state`) and run:
    `npx -y @mermaid-js/mermaid-cli -i <that>.mmd -o <tmp>.png -s 2 -b white -t default -p <puppeteer.json>`
    (`-t default`: Mermaid's normal theme; newer versions otherwise colour every shape).
 2. Set `PUPPETEER_SKIP_DOWNLOAD=true`, and let `puppeteer.json` point at an installed
@@ -424,6 +488,18 @@ The classes this feature touches and their direct collaborators.
 
 <sequenceDiagram of the flow after the change>
 
+## Data flow diagram (Mermaid)
+
+Where the feature's data comes from, what transforms it and where it is stored.
+
+<flowchart DFD, or _Not applicable: <reason>._>
+
+## State diagram (Mermaid)
+
+The states of <the object whose lifecycle the feature changes>.
+
+<stateDiagram-v2, or _Not applicable: <reason>._>
+
 ## Open questions
 
 - [ ] <each unanswered clarifying question>
@@ -471,6 +547,9 @@ Omit "**Answered while planning**" when nothing was answered.
   result, with real classes as participants and real method names as messages;
   `activate`/`deactivate` for nested calls, `alt`/`opt` for branches. In **Current**,
   a `Note` marks where it goes wrong.
+- **Data flow diagram** and **State diagram**: rules in
+  [diagram-rules.md](diagram-rules.md#data-flow-diagram); _Not applicable: <reason>._ when
+  the feature moves no data between parts, or has no object with a lifecycle.
 - **Open changes**: when an uncommitted change or stash touches the feature, also list
   it under Open questions.
 - `language` in `.featuredoc.yml` [`en`]: headings stay English (the CLI's), but fixed

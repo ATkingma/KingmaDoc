@@ -52,8 +52,8 @@ brackets); ignore the file if it is absent:
 - `analyzer.exclude_dirs` [`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`,
   `dist`, `build`, `*.egg-info`, tool caches], `analyzer.max_files` [`5000`],
   `analyzer.tree_depth` [`3`].
-- `diagrams` [`c4_context`, `c4_container`, `class`, `sequence`]: which sections get
-  a diagram.
+- `diagrams` [`c4_context`, `c4_container`, `class`, `sequence`, `data_flow`, `state`]:
+  which sections get a diagram.
 - `diagrams_png` [`embed`]: `embed`, `file` or `off`; see
   [Rendering](reference/diagram-rules.md#rendering).
 - `language` [`en`]: language of fixed sentences, notes and captions (headings stay English).

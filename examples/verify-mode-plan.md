@@ -11,7 +11,7 @@ files_expected: ["src/kingmadoc/cli.py", "src/kingmadoc/verify"]
 |---|---|
 | **Project** | KingmaDoc |
 | **Status** | Draft |
-| **Generated** | 2026-09-28T10:44+00:00 by KingmaDoc 0.1.0.dev50 |
+| **Generated** | 2026-09-28T12:54+00:00 by KingmaDoc 0.1.0.dev50 |
 
 > Generated before implementation. Fill in every _TODO_ and review everything marked
 > _(inferred)_: it comes from the codebase analysis and is a starting point, not the truth.
@@ -97,6 +97,18 @@ _Disabled in `.featuredoc.yml` (`diagrams`)._
 
 _Disabled in `.featuredoc.yml` (`diagrams`)._
 
+## Data flow diagram (Mermaid)
+
+Where the feature's data comes from, what transforms it and where it is stored.
+
+_Disabled in `.featuredoc.yml` (`diagrams`)._
+
+## State diagram (Mermaid)
+
+The states of the object whose lifecycle the feature changes.
+
+_Disabled in `.featuredoc.yml` (`diagrams`)._
+
 ## Open questions
 
 - [ ] _TODO: anything else that must be decided before implementation._
@@ -121,12 +133,12 @@ _Disabled in `.featuredoc.yml` (`diagrams`)._
 | python | 113 |
 | markdown | 28 |
 | jinja | 6 |
+| json | 4 |
 | yaml | 3 |
-| json | 2 |
 | toml | 1 |
 
 <details>
-<summary>File tree (230 files)</summary>
+<summary>File tree (236 files)</summary>
 
 ```text
 KingmaDoc/
@@ -149,6 +161,7 @@ KingmaDoc/
 │   │   ├── 0b0dfdcede5596e1
 │   │   ├── 1b81a71a7607fbf6
 │   │   ├── 2003bed8cb6acdf2
+│   │   ├── 27972aa85104d731
 │   │   ├── 2e00d1a2bca2c453
 │   │   ├── 390efa9697d4e1bf
 │   │   ├── 429e7d227d43fa43
@@ -189,6 +202,7 @@ KingmaDoc/
 │   │   ├── c7c62939844fec2e
 │   │   ├── cc4dfad2dc9d75e2
 │   │   ├── cd82d38bc12deabd
+│   │   ├── d1d54a4302c7359c
 │   │   ├── d6e5d66b09a82b49
 │   │   ├── da39a3ee5e6b4b0d
 │   │   ├── e36626a891f1bf04
@@ -200,6 +214,11 @@ KingmaDoc/
 │   │   └── 14.0.0/
 │   │       └── …
 │   └── .gitignore
+├── .import_linter_cache/
+│   ├── .gitignore
+│   ├── 3516dc116b537972f63cac11b7ceb5fffe116986.data.json
+│   ├── CACHEDIR.TAG
+│   └── kingmadoc.meta.json
 ├── docs/
 │   ├── conventions.md
 │   ├── index.md

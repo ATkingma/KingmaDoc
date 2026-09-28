@@ -35,7 +35,9 @@ DEFAULT_EXCLUDE_DIRS: tuple[str, ...] = (
 # Hard ceiling on analyzed files, so huge repos cannot make `plan` run away.
 MAX_FILES_LIMIT = 5000
 
-SUPPORTED_DIAGRAMS: frozenset[str] = frozenset({"c4_context", "c4_container", "class", "sequence"})
+SUPPORTED_DIAGRAMS: frozenset[str] = frozenset(
+    {"c4_context", "c4_container", "class", "sequence", "data_flow", "state"}
+)
 # How the skill embeds a rendered PNG below each Mermaid block (the CLI writes none).
 DIAGRAMS_PNG_MODES: tuple[str, ...] = ("embed", "file", "off")
 # Models each extra design document can contain, in document order. Must match the
@@ -184,7 +186,9 @@ class FeatureDocConfig:
     max_questions: int = 5
     project: ProjectConfig = field(default_factory=ProjectConfig)
     analyzer: AnalyzerConfig = field(default_factory=AnalyzerConfig)
-    diagrams: tuple[str, ...] = ("c4_context", "c4_container", "class", "sequence")
+    diagrams: tuple[str, ...] = (
+        "c4_context", "c4_container", "class", "sequence", "data_flow", "state",
+    )
     diagram_format: str = "mermaid"
     diagrams_png: str = "embed"
     language: str = "en"
@@ -424,6 +428,8 @@ diagrams:
   - c4_container
   - class
   - sequence
+  - data_flow
+  - state
 
 # Diagram language: mermaid, plantuml (C4-PlantUML) or d2.
 diagram_format: mermaid
