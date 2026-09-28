@@ -215,15 +215,19 @@ def test_cli_render_verbose_lists_every_image(tmp_path: Path, d2: list[str]) -> 
 @pytest.mark.skipif(
     not (os.environ.get("D2_BIN") or shutil.which("d2")), reason="d2 not available"
 )
-def test_real_d2_produces_svg(tmp_path: Path) -> None:
-    """With the real d2 binary, the images are valid SVG."""
+def test_real_d2_produces_pictures(tmp_path: Path) -> None:
+    """With the real d2 binary: a PNG per diagram, linked, with a valid SVG next to it."""
     doc = _doc(tmp_path)
 
     images = render_file(doc, [os.environ.get("D2_BIN") or shutil.which("d2") or "d2"])
 
     assert len(images) == 2
+    text = doc.read_text(encoding="utf-8")
+    assert "```d2" not in text
     for image in images:
-        assert "<svg" in image.read_text(encoding="utf-8")[:500]
+        assert image.suffix == ".png" and image.read_bytes().startswith(b"\x89PNG")
+        assert image.relative_to(doc.parent).as_posix() in text
+        assert "<svg" in image.with_suffix(".svg").read_text(encoding="utf-8")[:500]
 
 
 def test_older_folded_source_format_is_converted(tmp_path: Path, d2: list[str]) -> None:
@@ -503,3 +507,66 @@ def test_cli_format_svg_and_the_dark_mode_warnings(tmp_path: Path, d2: list[str]
     assert png.exit_code == 0 and "dark mode" not in png.stderr, png.output
     assert svg.exit_code == 0 and "dark mode" in svg.stderr, svg.output
     assert "![T](img/shop-1.svg)" in doc.read_text(encoding="utf-8")
+
+
+def test_a_failing_png_falls_back_to_svg(
+    tmp_path: Path, d2: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A PNG error (a missing resvg wheel, a Rust panic) never leaves a document without
+    pictures: that diagram links its SVG instead."""
+    from kingmadoc import render
+    from kingmadoc.exceptions import RenderError
+
+    def broken(_svg: str) -> bytes:
+        raise RenderError("resvg panicked")
+
+    monkeypatch.setattr(render, "svg_to_png", broken)
+    doc = _doc(tmp_path)
+
+    images = render_file(doc, d2)
+
+    text = doc.read_text(encoding="utf-8")
+    assert images and all(i.suffix == ".svg" and i.is_file() for i in images)
+    assert "```d2" not in text
+    for image in images:
+        assert image.relative_to(doc.parent).as_posix() in text
+
+
+def test_the_cli_starts_without_resvg() -> None:
+    """resvg-py is imported only when a PNG is made: every other command still works."""
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; sys.modules['resvg_py'] = None\n"  # import resvg_py -> ImportError
+        "from kingmadoc.cli import cli\n"
+        "from kingmadoc.exceptions import RenderError\n"
+        "from kingmadoc.raster import svg_to_png\n"
+        "try:\n"
+        "    svg_to_png('<svg xmlns=\"http://www.w3.org/2000/svg\"/>')\n"
+        "except RenderError as exc:\n"
+        "    print('render error:', exc)\n"
+    )
+    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,  # noqa: S603
+                          check=False)
+
+    assert done.returncode == 0, done.stderr
+    assert "render error: PNG conversion is not available here" in done.stdout
+
+
+def test_one_broken_document_does_not_cost_the_others_their_pictures(
+    tmp_path: Path, d2: list[str]
+) -> None:
+    """render renders every document; the broken one stays unchanged and fails the run."""
+    good = _doc(tmp_path)
+    broken = good.parent / "technical.md"
+    broken.write_text("# T\n\n```d2\nBAD\n```\n", encoding="utf-8")
+    wrapper = _wrapper(tmp_path, d2)
+
+    result = CliRunner().invoke(cli, ["render", str(broken), str(good)],
+                                env={"KINGMADOC_D2": str(wrapper)})
+
+    assert result.exit_code == 1
+    assert "1 document not rendered" in result.output
+    assert "```d2" not in good.read_text(encoding="utf-8")  # rendered after the failure
+    assert "```d2\nBAD" in broken.read_text(encoding="utf-8")  # untouched, to fix

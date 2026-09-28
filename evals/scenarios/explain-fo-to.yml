@@ -1,0 +1,26 @@
+# explaining-code, split: an FO for stakeholders and a TO for developers about a branch.
+skill: explaining-code
+fixture: shop
+branch:
+  name: feature/discount
+  overlay: shop-discount
+request: >-
+  Maak een FO en TO over de branch feature/discount. Ik kan nu geen vragen beantwoorden
+  en de app niet starten.
+checks:
+  - exists: docs/explain/0001-*/functional.md
+  - exists: docs/explain/0001-*/technical.md
+  - contains:
+      files: docs/explain/0001-*/functional.md
+      # The request is Dutch, so the agent may write the headings in Dutch.
+      text: ["Domain model | Domeinmodel", "User stories", "Evil user stories"]
+  - contains:
+      files: docs/explain/0001-*/technical.md
+      text: ["Business rules | Bedrijfsregels", "Threat model | Dreigingsmodel",
+             "Level 2 | Niveau 2"]
+  - pictures_only: docs/explain/0001-*/*.md
+  - explain_check: docs/explain/0001-*
+  - max_questions:
+      files: docs/explain/0001-*/*.md
+      max: 3
+  - unchanged_outside: [docs/, .claude/]

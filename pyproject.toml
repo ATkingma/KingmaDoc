@@ -40,6 +40,9 @@ dev = [
     "pytest>=8.0", "pytest-cov>=6.0", "hypothesis>=6.100", "ruff>=0.16", "mypy>=2.0",
     "types-PyYAML", "import-linter>=2.1",
 ]
+# `kingmadoc screenshots` with one browser for all screens (then: playwright install chromium);
+# without it, the command falls back to `npx playwright screenshot`.
+screenshots = ["playwright>=1.40"]
 
 [project.scripts]
 kingmadoc = "kingmadoc.cli:main"
@@ -125,14 +128,21 @@ source_modules = ["kingmadoc.diagrams"]
 forbidden_modules = ["kingmadoc.plan", "kingmadoc.verify", "kingmadoc.facts"]
 
 [[tool.importlinter.contracts]]
+name = "Threat models know no mode (E5)"
+type = "forbidden"
+source_modules = ["kingmadoc.threats"]
+forbidden_modules = ["kingmadoc.plan", "kingmadoc.verify", "kingmadoc.facts"]
+
+[[tool.importlinter.contracts]]
 name = "Only the CLI imports click, and nothing imports the CLI (E1)"
 type = "forbidden"
 source_modules = [
     "kingmadoc.plan", "kingmadoc.verify", "kingmadoc.facts", "kingmadoc.diagrams",
     "kingmadoc.about", "kingmadoc.adr", "kingmadoc.config", "kingmadoc.d2_binary",
     "kingmadoc.documents", "kingmadoc.exceptions", "kingmadoc.explain", "kingmadoc.git",
-    "kingmadoc.naming", "kingmadoc.plandoc", "kingmadoc.raster", "kingmadoc.render", "kingmadoc.skills",
-    "kingmadoc.templating", "kingmadoc.vscode",
+    "kingmadoc.naming", "kingmadoc.plandoc", "kingmadoc.raster", "kingmadoc.render",
+    "kingmadoc.scaffold", "kingmadoc.screenshots", "kingmadoc.skills",
+    "kingmadoc.templating", "kingmadoc.threats", "kingmadoc.vscode",
 ]
 forbidden_modules = ["click", "kingmadoc.cli"]
 allow_indirect_imports = true

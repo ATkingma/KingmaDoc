@@ -7,6 +7,7 @@ skills installed (roadmap WP5).
 | Scenario | Skill | Request | Checks |
 | --- | --- | --- | --- |
 | [explain-feature](scenarios/explain-feature.yml) | `explaining-code` | Explain how placing an order works | explainer in `docs/explain/0001-*/`, arc42 headings, pictures only, at most three questions, no code changed |
+| [explain-fo-to](scenarios/explain-fo-to.yml) | `explaining-code` | "Maak een FO en TO over de branch" (Dutch) | cover, `functional.md` (domain model, user stories, evil user stories) and `technical.md` (business rules, threat model, C4 level 2), `kingmadoc explain check`, no code changed |
 | [explain-branch](scenarios/explain-branch.yml) | `explaining-code` | Explain what `feature/discount` changed | "What changed" about the discount, pictures only, no code changed |
 | [plan-feature](scenarios/plan-feature.yml) | `kingmadoc` | Plan cancelling an order, don't build it | plan in `docs/features/`, plan headings, passes `kingmadoc check`, no code changed (the approval gate) |
 
@@ -40,6 +41,16 @@ recorded result shows a real failure.
 | [2026-09-27 11:18](results/2026-09-27T111837Z.json), with skill | 6/6 | 5/5 | 1/3 (asked its questions and stopped) |
 | same run, without skill | 2/6 | 2/5 | 1/3 |
 | [2026-09-27 11:26](results/2026-09-27T112600Z.json), with skill, 3 runs | | | 4/4, 4/4, 4/4 |
+
+| [2026-09-28 06:45](results/2026-09-28T064505Z.json), skill 5.9 (before the optimisation) | 7/7, 173 s, $1.15 | 6/6, 100 s, $0.86 | FO/TO: stopped by the spend limit, D2 left unrendered |
+| [2026-09-28 09:26](results/2026-09-28T092643Z.json), skill 6.0 (scaffold, shorter skill) | 7/7, 256 s, $1.54 | 6/6, 99 s, $0.81 | FO/TO: 8/8, 367 s, $2.10 |
+
+Rows from 2026-09-28 are re-checked with the current checks (`explain_check`,
+`__pycache__` ignored, Dutch headings accepted). The 6.0 feature run filled the scaffold
+placeholder by placeholder (41 turns instead of 22); the skill now says to write each
+document in one pass: [2026-09-28 09:30](results/2026-09-28T093046Z.json), explain-feature
+7/7, 192 s, $1.23, 20 turns, with the larger 6.0 content (user stories, rules, threat
+model) at about the cost of the 5.9 run.
 
 After the first run the plan scenario says the user cannot answer now (the skill's
 non-interactive path). The baseline runs of 11:26 hit the account's spend limit and

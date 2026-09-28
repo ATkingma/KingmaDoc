@@ -11,6 +11,7 @@ checks:
       files: docs/explain/0001-*/README.md
       text: ["## What changed", "discount"]
   - pictures_only: docs/explain/0001-*/*.md
+  - explain_check: docs/explain/0001-*
   - max_questions:
       files: docs/explain/0001-*/README.md
       max: 3

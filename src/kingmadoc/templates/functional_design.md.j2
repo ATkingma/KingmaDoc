@@ -8,9 +8,139 @@
 | **Generated** | {{ generated_at.isoformat(timespec="minutes") }} by KingmaDoc {{ version }} |
 
 > Optional companion to the plan doc (`extra_designs.functional_design` in `.featuredoc.yml`).
-> Describes _what_ the feature does from the user's point of view, not how it is built.
-> Fill in every _TODO_; write rules so a tester could check them without reading code.
+> For stakeholders: _what_ the feature does and for whom, in plain words and without
+> technical terms. How it is built (business rules, permissions, edge cases, threat
+> model) is in the technical design. Fill in every _TODO_.
+>
+> **Red thread:** every user story **US-n** gets its own use case **UC-n**, screen design
+> **S-n** and evil user stories **EUS-n.m**. Each evil user story names the security
+> measure (**SM-n**) that stops it; the threat model in the technical design lists them.
+{% set stories = requirements or [""] %}
 
+{% if "user_stories" in models %}
+## User stories
+
+One story per need of one kind of user. _TODO: add a row (and a US-n section below) per
+story; split stories that need more than one screen._
+
+| ID | As a … | I want … | So that … | Covers |
+|---|---|---|---|---|
+{% for requirement in stories %}
+| US-{{ loop.index }} | _TODO: role_ | _TODO: goal_ | _TODO: benefit_ | {{ "REQ-%d" % loop.index if requirement else "_TODO: REQ-n_" }} |
+{% endfor %}
+{% endif %}
+
+{% if "use_case_diagram" in models %}
+## Use case diagram
+
+Every actor with the use cases it takes part in; one use case per user story.
+
+{% if diagram_format == "plantuml" %}
+```plantuml
+@startuml
+left to right direction
+actor "User (TODO: role)" as user
+rectangle "{{ project_name | replace('"', "<U+0022>") }}" {
+{% for _ in stories %}
+  usecase "UC-{{ loop.index }}: TODO: goal" as uc{{ loop.index }}
+{% endfor %}
+}
+{% for _ in stories %}
+user --> uc{{ loop.index }}
+{% endfor %}
+@enduml
+```
+{% elif diagram_format == "d2" %}
+```d2
+direction: right
+user: "User (TODO: role)" {shape: person}
+system: "{{ project_name | replace("\\", "\\\\") | replace('"', '\\"') | replace("$", "\\$") }}" {
+{% for _ in stories %}
+  uc{{ loop.index }}: "UC-{{ loop.index }}: TODO: goal" {shape: oval}
+{% endfor %}
+}
+{% for _ in stories %}
+user -> system.uc{{ loop.index }}
+{% endfor %}
+```
+{% else %}
+```mermaid
+flowchart LR
+    user(("User (TODO: role)"))
+    subgraph system["{{ project_name | replace('"', "#quot;") }}"]
+{% for _ in stories %}
+        uc{{ loop.index }}(["UC-{{ loop.index }}: TODO: goal"])
+{% endfor %}
+    end
+{% for _ in stories %}
+    user --> uc{{ loop.index }}
+{% endfor %}
+```
+{% endif %}
+{% endif %}
+
+{% if "use_cases" in models or "screen_designs" in models or "evil_user_stories" in models %}
+## Per user story
+{% for requirement in stories %}
+{% set n = loop.index %}
+
+### US-{{ n }}: _TODO: short title_
+
+{% if requirement %}
+- **Covers:** REQ-{{ n }}: {{ requirement }}
+{% else %}
+- **Covers:** _TODO: REQ-n from the plan._
+{% endif %}
+
+{% if "use_cases" in models %}
+#### Use case
+
+| UC-{{ n }} | |
+|---|---|
+| **Actor** | _TODO: the role from US-{{ n }}_ |
+| **Precondition** | _TODO: what is true before the use case starts_ |
+| **Main flow** | 1. _TODO: the actor …_ 2. _TODO: the system …_ 3. _TODO_ |
+| **Alternative flows** | _TODO: 2a. input invalid → message shown, back to step 1_ |
+| **Postcondition** | _TODO: what is true afterwards_ |
+{% endif %}
+
+{% if "screen_designs" in models %}
+#### Screen design
+
+S-{{ n }}: _TODO: the screen (or command, API response, e-mail) the actor uses in UC-{{ n }}.
+If the screen already exists, replace the sketch with a screenshot of the running app
+(`![S-{{ n }}](img/screen-us-{{ n }}.png)`); otherwise keep a wireframe, one per state
+that matters (empty, filled, error)._
+
+```text
++--------------------------------------------------+
+| TODO: screen title                         [ X ] |
++--------------------------------------------------+
+| TODO: label       [ input field             ]    |
+| TODO: label       [ input field             ]    |
+|                                                  |
+| ! TODO: error message shown in alternative flow  |
+|                                                  |
+|                        [ Cancel ]  [ TODO: OK ]  |
++--------------------------------------------------+
+```
+{% endif %}
+
+{% if "evil_user_stories" in models %}
+#### Evil user stories
+
+How someone could misuse US-{{ n }}. Every row needs a mitigation that a test can check.
+
+| ID | As a malicious … I want … so that … | Threat (STRIDE) | Mitigation |
+|---|---|---|---|
+| EUS-{{ n }}.1 | _TODO: e.g. as an attacker I want to try many passwords so that I get in_ | _TODO_ | _TODO: SM-n (technical design)_ |
+| EUS-{{ n }}.2 | _TODO: e.g. as a user I want to open another user's data by changing the ID_ | _TODO_ | _TODO_ |
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if "user_flows" in models %}
 ## User flows
 
 _TODO: one diagram per main flow. Start with the happy path, then add the error paths.
@@ -53,34 +183,8 @@ flowchart TD
 
 - **Actors:** _TODO: who starts each flow (see the plan's C4 Context diagram)._
 - **Entry points:** _TODO: screen, command, API call or event that starts the flow._
+{% endif %}
 
-## Edge cases
-
-| Situation | Expected behavior |
-|---|---|
-| Empty, invalid or too large input | _TODO_ |
-| The same action twice, or at the same time by two users | _TODO_ |
-| A dependency is slow or unavailable halfway through | _TODO_ |
-| The user cancels, goes back, or retries | _TODO_ |
-| _TODO: feature-specific situation_ | _TODO_ |
-
-## Business rules
-
-Number rules so tests and the verification doc can refer to them.
-
-- **BR-1:** _TODO: a rule the feature must always follow (source: who decided it)._
-- **BR-2:** _TODO_
-
-## Permissions and roles
-
-| Role | Can | Cannot |
-|---|---|---|
-| _TODO: e.g. anonymous visitor_ | _TODO_ | _TODO_ |
-| _TODO: e.g. signed-in user_ | _TODO_ | _TODO_ |
-| _TODO: e.g. administrator_ | _TODO_ | _TODO_ |
-
-- _TODO: what happens when someone without permission tries (hidden, disabled, or an
-  error), and whether the attempt is logged._
 {% for section in model_sections %}
 
 {{ section }}{% endfor %}

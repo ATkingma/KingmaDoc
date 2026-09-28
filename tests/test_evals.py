@@ -130,7 +130,9 @@ def test_checks_catch_a_bad_explainer(
     results = evals.run_checks(workspace, [c for c in checks if "unchanged_outside" not in c])
 
     failed = {r["check"].split()[0] for r in results if not r["ok"]}
-    assert failed == {failing}
+    # explain_check (kingmadoc explain check) catches every picture problem as well.
+    expected = {failing, "explain_check"} if failing == "pictures_only" else {failing}
+    assert failed == expected
 
 
 @needs_git

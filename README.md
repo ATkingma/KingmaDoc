@@ -94,7 +94,8 @@ change), a whole project, or a part of one. Each subject gets its own folder wit
 unique ID, `docs/explain/<NNNN>-<name>/` (the explainer `README.md` plus its `img/`),
 listed in `docs/explain/README.md`; explaining it again updates that folder. The
 explainer is one document, or on request (or with `explain: {documents: split}`) a
-functional and a technical document next to a cover page. It is by default an **arc42** architecture document (the twelve arc42
+functional and a technical document next to a cover page (FO/TO: user stories with
+use cases, screenshots and evil user stories; a threat model in the technical side). It is by default an **arc42** architecture document (the twelve arc42
 sections, with C4 diagrams per level, runtime flows and deployment), or a compact C4
 zoom-in with `explain: {format: c4}` in `.featuredoc.yml`. Every figure is numbered,
 rendered as an image and decoded by a small table. The C4 diagrams follow Simon Brown's
@@ -141,6 +142,11 @@ More commands:
 
 ```bash
 kingmadoc plan "…" --no-input --stdout   # no questions, print instead of writing
+kingmadoc plan "…" --models user_stories,screen_designs,threat_model   # only these models
+kingmadoc threats threat-model.yml       # Microsoft Threat Modeling Tool threats for a DFD
+kingmadoc explain scaffold "Checkout" --documents split   # empty FO + TO to fill in
+kingmadoc explain check docs/explain/0001-checkout        # fails until every picture shows
+kingmadoc screenshots http://localhost:8000 /cart=screen-us-1 -o docs/explain/0001-checkout/img
 kingmadoc check add-login                # validate a plan's frontmatter and REQ IDs
 kingmadoc approve add-login              # draft -> approved: the gate before code
 kingmadoc explain new "Checkout"         # folder for a subject: docs/explain/0001-checkout/
@@ -169,14 +175,27 @@ file with all defaults and comments; [this repository's
 | `analyzer.exclude_dirs`                   | `.git`, `.venv`, `node_modules`, … | Directory names/globs to skip                                                                                  |
 | `diagrams`                                | `[c4_context, c4_container]`       | Which C4 diagrams the plan contains                                                                            |
 | `diagram_format`                          | `mermaid`                          | `mermaid`, `plantuml` (C4-PlantUML) or `d2`                                                                    |
-| `extra_designs.functional_design.enabled` | `false`                            | Also write `<slug>-functional-design.md`: user flows, edge cases, business rules, permissions                  |
-| `extra_designs.technical_design.enabled`  | `false`                            | Also write `<slug>-technical-design.md`: database schema, API contracts, error handling, performance, security, and a module dependency graph derived from the code |
+| `extra_designs.functional_design.enabled` | `false`                            | Also write `<slug>-functional-design.md`, for stakeholders (plain words, no technical terms): user stories, use case diagram, per story a use case, screen design and evil user stories, user flows |
+| `extra_designs.technical_design.enabled`  | `false`                            | Also write `<slug>-technical-design.md`, for developers: database schema, API contracts, business rules, permissions, edge cases, error handling, performance, security, a threat model in Microsoft Threat Modeling Tool style with security measures, and a module dependency graph derived from the code |
 | `extra_designs.domain_design.enabled` | `false` | Also write `<slug>-domain-design.md`: domain model, event storming |
-| `extra_designs.security_design.enabled` | `false` | Also write `<slug>-security-design.md`: STRIDE threat model (with the inferred elements), who may do what |
-| `extra_designs.<name>.models` | all models of that document | Which design models (sections) the document contains, e.g. `[threat_model]` |
+| `extra_designs.security_design.enabled` | `false` | Also write `<slug>-security-design.md`: threat model (with the inferred elements), who may do what |
+| `extra_designs.<name>.models` | all models of that document | Which design models (sections) the document contains, e.g. `[threat_model]`; `plan --models` picks them per run |
+| `explain.format` / `.documents` | `arc42` / `single` | Explainer format (`arc42`, `c4`); documents: one (arc42), `split` (FO + TO), or only `functional` (FO) or `technical` (TO). The request overrides both ("describe this branch with an FO and a TO", "only a TO") |
+| `explain.models` | all models | What the explaining-code agent may draw (C4, UML, ER, user stories, screens, evil user stories, threat model …); the request can narrow it |
 | `extra_designs.<name>.template`          | bundled template                   | Template for that document: bundled name or explicit path (runs sandboxed)                                     |
 | `adr.enabled`                             | `false`                            | Enable `kingmadoc adr "<title>"`, which writes numbered Architecture Decision Records to `docs/adr/`           |
 | `adr.template`                            | `adr.md.j2`                        | ADR template: bundled name or explicit path (runs sandboxed)                                                   |
+
+### Threat models
+
+Threat models follow the [Microsoft Threat Modeling
+Tool](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool):
+its data flow notation, and its report (per interaction the threats, with state,
+priority and justification). The threats themselves come from Microsoft's own
+knowledge base, the tool's default template *SDL TM Knowledge Base (Core)*, bundled
+from [microsoft/threat-modeling-templates](https://github.com/microsoft/threat-modeling-templates)
+(MIT license, Copyright (c) Microsoft Corporation); `kingmadoc threats` evaluates its
+generation rules for every data flow the way the tool does.
 
 ## Comparison
 

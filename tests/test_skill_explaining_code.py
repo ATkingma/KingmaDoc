@@ -21,6 +21,8 @@ ARC42_HEADINGS = [
     "## 1. Introduction and goals",
     "## 2. Constraints",
     "## 3. Context and scope",
+    "### Business context",
+    "### Technical context",
     "## 4. Solution strategy",
     "## 5. Building block view",
     "### Level 1: containers",
@@ -30,6 +32,8 @@ ARC42_HEADINGS = [
     "###",
     "## 7. Deployment view",
     "## 8. Cross-cutting concepts",
+    "### Conventions",
+    "### Threat model",
     "## 9. Architecture decisions",
     "## 10. Quality requirements",
     "## 11. Risks and technical debt",
@@ -53,6 +57,7 @@ C4_HEADINGS = [
     "## Configuration",
     "## What changed",
     "## Design choices",
+    "## Threat model",
     "## Where to find what",
     "## Couldn't work out",
 ]
@@ -282,3 +287,147 @@ def test_hand_over_offers_the_vs_code_preview() -> None:
 
     assert "kingmadoc skills install --vscode" in hand_over
     assert "Ask" in hand_over and "on yes" in hand_over
+
+
+SPLIT = FOLDER / "reference" / "split.md"
+
+
+def _split_block(title: str) -> str:
+    """The ````markdown block after ``## <title>`` in reference/split.md."""
+    after = _read(SPLIT).split(f"## {title}\n", 1)[1]
+    block = re.search(r"^(`{4,})markdown\n(.*?)\n\1$", after, re.S | re.M)
+    assert block, title
+    return block.group(2)
+
+
+def test_fo_to_and_arc42_requests_pick_their_variant() -> None:
+    """"Document an arc42" -> arc42; "document an FO/TO" -> functional + technical."""
+    text = _read(SKILL)
+    description = yaml.safe_load(text.split("---", 2)[1])["description"]
+    step = re.sub(r"\s+", " ", text.split("## Step 1.", 1)[1].split("## Step 2.", 1)[0])
+
+    assert "arc42" in description and "(FO, TO, or only one of them)" in description
+    assert "otherwise **single** (one arc42 document)" in step
+    assert "without asking back" in step
+    for request, documents in {
+        '"document it as arc42"': "single",
+        '"as an FO/TO"': "split",
+        '"describe this branch with an FO and a TO"': "split",
+        '"only an FO"': "functional",
+        '"only a TO"': "technical",
+    }.items():
+        row = re.search(re.escape(request) + r"[^|]*\| `(\w+)`", step)
+        assert row and row.group(1) == documents, request
+    for documents in ("`split` (FO/TO)", "`functional` (FO)", "`technical` (TO)"):
+        assert documents in step, documents
+
+
+def test_functional_design_follows_one_red_thread() -> None:
+    """User stories, then per story a use case, a screen and evil user stories."""
+    block = _split_block("Output format: functional.md")
+
+    assert _headings(block) == [
+        "#", "## 1. Goal and users", "## 2. Context", "## 3. Domain model",
+        "### Lifecycle of", "## 4. What users can do", "## 5. User stories",
+        "## 6. Per user story", "### US-1:", "#### Use case", "#### Screen",
+        "#### Activity", "#### Evil user stories", "## 7. Glossary",
+        "## Couldn't work out",
+    ]
+    for row in ("| US-1 |", "| UC-1 ", "**Main scenario**", "**Exceptions**", "| EUS-1.1 |",
+                "img/screen-us-1.png", "wireframe"):
+        assert row in block, row
+    assert "SM-1" in block  # evil user stories point at the technical measures
+
+
+def test_threat_model_is_in_the_technical_design() -> None:
+    """Microsoft Threat Modeling Tool style: stencils, STRIDE per interaction, states."""
+    technical = _read(SPLIT).split("## Output format: technical.md", 1)[1]
+    threat_model = FOLDER / "reference" / "threat-model.md"
+    rules = re.sub(r"\s+", " ", _read(threat_model))
+    block = _output_block(threat_model)
+
+    assert "The [threat model](threat-model.md) is always there" in technical
+    assert "Microsoft Threat Modeling Tool" in rules
+    assert "#### Interaction: <flow name>" in block
+    assert "| # | Threat" in block and "| State" in block and "| Priority" in block
+    states = "| Not Started | Not Applicable | Needs Investigation | Mitigation Implemented |"
+    assert states in block
+    threats = _read(FOLDER / "reference" / "threats.md")
+    for category in ("Spoofing", "Tampering", "Repudiation", "Information Disclosure",
+                     "Denial Of Service", "Elevation Of Privilege"):
+        assert f"| {category} |" in threats, category
+    for stencil in ("External Interactor", "Process", "Data Store", "Internet Boundary"):
+        assert stencil in rules, stencil
+    assert "kingmadoc threats img/threat-model.yml" in rules
+    assert "never invent threats outside it" in rules
+    assert "#### Security measures" in block and "| SM-1 |" in block
+    assert "threat model" in _read(ARC42).lower() and "## Threat model" in _read(C4)
+
+
+def test_screens_never_block_the_explainer() -> None:
+    """Wireframes first; screenshots only when allowed, offered at hand-over; no early question."""
+    stories = re.sub(r"\s+", " ", _read(FOLDER / "reference" / "stories.md"))
+
+    assert "The explainer never waits for it" in stories
+    assert "Never ask before the document exists" in stories
+    assert "kingmadoc screenshots <url>" in stories
+    assert "Never change code or configuration" in stories
+    assert '"[Screen]' in stories
+
+def test_fo_is_for_stakeholders_and_to_for_developers() -> None:
+    """Business rules, permissions and edge cases are technical: they live in the TO."""
+    functional = _split_block("Output format: functional.md")
+    rules = _split_block("Rules, permissions and edge cases")
+
+    for technical in ("BR-1", "| May ", "Not allowed", "Edge cases", "`<path>`"):
+        assert technical not in functional, technical
+    for heading in ("### Business rules", "### Permissions", "### Edge cases"):
+        assert heading in rules, heading
+    assert "developers only" in _read(SPLIT) and "stakeholders" in _read(SPLIT)
+    assert "rules-permissions-and-edge-cases" in _read(ARC42)
+
+
+def test_arc42_follows_a_software_architecture_document() -> None:
+    """Business vs technical context, stakeholders, conventions, tested quality scenarios."""
+    guide = re.sub(r"\s+", " ", _read(ARC42))
+    block = _output_block(ARC42)
+
+    assert "**Business context** (for stakeholders" in guide
+    assert "**Technical context** (for developers" in guide
+    assert "| Stakeholder (optional) |" in block
+    assert "| Scenario | Context | Quality goal | How it is tested |" in block
+    assert "**conventions**: code, branches, commits" in guide
+    assert "Tests are facts; do not grade them." in guide
+    assert "section 3 keeps only its Technical context" in re.sub(r"\s+", " ", _read(SPLIT))
+
+
+def test_fo_starts_with_the_domain_model_and_to_has_all_c4_levels() -> None:
+    """The domain model is the FO's overview; the TO zooms through C4 levels 2 to 4."""
+    headings = _headings(_split_block("Output format: functional.md"))
+    technical = re.sub(r"\s+", " ", _read(SPLIT).split("## Output format: technical.md")[1])
+
+    assert headings.index("## 3. Domain model") < headings.index("## 4. What users can do")
+    for level in ("C4 level 2 (containers)", "C4 level 3 (a component diagram",
+                  "C4 level 4 (a class or ER diagram"):
+        assert level in technical, level
+
+
+def test_the_skill_always_delivers_rendered_pictures() -> None:
+    """Never stop before the explainer is written and rendered; `explain check` is the gate."""
+    text = re.sub(r"\s+", " ", _read(SKILL))
+    rules = text.split("Rules:", 1)[1].split("## Working efficiently", 1)[0]
+    step6 = text.split("## Step 6.", 1)[1]
+
+    assert "**Always deliver the pictures.**" in rules
+    assert "Never ask first and stop" in rules
+    assert "kingmadoc explain check" in step6 and "repeat until it passes" in step6
+    step1 = text.split("## Step 1.", 1)[1].split("## Step 2.", 1)[0]
+    assert "ask one question" not in step1
+
+
+def test_the_scaffold_is_filled_in_one_pass() -> None:
+    """One write per document: filling placeholder by placeholder doubled the turns."""
+    step = re.sub(r"\s+", " ", _read(SKILL).split("## Step 4.", 1)[1].split("## Step 5.", 1)[0])
+
+    assert "kingmadoc explain scaffold" in step
+    assert "one pass per document" in step and "not one edit per placeholder" in step

@@ -31,7 +31,10 @@ Feature Verification Doc afterwards.
   [arc42](../skill/explaining-code/reference/arc42.md), [C4](../skill/explaining-code/reference/c4.md);
   models: [C4 model](../skill/explaining-code/reference/c4-model.md),
   [UML, ER, DFD and others](../skill/explaining-code/reference/models.md);
-  [one document or functional and technical apart](../skill/explaining-code/reference/split.md))
+  [one document or functional and technical apart (FO/TO)](../skill/explaining-code/reference/split.md),
+  [user stories, use cases, screens](../skill/explaining-code/reference/stories.md),
+  [threat model](../skill/explaining-code/reference/threat-model.md),
+  [Microsoft threat knowledge base](../skill/explaining-code/reference/threats.md))
   ([README: Markdown-only install](../README.md#markdown-only-no-python))
 - **Seeing what the output looks like** → [Example plan doc](../examples/verify-mode-plan.md)
 - **Contributing code** → [Conventions: Python coding standards](conventions.md#d-python-coding-standards)
@@ -65,6 +68,8 @@ in the package.
 | [`checking-conventions` skill](../.claude/skills/checking-conventions/SKILL.md) | Checks changes against the conventions: automatic checker + manual review workflow |
 | [`.claude/settings.json`](../.claude/settings.json) | Stop hook that runs the convention checker after every agent turn |
 | [`scripts/build_skill_variants.py`](../scripts/build_skill_variants.py) | Generates the Cursor, Codex and Copilot skill variants from `skill/SKILL.md` |
+| [`scripts/import_tmt_knowledge_base.py`](../scripts/import_tmt_knowledge_base.py) | Imports Microsoft's threat knowledge base (`default.tb7`) into `src/kingmadoc/threats/sdl_knowledge_base.json` |
+| [`scripts/build_threat_reference.py`](../scripts/build_threat_reference.py) | Writes the skill's `reference/threats.md` from that knowledge base |
 | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | CI: pytest on Python 3.11–3.13, Linux/macOS/Windows, plus a CLI smoke test |
 | [Bug report](../.github/ISSUE_TEMPLATE/bug_report.md), [feature request](../.github/ISSUE_TEMPLATE/feature_request.md) | GitHub issue templates |
 

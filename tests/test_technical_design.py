@@ -17,9 +17,13 @@ TECHNICAL = FEATURES / "add-password-reset-via-email-technical-design.md"
 SECTIONS = (
     "## Database schema",
     "## API contracts",
+    "## Business rules",
+    "## Permissions and roles",
+    "## Edge cases",
     "## Error handling",
     "## Performance considerations",
     "## Security considerations",
+    "## Threat model",
 )
 
 ENABLED = "extra_designs:\n  technical_design:\n    enabled: true\n"

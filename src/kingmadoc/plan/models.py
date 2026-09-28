@@ -10,14 +10,20 @@ its name to ``kingmadoc.config.DOCUMENT_MODELS`` (checked when this module is im
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import TYPE_CHECKING
+
+import yaml
 
 from kingmadoc.config import DOCUMENT_MODELS
 from kingmadoc.diagrams.base import DiagramBackend
 from kingmadoc.exceptions import GenerationError
 from kingmadoc.plan.dependencies import collapse
+from kingmadoc.threats.knowledge_base import load_knowledge_base
+from kingmadoc.threats.model import generate_threats, parse_threat_model
+from kingmadoc.threats.report import render_diagram, render_report
 
 if TYPE_CHECKING:
     from kingmadoc.plan.generator import PlanContext
@@ -31,45 +37,89 @@ class Model:
         name: Value in ``extra_designs.<document>.models``.
         document: The extra design document it belongs to.
         title: Section heading.
-        render: Returns the section body (Markdown, without the heading).
+        render: Returns the section body (Markdown, without the heading); ``None`` when
+            the document's template renders it (it checks ``name in models``).
     """
 
     name: str
     document: str
     title: str
-    render: Callable[[PlanContext, DiagramBackend], str]
+    render: Callable[[PlanContext, DiagramBackend], str] | None = None
 
 
-STRIDE: tuple[tuple[str, str], ...] = (
-    ("Spoofing", "Can someone pretend to be another user or system?"),
-    ("Tampering", "Can data be changed in transit or at rest without anyone noticing?"),
-    ("Repudiation", "Can someone deny an action because it is not logged?"),
-    ("Information disclosure", "Can data reach someone who should not see it?"),
-    ("Denial of service", "Can the feature be made slow or unavailable?"),
-    ("Elevation of privilege", "Can someone do more than their role allows?"),
-)
+# Detected technologies that make the first container a web application (XSS, CSRF …).
+WEB_STACK = frozenset({
+    "Django", "Flask", "FastAPI", "Express", "Next.js", "NestJS", "React", "Vue", "Angular",
+    "Svelte", "Gin", "Echo", "Fiber",
+})
+# Detected data stores -> the knowledge base's data store type.
+STORE_TYPES: Mapping[str, str] = MappingProxyType({
+    "PostgreSQL": "SQL Database", "MySQL": "SQL Database", "MariaDB": "SQL Database",
+    "SQLite": "SQL Database", "MongoDB": "Non Relational Database",
+    "Elasticsearch": "Non Relational Database", "Redis": "Cache",
+})
+
+
+def inferred_threat_model(context: PlanContext) -> dict[str, object]:
+    """A first data flow diagram from the analysis, in ``kingmadoc threats`` form."""
+    from kingmadoc.plan.generator import infer_containers  # avoid import cycle
+
+    report = context.codebase_report
+    containers = [c["name"] for c in infer_containers(report, context.project_name)]
+    stores = [t for t in report.detected_stack if t in STORE_TYPES]
+    web = bool(WEB_STACK & set(report.detected_stack))
+    elements = [
+        {"name": "User", "type": "Human User"},
+        *({"name": name, "type": "Web Application" if web and i == 0 else "Generic Process"}
+          for i, name in enumerate(containers)),
+        *({"name": store, "type": STORE_TYPES[store]} for store in stores),
+    ]
+    flows = [
+        {"name": "Request", "from": "User", "to": containers[0], "type": "HTTPS"},
+        *({"name": f"Query {store}", "from": containers[0], "to": store, "type": "Binary"}
+          for store in stores),
+    ]
+    return {
+        "title": context.feature_summary.rstrip("."),
+        "elements": elements,
+        "boundaries": [{"name": "Internet Boundary", "type": "Internet Boundary",
+                        "contains": [*containers, *stores]}],
+        "flows": flows,
+    }
 
 
 def _threat_model(context: PlanContext, backend: DiagramBackend) -> str:
-    from kingmadoc.plan.generator import DATA_STORES, infer_containers  # avoid import cycle
+    kb = load_knowledge_base()
+    source = inferred_threat_model(context)
+    model = parse_threat_model(source, kb)
+    report = render_report(model, generate_threats(model, kb), kb)
+    source_yaml = yaml.safe_dump(source, sort_keys=False, allow_unicode=True).strip()
+    return f"""Follows the Microsoft Threat Modeling Tool: a data flow diagram with trust
+boundaries, and the threats Microsoft's knowledge base generates for each interaction.
+_(inferred)_ The diagram below is a first guess from the analysis: _TODO: add the real
+flows and external systems in the source at the end, then run `kingmadoc threats` on it
+(or model it in the tool and save the `.tm7` next to this doc)._ For each threat, set the
+state, priority and justification (the **SM-n** that stops it); the evil user stories of
+the functional design (**EUS-n.m**) go under the interaction they misuse.
 
-    report = context.codebase_report
-    containers = ", ".join(
-        f"`{c['name']}`" for c in infer_containers(report, context.project_name)
-    )
-    stores = ", ".join(t for t in report.detected_stack if t in DATA_STORES) or "none detected"
-    rows = "\n".join(
-        f"| **{threat}** | {question} | _TODO_ | _TODO_ | open |" for threat, question in STRIDE
-    )
-    return f"""_(inferred)_ Elements to assess: the users of the feature; containers {containers};
-data stores: {stores}; external systems: _TODO_.
+{render_diagram(model, kb, context.diagram_format)}
 
-Go through every threat for every element it applies to. Keep a row per threat that is
-real, with its mitigation; write _not applicable_ (and why) for the others.
+{report}
 
-| Threat | Question | Applies to | Mitigation | Status |
-|---|---|---|---|---|
-{rows}"""
+### Security measures
+
+| ID | Measure | Stops | Test |
+|---|---|---|---|
+| SM-1 | _TODO: e.g. at most 5 logins per minute per account_ | _TODO: #, EUS-n.m_ | _TODO_ |
+
+<details>
+<summary>Threat model source (<code>kingmadoc threats &lt;file&gt;</code>)</summary>
+
+```yaml
+{source_yaml}
+```
+
+</details>"""
 
 
 def _permissions(context: PlanContext, backend: DiagramBackend) -> str:
@@ -147,10 +197,22 @@ feature changes, and whether it adds new dependencies.
 
 
 MODELS: tuple[Model, ...] = (
+    # The functional design's template renders these itself, woven into one red thread.
+    Model("user_stories", "functional_design", "User stories"),
+    Model("use_case_diagram", "functional_design", "Use case diagram"),
+    Model("use_cases", "functional_design", "Use case (per user story)"),
+    Model("screen_designs", "functional_design", "Screen design (per user story)"),
+    Model("evil_user_stories", "functional_design", "Evil user stories (per user story)"),
+    Model("user_flows", "functional_design", "User flows"),
+    # The technical design's template renders these between its fixed sections.
+    Model("business_rules", "technical_design", "Business rules"),
+    Model("permissions", "technical_design", "Permissions and roles"),
+    Model("edge_cases", "technical_design", "Edge cases"),
     Model("domain_model", "domain_design", "Domain model", _domain_model),
     Model("event_storming", "domain_design", "Event storming", _event_storming),
+    Model("threat_model", "technical_design", "Threat model", _threat_model),
     Model("dependency_graph", "technical_design", "Dependency graph", _dependency_graph),
-    Model("threat_model", "security_design", "Threat model (STRIDE)", _threat_model),
+    Model("threat_model", "security_design", "Threat model", _threat_model),
     Model("permissions", "security_design", "Permissions: who may do what", _permissions),
 )
 
@@ -167,7 +229,7 @@ def render_model_sections(
         backend: Diagram backend for the configured ``diagram_format``.
 
     Returns:
-        One ``## Title`` section per selected model.
+        One ``## Title`` section per selected model the template does not render itself.
 
     Raises:
         GenerationError: If a name is not a model of ``document``.
@@ -178,6 +240,8 @@ def render_model_sections(
         model = by_name.get(name)
         if model is None:
             raise GenerationError(f"Unknown model {name!r} for {document}")
+        if model.render is None:
+            continue
         sections.append(f"## {model.title}\n\n{model.render(context, backend).strip()}\n")
     return sections
 

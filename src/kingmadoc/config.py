@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -39,9 +39,14 @@ SUPPORTED_DIAGRAMS: frozenset[str] = frozenset({"c4_context", "c4_container"})
 # Models each extra design document can contain, in document order. Must match the
 # renderers in kingmadoc.plan.models (checked when that module is imported).
 DOCUMENT_MODELS: Mapping[str, tuple[str, ...]] = MappingProxyType({
-    "functional_design": (),
+    "functional_design": (
+        "user_stories", "use_case_diagram", "use_cases", "screen_designs",
+        "evil_user_stories", "user_flows",
+    ),
     "domain_design": ("domain_model", "event_storming"),
-    "technical_design": ("dependency_graph",),
+    "technical_design": (
+        "business_rules", "permissions", "edge_cases", "threat_model", "dependency_graph",
+    ),
     "security_design": ("threat_model", "permissions"),
 })
 
@@ -111,7 +116,16 @@ def _design(name: str) -> ExtraDesignConfig:
 # or c4 (a compact zoom-in: context, containers, components, flows, data).
 EXPLAIN_FORMATS: tuple[str, ...] = ("arc42", "c4")
 # One explainer per subject (default), or split into a functional and a technical one.
-EXPLAIN_DOCUMENTS: tuple[str, ...] = ("single", "split")
+# "functional" / "technical" write only the functional (FO) or technical (TO) document.
+EXPLAIN_DOCUMENTS: tuple[str, ...] = ("single", "split", "functional", "technical")
+# Models the explaining-code skill may draw (default: all; each only when the code has
+# its signal). Names match the sections of its reference files.
+EXPLAIN_MODELS: tuple[str, ...] = (
+    "c4_context", "c4_container", "c4_component", "c4_code", "c4_deployment", "c4_dynamic",
+    "sequence", "state_machine", "er_diagram", "domain_model", "class_diagram",
+    "package_diagram", "activity", "user_journey", "use_case", "event_flow", "context_map",
+    "data_flow", "algorithm", "user_stories", "screens", "evil_user_stories", "threat_model",
+)
 
 
 @dataclass(frozen=True)
@@ -121,10 +135,12 @@ class ExplainConfig:
     Attributes:
         format: One of :data:`EXPLAIN_FORMATS`.
         documents: One of :data:`EXPLAIN_DOCUMENTS`.
+        models: Models the skill may draw, from :data:`EXPLAIN_MODELS` (default: all).
     """
 
     format: str = "arc42"
     documents: str = "single"
+    models: tuple[str, ...] = EXPLAIN_MODELS
 
 
 @dataclass(frozen=True)
@@ -202,6 +218,69 @@ def load_config(root: Path, config_path: Path | None = None) -> FeatureDocConfig
         raise ConfigError(f"Cannot read {config_path}: {exc}") from exc
 
     return parse_config(raw if raw is not None else {})
+
+
+# `kingmadoc plan --documents`: which of the functional (FO) and technical (TO) design
+# documents are written next to the plan.
+PLAN_DOCUMENTS: Mapping[str, tuple[str, ...]] = MappingProxyType({
+    "single": (),
+    "split": ("functional_design", "technical_design"),
+    "functional": ("functional_design",),
+    "technical": ("technical_design",),
+})
+
+
+def select_documents(config: FeatureDocConfig, documents: str) -> FeatureDocConfig:
+    """Switch the FO and TO on or off, e.g. from ``kingmadoc plan --documents split``.
+
+    ``single`` writes only the plan; ``split`` adds the functional and technical design;
+    ``functional`` / ``technical`` add just that one. Other extra designs keep their
+    configuration.
+
+    Raises:
+        ConfigError: If ``documents`` is not a key of :data:`PLAN_DOCUMENTS`.
+    """
+    if documents not in PLAN_DOCUMENTS:
+        raise ConfigError(
+            f"Unknown documents {documents!r}; supported: {', '.join(PLAN_DOCUMENTS)}"
+        )
+    chosen = PLAN_DOCUMENTS[documents]
+    designs = {
+        name: replace(getattr(config.extra_designs, name), enabled=name in chosen)
+        if name in ("functional_design", "technical_design")
+        else getattr(config.extra_designs, name)
+        for name in DOCUMENT_MODELS
+    }
+    return replace(config, extra_designs=ExtraDesignsConfig(**designs))
+
+
+def select_models(config: FeatureDocConfig, names: tuple[str, ...]) -> FeatureDocConfig:
+    """Keep only the named design models, e.g. from ``kingmadoc plan --models``.
+
+    Every extra design that has one of the models is switched on with just those
+    models; every other extra design is switched off.
+
+    Args:
+        config: The loaded configuration.
+        names: Model names from :data:`DOCUMENT_MODELS`.
+
+    Returns:
+        A new configuration.
+
+    Raises:
+        ConfigError: If a name is not a model of any document.
+    """
+    known = {m for models in DOCUMENT_MODELS.values() for m in models}
+    unknown = [n for n in names if n not in known]
+    if unknown:
+        raise ConfigError(f"Unknown model {unknown[0]!r}; supported: {', '.join(sorted(known))}")
+    designs = {}
+    for name, models in DOCUMENT_MODELS.items():
+        chosen = tuple(m for m in models if m in names)
+        designs[name] = replace(
+            getattr(config.extra_designs, name), enabled=bool(chosen), models=chosen
+        )
+    return replace(config, extra_designs=ExtraDesignsConfig(**designs))
 
 
 def resolve_output_dir(root: Path, config: FeatureDocConfig) -> Path:
@@ -338,14 +417,16 @@ diagram_format: mermaid
 # `models` selects the design models (sections) of a document; default: all of them.
 extra_designs:
   functional_design:
-    # <slug>-functional-design.md: user flows, edge cases, business rules,
-    # permissions and roles.
+    # <slug>-functional-design.md, for stakeholders: user stories, use case diagram, per
+    # story a use case, screen design (screenshot or wireframe) and evil user stories;
+    # user flows.
     enabled: false
     template: functional_design.md.j2
     models: [{", ".join(DOCUMENT_MODELS["functional_design"])}]
   technical_design:
-    # <slug>-technical-design.md: database schema, API contracts, error handling,
-    # performance and security considerations.
+    # <slug>-technical-design.md, for developers: database schema, API contracts,
+    # business rules, permissions, edge cases, error handling, performance and security,
+    # threat model (Microsoft Threat Modeling Tool style), dependency graph.
     enabled: false
     template: technical_design.md.j2
     models: [{", ".join(DOCUMENT_MODELS["technical_design"])}]
@@ -355,7 +436,8 @@ extra_designs:
     template: domain_design.md.j2
     models: [{", ".join(DOCUMENT_MODELS["domain_design"])}]
   security_design:
-    # <slug>-security-design.md: threat model (STRIDE) and who may do what.
+    # <slug>-security-design.md: threat model (Threat Modeling Tool style) and who may
+    # do what.
     enabled: false
     template: security_design.md.j2
     models: [{", ".join(DOCUMENT_MODELS["security_design"])}]
@@ -367,10 +449,14 @@ adr:
 
 # Explainers written by the explaining-code agent skill ("explain this project").
 # format: arc42 (the 12 arc42 sections, default) or c4 (compact zoom-in).
-# documents: single (one explainer, default) or split (functional + technical).
+# documents: single (one explainer, default), split (functional + technical, "FO/TO"),
+# functional (only the FO) or technical (only the TO). The request overrides it.
+# models: what the agent may draw (default: all; each only when the code has it). The
+# request can narrow it too ("without screens", "only the threat model").
 explain:
   format: arc42
   documents: single
+  models: [{", ".join(EXPLAIN_MODELS)}]
 
 # Verification (`kingmadoc verify`). Build, test and lint commands; null means detected
 # from the project files. They only run with `kingmadoc verify --run-checks`.
@@ -458,7 +544,7 @@ def _parse_explain(data: Any) -> ExplainConfig:
     if data is None:
         return defaults
     data = _require_mapping(data, "explain")
-    _reject_unknown(data, {"format", "documents"}, "explain")
+    _reject_unknown(data, {"format", "documents", "models"}, "explain")
     fmt = _get(data, "format", str, defaults.format, "explain.")
     if fmt not in EXPLAIN_FORMATS:
         raise ConfigError(
@@ -469,7 +555,14 @@ def _parse_explain(data: Any) -> ExplainConfig:
         raise ConfigError(
             f"Unknown explain.documents {documents!r}; supported: {', '.join(EXPLAIN_DOCUMENTS)}"
         )
-    return ExplainConfig(format=fmt, documents=documents)
+    models = tuple(_get_str_list(data, "models", defaults.models, "explain."))
+    unknown = [m for m in models if m not in EXPLAIN_MODELS]
+    if unknown:
+        raise ConfigError(
+            f"Unknown model {unknown[0]!r} in explain.models; supported: "
+            f"{', '.join(EXPLAIN_MODELS)}"
+        )
+    return ExplainConfig(format=fmt, documents=documents, models=models)
 
 
 def _parse_verify(data: Any) -> VerifyConfig:

@@ -43,3 +43,11 @@ class FactsError(KingmaDocError):
 
 class PlanFormatError(KingmaDocError):
     """Raised when a plan doc's frontmatter or requirements are not valid (``kingmadoc check``)."""
+
+
+class ThreatModelError(KingmaDocError):
+    """Raised when a threat model is invalid (unknown element type, flow end or filter)."""
+
+
+class ScreenshotError(KingmaDocError):
+    """Raised when screens of a running app cannot be captured (``kingmadoc screenshots``)."""

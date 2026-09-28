@@ -96,3 +96,13 @@ def test_analyze_without_json_prints_a_summary(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert "Files: 1" in result.stdout
     assert "Entry points: main.py" in result.stdout
+
+
+def test_the_repositorys_own_config_loads() -> None:
+    """The repo's .featuredoc.yml stays valid when models or keys change (it once lagged)."""
+    from pathlib import Path
+
+    from kingmadoc.config import load_config
+
+    root = Path(__file__).resolve().parents[1]
+    load_config(root, None)

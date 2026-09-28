@@ -9,7 +9,8 @@
 | **Generated** | {{ generated_at.isoformat(timespec="minutes") }} by KingmaDoc {{ version }} |
 
 > Optional companion to the plan doc (`extra_designs.technical_design` in `.featuredoc.yml`).
-> Fill in every _TODO_ and review everything marked _(inferred)_. Delete a section only
+> For developers: how the feature is built and enforced. What it does for users is in the
+> functional design (user stories, use cases, screens). Fill in every _TODO_ and review everything marked _(inferred)_. Delete a section only
 > when it truly does not apply, and say why.
 
 ## Database schema
@@ -79,6 +80,45 @@ _TODO: every endpoint, command, event or function this feature exposes or change
 | _TODO_ | _TODO_ | _TODO_ | _TODO_ | _TODO_ |
 
 - _TODO: versioning and backwards compatibility for existing callers._
+{% if "business_rules" in models %}
+
+## Business rules
+
+Number rules so tests and the verification doc can refer to them.
+
+| Rule | What it enforces | Where (layer, `path`) | Test |
+|---|---|---|---|
+| BR-1 | _TODO: a rule the feature must always follow (source: who decided it)_ | _TODO: e.g. domain model, API validation_ | _TODO_ |
+| BR-2 | _TODO_ | _TODO_ | _TODO_ |
+{% endif %}
+{% if "permissions" in models %}
+
+## Permissions and roles
+
+One row per role, one column per endpoint or action this feature adds or changes
+(_allowed_, _denied_ or the condition, e.g. _own data only_).
+
+| Role | _TODO: endpoint or action 1_ | _TODO: endpoint or action 2_ |
+|---|---|---|
+| _TODO: e.g. anonymous visitor_ | _TODO_ | _TODO_ |
+| _TODO: e.g. signed-in user_ | _TODO_ | _TODO_ |
+| _TODO: e.g. administrator_ | _TODO_ | _TODO_ |
+
+- _TODO: where roles come from, and where the check runs (middleware, attribute, policy)._
+- _TODO: what a denied request gets (hidden, 403, 404) and whether it is logged._
+{% endif %}
+{% if "edge_cases" in models %}
+
+## Edge cases
+
+| Situation | Expected behavior | Where handled | Test |
+|---|---|---|---|
+| Empty, invalid or too large input | _TODO_ | _TODO_ | _TODO_ |
+| The same action twice, or at the same time by two users | _TODO_ | _TODO_ | _TODO_ |
+| A dependency is slow or unavailable halfway through | _TODO_ | _TODO_ | _TODO_ |
+| The user cancels, goes back, or retries | _TODO_ | _TODO_ | _TODO_ |
+| _TODO: feature-specific situation_ | _TODO_ | _TODO_ | _TODO_ |
+{% endif %}
 
 ## Error handling
 

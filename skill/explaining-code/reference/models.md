@@ -238,31 +238,33 @@ admin -- shop.stock
 
 ## Data flow diagram with trust boundaries
 
-Rules: external entities as rectangles, processes as numbered circles, data stores as
-`stored_data` shapes named `D1 …`; every flow labelled with **what data** moves and how;
-trust boundaries as dashed red boxes named after what separates them. This explains
-where sensitive data goes; list threats only when the user asks (plan mode's security
-design does that).
+Rules: the notation of the Microsoft Threat Modeling Tool: External Interactors as
+rectangles (a human user as a person), Processes as circles, Data Stores as
+`stored_data`; every flow a one-way arrow labelled with **what data** moves and its type
+(`[HTTPS]`, `[Binary]`); trust boundaries as dashed red, unfilled boxes named like
+the tool's (`Internet Boundary`, `Machine Trust Boundary`). This explains where
+sensitive data goes. The threat model ([threat-model.md](threat-model.md)) builds on it
+with the tool's STRIDE threats per interaction and the measures the code takes.
 
 ```d2
 title: "[Data flow] Login" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 direction: right
 vars: {
   d2-legend: {
-    e: External entity
+    e: External Interactor
     p: Process {shape: circle}
-    s: Data store {shape: stored_data}
-    t: Trust boundary {style: {stroke: red; stroke-dash: 4}}
+    s: Data Store {shape: stored_data}
+    t: Trust Border Boundary {style: {stroke: red; stroke-dash: 4; fill: transparent}}
   }
 }
 browser: Browser
-internet: "Trust boundary: internet to server" {
-  style: {stroke: red; stroke-dash: 4}
-  login: "1. Log in" {shape: circle}
-  users: "D1 Users" {shape: stored_data}
+internet: "Internet Boundary" {
+  style: {stroke: red; stroke-dash: 4; fill: transparent}
+  login: "Login API" {shape: circle}
+  users: "Users" {shape: stored_data}
 }
 browser -> internet.login: "e-mail and password [HTTPS]"
-internet.login -> internet.users: "password hash lookup [SQL]"
+internet.login -> internet.users: "password hash lookup [Binary]"
 internet.login -> browser: "session cookie [HTTPS]"
 ```
 

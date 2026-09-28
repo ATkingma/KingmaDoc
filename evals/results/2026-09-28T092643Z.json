@@ -1,0 +1,173 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "explain-branch",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 99,
+        "total_cost_usd": 0.8051438499999999,
+        "num_turns": 28,
+        "tokens": {
+          "input_tokens": 30,
+          "cache_creation_input_tokens": 53870,
+          "cache_read_input_tokens": 646769,
+          "output_tokens": 9689
+        },
+        "reply": "code.\n\nI also wrote this up with 4 diagrams in `docs/explain/0001-branch-feature-discount/README.md`: what the branch changed, the shop's parts, the order-placing flow and the discount rule. The KingmaDoc check passes.\n\nTwo things the code doesn't say:\n1. What currency the threshold of 100 is in. Orders have no currency field.\n2. Whether customers should see the price before the discount or the discount amount. Only the discounted total is stored and returned.\n\nIn VS Code, press Ctrl+Shift+V to see the diagrams in the preview. Should I set VS Code to open explainers as a preview automatically?"
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "4 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "2 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "14 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 256,
+        "total_cost_usd": 1.5355056000000002,
+        "num_turns": 41,
+        "tokens": {
+          "input_tokens": 44,
+          "cache_creation_input_tokens": 82344,
+          "cache_read_input_tokens": 1320485,
+          "output_tokens": 22915
+        },
+        "reply": "/pay/`. It only changes the status from `new` to `paid` (anything else gives `409`). No payment is actually taken.\n\n**Couldn't work out** (listed at the end of the explainer):\n- Which client calls these endpoints? It isn't in this repo.\n- Is `shop/settings.py` the full config? It sets no `MIDDLEWARE`, so as written `@login_required` can't see a signed-in user.\n- Does real payment happen somewhere else, and what sets the `shipped` status? No code sets it.\n\nVS Code only shows the pictures in Markdown preview (Ctrl+Shift+V). Should VS Code open explainers directly as a preview, with the pictures?"
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "8 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "3 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "27 change(s), all allowed"
+        }
+      ],
+      "passed": 7,
+      "total": 7
+    },
+    {
+      "scenario": "explain-fo-to",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 367,
+        "total_cost_usd": 2.09815075,
+        "num_turns": 53,
+        "tokens": {
+          "input_tokens": 52,
+          "cache_creation_input_tokens": 117016,
+          "cache_read_input_tokens": 1825575,
+          "output_tokens": 33527
+        },
+        "reply": " zijn geen migraties.\n- In `shop/settings.py` staan geen middleware, geen sessions en geen loginroute. Daardoor werkt `@login_required` waarschijnlijk niet. Mogelijk zijn dit alleen voorbeeld-settings.\n\n**Open vragen** (in de documenten onder \"Niet uit te zoeken\"), voor als je tijd hebt:\n- Welke valuta geldt, en is de drempel van 100 inclusief of exclusief btw?\n- Welke app of welk scherm roept de API aan, en moet de klant het bedrag v\u00f3\u00f3r korting zien?\n- Is de afronding naar het even getal bij een halve cent bewust zo gekozen?\n\nIn VS Code zie je de figuren in de Markdown-preview (Ctrl+Shift+V)."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/functional.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/functional.md"
+        },
+        {
+          "check": "exists docs/explain/0001-*/technical.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/technical.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/functional.md",
+          "ok": false,
+          "detail": "docs/explain/0001-branch-feature-discount/functional.md: 'Domain model'"
+        },
+        {
+          "check": "contains docs/explain/0001-*/technical.md",
+          "ok": false,
+          "detail": "docs/explain/0001-branch-feature-discount/technical.md: 'Business rules'; docs/explain/0001-branch-feature-discount/technical.md: 'Level 2'"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "12 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "0 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "41 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 8
+    }
+  ]
+}

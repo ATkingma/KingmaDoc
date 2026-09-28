@@ -1,0 +1,159 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "explain-branch",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 100,
+        "total_cost_usd": 0.8613995499999999,
+        "num_turns": 25,
+        "tokens": {
+          "input_tokens": 30,
+          "cache_creation_input_tokens": 64155,
+          "cache_read_input_tokens": 690090,
+          "output_tokens": 9188
+        },
+        "reply": "ld the discounted amount. No field keeps the original total or the discount amount. The threshold and rate are fixed in the code, and there are no tests for any of this.\n- **Other commit (`7bc5fcf`):** it only adds the KingmaDoc skill files under `.claude/skills/`. The shop never runs them.\n\nThe three diagrams show which parts changed, how placing an order runs with the discount step, and how the discount is calculated, with a table of example inputs checked by running the function.\n\nShould VS Code open explainers directly as a preview, so the pictures show? Otherwise, Ctrl+Shift+V shows them."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "3 images"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "0 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": false,
+          "detail": "shop/__pycache__/__init__.cpython-311.pyc, shop/__pycache__/discounts.cpython-311.pyc"
+        }
+      ],
+      "passed": 4,
+      "total": 5
+    },
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 173,
+        "total_cost_usd": 1.15176445,
+        "num_turns": 22,
+        "tokens": {
+          "input_tokens": 34,
+          "cache_creation_input_tokens": 71975,
+          "cache_read_input_tokens": 890083,
+          "output_tokens": 18567
+        },
+        "reply": "hipped` status.\n- Stock taken by orders that are never paid is never given back.\n- There's no CSRF protection.\n- An unknown product ID, bad JSON, or a missing customer returns a 500 error.\n- There are no tests or migrations.\n\n**Couldn't work out:**\n- How does a customer sign in? `shop/settings.py` has no `MIDDLEWARE` and doesn't install sessions, and there's no login route, so `@login_required` has nothing to check against.\n- Who creates `Customer` rows, and is `shipped` still planned?\n\nShould VS Code open explainers directly as a preview, so the pictures show? If not, Ctrl+Shift+V shows them."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "8 images"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "2 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "27 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "scenario": "explain-fo-to",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 1,
+        "seconds": 113,
+        "total_cost_usd": 0.8422781499999998,
+        "num_turns": 16,
+        "tokens": {
+          "input_tokens": 20,
+          "cache_creation_input_tokens": 65220,
+          "cache_read_input_tokens": 482569,
+          "output_tokens": 11015
+        },
+        "reply": "You've hit your monthly spend limit \u00b7 raise it at claude.ai/settings/usage?from=cc_cli_limit_message \u00b7 your session limit resets 11am (Europe/Amsterdam)",
+        "error": "You've hit your monthly spend limit \u00b7 raise it at claude.ai/settings/usage?from=cc_cli_limit_message \u00b7 your session limit resets 11am (Europe/Amsterdam)"
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/functional.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/functional.md"
+        },
+        {
+          "check": "exists docs/explain/0001-*/technical.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/technical.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/functional.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "contains docs/explain/0001-*/technical.md",
+          "ok": false,
+          "detail": "nothing at docs/explain/0001-*/technical.md"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": false,
+          "detail": "docs/explain/0001-branch-feature-discount/functional.md: D2 source not rendered; no images"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "0 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": false,
+          "detail": "shop/__pycache__/__init__.cpython-311.pyc, shop/__pycache__/discounts.cpython-311.pyc"
+        }
+      ],
+      "passed": 3,
+      "total": 7
+    }
+  ]
+}

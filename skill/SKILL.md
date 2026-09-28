@@ -1,7 +1,7 @@
 ---
 name: kingmadoc
 description: Generates a Feature Design Doc (plan) before a feature is implemented and a Feature Verification Doc afterwards, with Mermaid C4 diagrams inferred from the codebase. Use when the user asks to plan, design, or scope a new feature before writing code, or to verify, review, or check what was built against its plan. Works without installing anything; uses the kingmadoc CLI when it is available.
-version: 1.1.0
+version: 1.2.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -54,7 +54,17 @@ brackets); ignore the file if it is absent:
   `analyzer.tree_depth` [`3`].
 - `diagrams` [`c4_context`, `c4_container`]: which C4 sections get a diagram.
 - `extra_designs.functional_design.enabled` / `extra_designs.technical_design.enabled`
-  [`false`]: also write a functional and/or technical design doc.
+  [`false`]: also write a functional and/or technical design doc. By default only the
+  plan is written. The request decides directly, without asking back: "FO and TO",
+  "FO/TO", "functional and technical design", "split" → both; "only an FO" → the
+  functional design; "only a TO" → the technical design (CLI: `--documents split`,
+  `functional` or `technical`).
+- `extra_designs.<doc>.models` [all]: which models a doc contains. Functional (for
+  stakeholders, plain words): `user_stories`, `use_case_diagram`, `use_cases`,
+  `screen_designs`, `evil_user_stories`, `user_flows`. Technical (developers only):
+  `business_rules`, `permissions`, `edge_cases`, `threat_model`, `dependency_graph`. Models the user names in the request
+  win ("only user stories and screens"); with the CLI pass them as `--models a,b`, which
+  also switches on the docs that have them.
 
 ### Step 2. Analyze the codebase
 
@@ -130,6 +140,11 @@ the diagrams, but never beyond what the user said or the code shows.
    `<slug>-technical-design.md`
    ([format](reference/formats.md#technical-design-doc-docsfeaturesslug-technical-designmd)), in that
    order. Fill in only what the answers and code support; leave the rest as TODOs.
+   In the functional design, keep the red thread: one user story per requirement, and
+   per story its use case, screen design (a screenshot when the screen already exists)
+   and evil user stories, each pointing at a security measure `SM-n` in the technical
+   design's threat model. That threat model follows the Microsoft Threat Modeling Tool;
+   with the CLI, `kingmadoc threats <file>.yml` generates its threats.
 2. Show the paths and a three-line summary (scope, biggest risk, open questions count);
    do not paste the plan into the chat, and do not narrate while you work.
 3. Ask the user to reply **yes** (approve), **edit <changes>**, or **stop**. On

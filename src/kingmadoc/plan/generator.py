@@ -317,7 +317,8 @@ def render_extra_design(
     """Render an optional design doc that accompanies a plan doc.
 
     Every :class:`PlanContext` field is a template variable, plus ``plan_file`` (the
-    plan's file name, for a relative link) and ``data_stores`` (detected databases).
+    plan's file name, for a relative link), ``data_stores`` (detected databases),
+    ``models`` (the selected model names) and ``model_sections`` (their rendered sections).
 
     Args:
         design: Which extra doc to render (from :data:`EXTRA_DESIGNS`).
@@ -336,6 +337,7 @@ def render_extra_design(
     template_name = design_config.template
     variables = {f.name: getattr(context, f.name) for f in fields(context)}
     variables["plan_file"] = plan_path.name
+    variables["models"] = design_config.models
     variables["model_sections"] = render_model_sections(
         design.name, design_config.models, context, get_backend(config.diagram_format)
     )
@@ -344,7 +346,8 @@ def render_extra_design(
     ]
     try:
         template = load_template(template_name, context.codebase_report.root)
-        return template.render(**variables)
+        # Switched-off models leave empty lines behind.
+        return re.sub(r"\n{3,}", "\n\n", template.render(**variables))
     except TemplateError as exc:
         raise GenerationError(f"Cannot render template {template_name!r}: {exc}") from exc
 

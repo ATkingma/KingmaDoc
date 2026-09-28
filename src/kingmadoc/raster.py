@@ -19,8 +19,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from types import MappingProxyType
 
-import resvg_py
-
 from kingmadoc.exceptions import RenderError
 
 # 2x: sharp on high-DPI screens, still small (a typical diagram is 100-300 KB).
@@ -70,10 +68,18 @@ def svg_to_png(svg: str) -> bytes:
             re.sub(r"@font-face\s*\{[^}]*\}", "", svg),
         )
         try:
+            # Imported here: without a resvg wheel for this platform, only PNG is lost,
+            # not every kingmadoc command.
+            import resvg_py
+        except ImportError as exc:
+            raise RenderError(f"PNG conversion is not available here (resvg-py): {exc}") from exc
+        try:
             png = resvg_py.svg_to_bytes(
                 svg_string=text, font_files=files, skip_system_fonts=bool(files), zoom=ZOOM
             )
-        except Exception as exc:  # noqa: BLE001 - resvg raises bare exceptions (and panics)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except BaseException as exc:  # noqa: BLE001 - resvg raises bare exceptions and Rust panics (BaseException)
             raise RenderError(f"Could not convert the diagram to PNG: {exc}") from exc
     return bytes(png)
 

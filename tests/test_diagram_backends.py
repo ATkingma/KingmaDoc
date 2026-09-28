@@ -167,8 +167,9 @@ def test_plan_uses_configured_backend(tmp_path: Path, fmt: str, label: str) -> N
     assert f"## C4 Context ({label})" in result.stdout
     assert f"## C4 Container ({label})" in result.stdout
     fences = re.findall(r"^```(\w+)$", result.stdout, re.M)
-    diagram_fences = [f for f in fences if f != "text"]
-    assert diagram_fences == [fmt] * 4  # context, container, user flow, ER
+    diagram_fences = [f for f in fences if f not in ("text", "yaml")]
+    # context, container, use cases, user flow, threat model (data flow), ER
+    assert diagram_fences == [fmt] * 6
 
 
 def _plantuml() -> list[str] | None:

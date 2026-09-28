@@ -34,6 +34,7 @@ from typing import Any
 
 import yaml
 
+from kingmadoc.explain import check_explainer
 from kingmadoc.plandoc import check_plan
 
 REPO = Path(__file__).resolve().parents[1]
@@ -65,7 +66,10 @@ def check_exists(workspace: Path, pattern: str) -> tuple[bool, str]:
 
 
 def check_contains(workspace: Path, spec: dict[str, Any]) -> tuple[bool, str]:
-    """Every matching file contains every text (case-insensitive)."""
+    """Every matching file contains every text (case-insensitive).
+
+    ``"Domain model | Domeinmodel"`` accepts either: agents write in the user's language.
+    """
     files = sorted(workspace.glob(spec["files"]))
     if not files:
         return False, f"nothing at {spec['files']}"
@@ -73,9 +77,20 @@ def check_contains(workspace: Path, spec: dict[str, Any]) -> tuple[bool, str]:
         f"{_rel(workspace, f)}: {text!r}"
         for f in files
         for text in spec["text"]
-        if text.lower() not in f.read_text(encoding="utf-8", errors="replace").lower()
+        if not any(option.strip().lower()
+                   in f.read_text(encoding="utf-8", errors="replace").lower()
+                   for option in text.split(" | "))
     ]
     return not missing, "; ".join(missing) or "all present"
+
+
+def check_explain_check(workspace: Path, pattern: str) -> tuple[bool, str]:
+    """``kingmadoc explain check`` passes: written, filled in, rendered, pictures shown."""
+    folders = sorted(p for p in workspace.glob(pattern) if p.is_dir())
+    if not folders:
+        return False, f"nothing at {pattern}"
+    problems = [f"{_rel(workspace, f)}/{p}" for f in folders for p in check_explainer(f)]
+    return not problems, "; ".join(problems) or "finished"
 
 
 def check_pictures_only(workspace: Path, pattern: str) -> tuple[bool, str]:
@@ -117,6 +132,8 @@ def check_unchanged_outside(workspace: Path, allowed: list[str]) -> tuple[bool, 
     """git sees no change outside the allowed paths (no source code touched)."""
     status = _git(workspace, "status", "--porcelain", "--untracked-files=all")
     changed = [line[3:].strip('"') for line in status.splitlines() if line.strip()]
+    # Bytecode caches appear when the agent runs a function to check it: not a code change.
+    changed = [p for p in changed if "__pycache__/" not in p and not p.endswith(".pyc")]
     outside = [p for p in changed if not p.startswith(tuple(allowed))]
     return not outside, ", ".join(outside) or f"{len(changed)} change(s), all allowed"
 
@@ -139,6 +156,7 @@ CHECKS: dict[str, Check] = {
     "exists": check_exists,
     "contains": check_contains,
     "pictures_only": check_pictures_only,
+    "explain_check": check_explain_check,
     "max_questions": check_max_questions,
     "unchanged_outside": check_unchanged_outside,
     "plan_check": check_plan_check,
@@ -224,6 +242,9 @@ def run_agent(workspace: Path, request: str, agent: str) -> dict[str, Any]:
     except (json.JSONDecodeError, TypeError):
         pass
     info.update({k: data[k] for k in ("total_cost_usd", "num_turns") if k in data})
+    usage = data.get("usage")
+    if isinstance(usage, dict):  # tokens: what the skill's size and the agent's reading cost
+        info["tokens"] = {k: v for k, v in usage.items() if k.endswith("tokens")}
     if isinstance(data.get("result"), str):
         info["reply"] = data["result"][-REPLY_CHARS:]
     # Tell an agent that failed (limits, max turns, crash) apart from a skill that failed.

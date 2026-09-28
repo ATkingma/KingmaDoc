@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Explainers can no longer end up without pictures. `kingmadoc render` links the SVG of
+  a diagram whose PNG conversion fails (a missing `resvg-py` wheel, a Rust panic in
+  resvg) instead of failing the whole document, and `resvg-py` is loaded only when a
+  PNG is made, so a platform without its wheel keeps every other command. The
+  `explaining-code` skill (6.0) delivers first and asks afterwards: it never stops on a
+  question before the document is written and rendered (screenshots are offered at
+  hand-over, wireframes come first), and it must pass the new
+  `kingmadoc explain check <folder>` (no placeholders, no unrendered D2, no missing
+  images, no figure without a picture) before it hands over. The eval scenarios run
+  the same check.
+
 ### Changed
 
 - `kingmadoc render` links a PNG for each diagram, so the pictures show in every
@@ -42,6 +55,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The functional design follows one red thread: user stories (one per `REQ-n`), a use
+  case diagram, and per story `US-n` a use case `UC-n`, a screen design `S-n` (a
+  screenshot when the screen exists, else a text wireframe) and evil user stories
+  `EUS-n.m`, each pointing at a security measure `SM-n`. The technical design gets the
+  threat model with those measures. Skill 1.2.0 writes the same.
+- Threat models follow the Microsoft Threat Modeling Tool (template SDL TM Knowledge
+  Base): its stencils (External Interactor, Process, Data Store, trust boundaries such
+  as Internet Boundary), and its report: per interaction the tool's STRIDE threats, each
+  with a state (Not Started, Not Applicable, Needs Investigation, Mitigation
+  Implemented), a priority and a justification, plus the state summary. `threat_model`
+  is now also a model of `technical_design` (default: on). The threats come from
+  Microsoft's own knowledge base (the tool's default template, *SDL TM Knowledge Base
+  (Core)* 4.1.0.11, MIT, bundled from microsoft/threat-modeling-templates):
+  `kingmadoc threats <file>.yml` evaluates its generation rules for every data flow as
+  the tool does and prints the data flow diagram (D2, Mermaid or PlantUML) and the
+  report; `--types` lists the stencils. `explaining-code` uses it, or its generated
+  `reference/threats.md` without the CLI.
+- Every model is on by default and can be chosen: the functional design's parts are
+  models now (`user_stories`, `use_case_diagram`, `use_cases`, `screen_designs`,
+  `evil_user_stories`, `user_flows`, `edge_cases`, `business_rules`, `permissions`);
+  `kingmadoc plan --models a,b` keeps only those (and switches on the documents that
+  have them); `explain.models` lists what the explaining-code agent may draw, and the
+  request can narrow it ("without screens").
+- The functional design (FO) is for stakeholders: what the feature does and for whom,
+  in plain words. Business rules, permissions and edge cases moved to the technical
+  design (TO), which is for developers only: they are models of `technical_design` now
+  (with where each is enforced and its test). The explainer's `functional.md` and
+  `technical.md` split the same way; the threat model has its own reference,
+  `reference/threat-model.md`.
+- `kingmadoc explain scaffold "<subject>"` writes the empty explainer (arc42 or c4;
+  one document, FO + TO, only an FO or only a TO; the chosen models) straight from the
+  skill's reference formats, with the key facts, headings, tables and figure numbers
+  filled in, so the agent no longer reads the output formats. `kingmadoc screenshots
+  <url> /route=name …` captures screens of a running app (one browser with the optional
+  `kingmadoc[screenshots]` extra, else `npx playwright`). The skill is shorter
+  (SKILL.md about 3,400 instead of 4,900 tokens); user stories, screens and evil user
+  stories have their own reference, `reference/stories.md`.
+- `kingmadoc plan --documents split|functional|technical`: by default only the plan is
+  written; "make an FO and TO" (or "functional and technical design", "split") adds
+  both designs, "only an FO" / "only a TO" just that one. The plan skill (1.2.0) maps
+  the request the same way.
+- Explainers pick their documents from the request, without asking back: arc42 by
+  default, "as an FO/TO" writes both, "only an FO" or "only a TO" writes just that one
+  (`explain.documents: functional` / `technical` sets it per project).
+- The arc42 explainer reads like a software architecture document: section 1 lists
+  documented stakeholders and links the requirements (`REQ-n` plan docs); section 3
+  splits into a Business context for stakeholders (actors, use case diagram, user
+  stories with use case, screen and evil user stories) and a Technical context for
+  developers; section 8 adds testability and the repository's stated conventions
+  (code, branches, commits); section 10 lists the quality scenarios the tests cover
+  (context, goal, how it is tested).
+- `explaining-code` 5.9: "document an FO/TO" (functioneel/technisch ontwerp) writes the
+  split explainer with the same red thread: user stories, per story a use case, a
+  screenshot of the running app (the agent asks first; a D2 wireframe from the view code
+  when it cannot run) and evil user stories; `technical.md` gets a threat model in
+  Threat Modeling Tool style (data flow diagram in its notation, its threats per
+  interaction, the security measures the code takes, sensitive data), which a single arc42 or c4 explainer also gets when the code has logins,
+  tokens, personal data or uploads. "Document an arc42" picks the arc42 format.
 - `kingmadoc explain facts` lists private modules from the dominator tree of the module
   graph (Python and JavaScript/TypeScript): what only one module leads to belongs to
   it, which shows the real component boundaries. A single entry point is left out.

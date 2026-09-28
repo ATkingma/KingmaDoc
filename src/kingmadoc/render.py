@@ -71,7 +71,8 @@ def render_file(
     Bitbucket); several block or mishandle SVG.
 
     All diagrams are rendered before anything is written: if one fails, neither the
-    document nor any file in ``img/`` changes.
+    document nor any file in ``img/`` changes. A diagram whose PNG conversion fails is
+    linked as SVG instead, so the document always shows every picture.
 
     Args:
         path: The Markdown document.
@@ -80,7 +81,8 @@ def render_file(
         image_format: What the document links: one of :data:`IMAGE_FORMATS`.
 
     Returns:
-        The written image paths, in document order (empty if there are no diagrams).
+        The linked image paths, in document order (empty if there are no diagrams); a
+        ``.svg`` among them for ``image_format="png"`` means its PNG conversion failed.
 
     Raises:
         RenderError: If D2 cannot be run, a diagram does not compile, or a referenced
@@ -104,27 +106,36 @@ def render_file(
             _render(source, Path(tmp), n, path, [*d2, *_theme_args(dark), *_layout_args(source)])
             for n, source in enumerate(sources, start=1)
         ]
+        # A diagram whose PNG fails keeps its SVG: a document never ends up without pictures.
+        formats = [image_format] * len(rendered)
         if image_format == "png":
-            for svg in rendered:
-                svg.with_suffix(".png").write_bytes(svg_to_png(svg.read_text(encoding="utf-8")))
+            for index, svg in enumerate(rendered):
+                try:
+                    png = svg_to_png(svg.read_text(encoding="utf-8"))
+                except RenderError:
+                    formats[index] = "svg"
+                    continue
+                svg.with_suffix(".png").write_bytes(png)
         image_dir.mkdir(parents=True, exist_ok=True)
-        for name, source, svg in zip(names, sources, rendered, strict=True):
+        for name, source, svg, linked in zip(names, sources, rendered, formats, strict=True):
             write_document(image_dir / f"{name}.d2", source.rstrip("\n") + "\n", overwrite=True)
-            for suffix in (".svg", ".png") if image_format == "png" else (".svg",):
+            for suffix in (".svg", ".png") if linked == "png" else (".svg",):
                 target = image_dir / f"{name}{suffix}"
                 os.replace(svg.with_suffix(suffix), target)
                 # d2 writes its output private (0600); images are for everyone.
                 target.chmod(IMAGE_MODE)
-            if image_format == "svg":
+            if linked == "svg":
                 (image_dir / f"{name}.png").unlink(missing_ok=True)
     _remove_stale_files(image_dir, stem, set(names))
     _remove_renamed_files(image_dir, path, items, set(names))
 
-    for item, name in zip(reversed(items), reversed(names), strict=True):
+    for item, name, linked in zip(
+        reversed(items), reversed(names), reversed(formats), strict=True
+    ):
         alt = _nearest_heading(text, item.start()) or "Diagram"
-        text = text[: item.start()] + _embed(alt, name, image_format) + text[item.end() :]
+        text = text[: item.start()] + _embed(alt, name, linked) + text[item.end() :]
     write_document(path, text, overwrite=True)
-    return [image_dir / f"{name}.{image_format}" for name in names]
+    return [image_dir / f"{name}.{fmt}" for name, fmt in zip(names, formats, strict=True)]
 
 
 def diagram_warnings(source: str) -> list[str]:

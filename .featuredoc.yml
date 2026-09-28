@@ -51,24 +51,27 @@ diagram_format: mermaid
 # `models` selects the design models (sections) of a document; default: all of them.
 extra_designs:
   functional_design:
-    # <slug>-functional-design.md: user flows, edge cases, business rules,
-    # permissions and roles.
+    # <slug>-functional-design.md, for stakeholders: user stories, use case diagram, per
+    # story a use case, screen design (screenshot or wireframe) and evil user stories;
+    # user flows.
     enabled: false
     template: functional_design.md.j2
-    models: []
+    models: [user_stories, use_case_diagram, use_cases, screen_designs, evil_user_stories, user_flows]
   technical_design:
-    # <slug>-technical-design.md: database schema, API contracts, error handling,
-    # performance and security considerations.
+    # <slug>-technical-design.md, for developers: database schema, API contracts,
+    # business rules, permissions, edge cases, error handling, performance and security,
+    # threat model (Microsoft Threat Modeling Tool style), dependency graph.
     enabled: false
     template: technical_design.md.j2
-    models: [dependency_graph]
+    models: [business_rules, permissions, edge_cases, threat_model, dependency_graph]
   domain_design:
     # <slug>-domain-design.md: domain model and event storming.
     enabled: false
     template: domain_design.md.j2
     models: [domain_model, event_storming]
   security_design:
-    # <slug>-security-design.md: threat model (STRIDE) and who may do what.
+    # <slug>-security-design.md: threat model (Threat Modeling Tool style) and who may
+    # do what.
     enabled: false
     template: security_design.md.j2
     models: [threat_model, permissions]
@@ -80,5 +83,11 @@ adr:
 
 # Explainers written by the explaining-code agent skill ("explain this project").
 # format: arc42 (the 12 arc42 sections, default) or c4 (compact zoom-in).
+# documents: single (one explainer, default), split (functional + technical, "FO/TO"),
+# functional (only the FO) or technical (only the TO). The request overrides it.
+# models: what the agent may draw (default: all; each only when the code has it). The
+# request can narrow it too ("without screens", "only the threat model").
 explain:
   format: arc42
+  documents: single
+  models: [c4_context, c4_container, c4_component, c4_code, c4_deployment, c4_dynamic, sequence, state_machine, er_diagram, domain_model, class_diagram, package_diagram, activity, user_journey, use_case, event_flow, context_map, data_flow, algorithm, user_stories, screens, evil_user_stories, threat_model]

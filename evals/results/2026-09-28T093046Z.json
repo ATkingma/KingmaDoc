@@ -1,0 +1,61 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 192,
+        "total_cost_usd": 1.2258382,
+        "num_turns": 20,
+        "tokens": {
+          "input_tokens": 24,
+          "cache_creation_input_tokens": 80089,
+          "cache_read_input_tokens": 594123,
+          "output_tokens": 20548
+        },
+        "reply": "ts, a sequence diagram of placing an order, the order's states, the database tables, and a threat model.\n\nThree things I couldn't work out from the code:\n1. `shop/settings.py` sets no `MIDDLEWARE`, so login and CSRF checks can't run and `request.user` wouldn't exist. Is a different settings file used in practice?\n2. What calls these endpoints \u2014 a front end or app outside this repo?\n3. Is paying meant to go through a real payment provider later, or is changing the status the whole payment step?\n\nShould VS Code open explainers directly as a preview, with the pictures? Otherwise use Ctrl+Shift+V."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "8 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "3 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "27 change(s), all allowed"
+        }
+      ],
+      "passed": 7,
+      "total": 7
+    }
+  ]
+}

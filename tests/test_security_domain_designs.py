@@ -53,16 +53,17 @@ def test_disabled_by_default(tmp_path: Path) -> None:
 
 
 def test_security_design_models(tmp_path: Path) -> None:
-    """Threat model (STRIDE, with the inferred elements) and permissions matrix."""
+    """Threat model (Threat Modeling Tool style, inferred elements) and permissions matrix."""
     assert _plan(tmp_path, "extra_designs:\n  security_design: {enabled: true}\n").exit_code == 0
 
     doc = (tmp_path / FEATURES / "add-login-security-design.md").read_text(encoding="utf-8")
     assert doc.startswith("# Security design: Add login.\n")
-    assert doc.index("## Threat model (STRIDE)") < doc.index("## Permissions: who may do what")
-    for threat in ("Spoofing", "Tampering", "Repudiation", "Information disclosure",
-                   "Denial of service", "Elevation of privilege"):
-        assert threat in doc
-    assert "`api`" in doc and "PostgreSQL" in doc  # inferred elements
+    assert doc.index("## Threat model") < doc.index("## Permissions: who may do what")
+    # Generated from Microsoft's knowledge base for the inferred data flow diagram.
+    assert "| Spoofing the User External Entity | Spoofing |" in doc
+    assert "| Potential SQL Injection Vulnerability for PostgreSQL | Tampering |" in doc
+    assert "SDL TM Knowledge Base (Core)" in doc
+    assert "| api | Web Application (Process) | Internet Boundary |" in doc  # inferred elements
 
 
 @pytest.mark.parametrize(("fmt", "fence"), [("mermaid", "mermaid"), ("plantuml", "plantuml"),

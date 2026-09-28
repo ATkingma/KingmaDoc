@@ -109,12 +109,8 @@ classes: {
   boundary: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; stroke-dash: 4; font-size: 15}}
   node: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; font-size: 15}}
 }
-title: "[System Context] Webshop" {
+title: "[System Context] Webshop" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 direction: down
-  shape: text
-  near: top-center
-  style: {font-size: 24; bold: true}
-}
 vars: {
   d2-legend: {
     p: Person {class: person}

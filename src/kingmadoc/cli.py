@@ -1,4 +1,7 @@
-"""Command-line interface: ``kingmadoc init | analyze | plan | verify | adr | render``."""
+"""Command-line interface: ``kingmadoc init | analyze | plan | verify | adr | render``.
+
+Also ``threats``, ``explain`` and ``skills``; KingmaDoc errors become ``ClickException``.
+"""
 
 from __future__ import annotations
 
@@ -9,16 +12,29 @@ from datetime import date, datetime
 from pathlib import Path
 
 import click
+import yaml
 
 from kingmadoc.about import version_text
 from kingmadoc.adr import STATUSES, adr_path, render_adr
-from kingmadoc.config import CONFIG_FILENAME, MAX_FILES_LIMIT, default_config_yaml, load_config
+from kingmadoc.config import (
+    CONFIG_FILENAME,
+    EXPLAIN_DOCUMENTS,
+    EXPLAIN_FORMATS,
+    EXPLAIN_MODELS,
+    MAX_FILES_LIMIT,
+    PLAN_DOCUMENTS,
+    default_config_yaml,
+    load_config,
+    select_documents,
+    select_models,
+)
 from kingmadoc.d2_binary import ensure_d2
 from kingmadoc.documents import write_document, write_documents
 from kingmadoc.exceptions import KingmaDocError
 from kingmadoc.explain import (
     EXPLAIN_DIR,
     EXPLAINER_FILE,
+    check_explainer,
     explainer_folder,
     explainer_folders,
     freshness,
@@ -29,7 +45,7 @@ from kingmadoc.explain import (
 )
 from kingmadoc.facts.branch import branch_changes
 from kingmadoc.facts.collect import FACT_SECTIONS, collect_facts, facts_markdown, facts_to_dict
-from kingmadoc.git import short_head
+from kingmadoc.git import run_git, short_head
 from kingmadoc.plan.analyzer import (
     TEST_DIR_NAMES,
     CodebaseReport,
@@ -50,7 +66,12 @@ from kingmadoc.plan.generator import (
 )
 from kingmadoc.plandoc import check_plan, generated_at, parse_plan, set_status
 from kingmadoc.render import IMAGE_FORMATS, diagram_warnings, render_file
-from kingmadoc.skills import AGENT_DIRS, install_skills
+from kingmadoc.scaffold import REFERENCE_FILES, KeyFacts, scaffold
+from kingmadoc.screenshots import DEFAULT_SIZE, DEFAULT_WAIT_MS, capture, parse_screens
+from kingmadoc.skills import AGENT_DIRS, bundled_skill, install_skills
+from kingmadoc.threats.knowledge_base import load_knowledge_base
+from kingmadoc.threats.model import generate_threats, parse_threat_model
+from kingmadoc.threats.report import DIAGRAM_RENDERERS, kind, render_diagram, render_report
 from kingmadoc.verify.changes import detect_changes
 from kingmadoc.verify.commands import MARKER_FILES, detect_commands, run_check
 from kingmadoc.verify.deviations import (
@@ -131,6 +152,20 @@ def init(root: Path, force: bool) -> None:
 )
 @click.option("--stdout", "to_stdout", is_flag=True, help="Print the doc instead of writing it.")
 @click.option("--force", is_flag=True, help="Overwrite an existing output file.")
+@click.option(
+    "--documents",
+    "document_set",
+    type=click.Choice(list(PLAN_DOCUMENTS)),
+    default=None,
+    help="single: only the plan; split: plus the functional (FO) and technical (TO) "
+    "design; functional / technical: plus just that one (default: the config).",
+)
+@click.option(
+    "--models",
+    default=None,
+    help="Only these design models, comma-separated (e.g. user_stories,threat_model); "
+    "switches on the extra docs that have them and off the others.",
+)
 def plan(
     description: str,
     root: Path,
@@ -139,6 +174,8 @@ def plan(
     no_input: bool,
     to_stdout: bool,
     force: bool,
+    document_set: str | None,
+    models: str | None,
 ) -> None:
     """Analyze the codebase and write a plan doc for the feature in DESCRIPTION.
 
@@ -149,6 +186,11 @@ def plan(
     """
     try:
         config = load_config(root, config_path)
+        if document_set is not None:
+            config = select_documents(config, document_set)
+        if models is not None:
+            chosen = tuple(m.strip() for m in models.split(",") if m.strip())
+            config = select_models(config, chosen)
         report = analyze(root, config.analyzer, with_dependencies=needs_dependencies(config))
         _warn_if_truncated(report)
 
@@ -462,41 +504,129 @@ def render_command(
     """
     try:
         d2 = ensure_d2(lambda message: click.echo(message, err=True))
-        hinted = False
-        for document in documents:
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    hinted = False
+    failed: list[str] = []
+    # One broken diagram must not cost the other documents their pictures: every
+    # document is rendered, and the failures are reported together at the end.
+    for document in documents:
+        try:
             images = render_file(document, d2, dark=not light, image_format=image_format)
             index = index_path(document)
             if index is not None:
                 _write_explain_index(index.parent)
-                project = index.parent.parent.parent
-                if images and not hinted and not preview_enabled(project):
-                    hinted = True
-                    click.echo(
-                        "VS Code shows the pictures in the preview: open the file and press "
-                        "Ctrl+Shift+V (macOS: Cmd+Shift+V), or run `kingmadoc skills install "
-                        "--vscode-user` to always open explainers as a preview.",
-                        err=True,
-                    )
-            if not images:
-                click.echo(f"No D2 diagrams in {document}", err=True)
-            if verbose:
-                for image in images:
-                    click.echo(image)
-            elif images:
-                first, last = (i.relative_to(document.parent).as_posix()
-                               for i in (images[0], images[-1]))
-                span = first if len(images) == 1 else f"{first} … {last}"
-                noun = "image" if len(images) == 1 else "images"
-                click.echo(f"{document}: {len(images)} {noun} ({span})")
+        except KingmaDocError as exc:
+            failed.append(str(exc))
+            click.echo(f"Error: {exc}", err=True)
+            continue
+        if index is not None:
+            project = index.parent.parent.parent
+            if images and not hinted and not preview_enabled(project):
+                hinted = True
+                click.echo(
+                    "VS Code shows the pictures in the preview: open the file and press "
+                    "Ctrl+Shift+V (macOS: Cmd+Shift+V), or run `kingmadoc skills install "
+                    "--vscode-user` to always open explainers as a preview.",
+                    err=True,
+                )
+        if not images:
+            click.echo(f"{document}: no D2 diagrams to render", err=True)
+        if verbose:
             for image in images:
-                source = image.with_suffix(".d2")  # next to the .png and .svg
-                for warning in diagram_warnings(source.read_text(encoding="utf-8")):
-                    dark_mode = not light and image_format == "svg"
-                    if not dark_mode and warning.endswith("(dark mode)"):
-                        continue
-                    click.echo(f"{source}: {warning}", err=True)
+                click.echo(image)
+        elif images:
+            first, last = (i.relative_to(document.parent).as_posix()
+                           for i in (images[0], images[-1]))
+            span = first if len(images) == 1 else f"{first} … {last}"
+            noun = "image" if len(images) == 1 else "images"
+            click.echo(f"{document}: {len(images)} {noun} ({span})")
+        fallback = [i for i in images if image_format == "png" and i.suffix == ".svg"]
+        if fallback:
+            click.echo(f"{document}: PNG conversion failed for {len(fallback)} "
+                       "diagram(s); linked the SVG instead", err=True)
+        for image in images:
+            source = image.with_suffix(".d2")  # next to the .png and .svg
+            for warning in diagram_warnings(source.read_text(encoding="utf-8")):
+                dark_mode = not light and image_format == "svg"
+                if not dark_mode and warning.endswith("(dark mode)"):
+                    continue
+                click.echo(f"{source}: {warning}", err=True)
+    if failed:
+        noun = "document" if len(failed) == 1 else "documents"
+        raise click.ClickException(
+            f"{len(failed)} {noun} not rendered; fix the diagram(s) named above and run "
+            "kingmadoc render again (the other documents are done)"
+        )
+
+
+@cli.command("screenshots")
+@click.argument("base_url")
+@click.argument("screens", nargs=-1, required=True)
+@click.option("-o", "--out", "out_dir", type=click.Path(file_okay=False, path_type=Path),
+              default=Path("img"), show_default=True, help="Folder for the PNG files.")
+@click.option("--size", default=f"{DEFAULT_SIZE[0]}x{DEFAULT_SIZE[1]}", show_default=True,
+              help="Viewport, WIDTHxHEIGHT.")
+@click.option("--wait", "wait_ms", type=click.IntRange(0, 60_000), default=DEFAULT_WAIT_MS,
+              show_default=True, help="Milliseconds to let each page settle.")
+def screenshots_command(
+    base_url: str, screens: tuple[str, ...], out_dir: Path, size: str, wait_ms: int
+) -> None:
+    """Capture screens of a running app: SCREENS are ROUTE=NAME (e.g. /contact=screen-us-1).
+
+    One browser for all screens with the optional Playwright package, else npx playwright.
+    Prints one path per image.
+    """
+    try:
+        width, _, height = size.lower().partition("x")
+        viewport = (int(width), int(height))
+    except ValueError as exc:
+        raise click.BadParameter("use WIDTHxHEIGHT, e.g. 1280x800", param_hint="--size") from exc
+    try:
+        paths = capture(base_url, parse_screens(screens), out_dir, viewport, wait_ms)
     except KingmaDocError as exc:
         raise click.ClickException(str(exc)) from exc
+    for path in paths:
+        click.echo(path)
+
+
+@cli.command("threats")
+@click.argument("model_file", required=False, type=click.Path(exists=True, dir_okay=False,
+                                                              path_type=Path))
+@click.option("--types", "list_types", is_flag=True, help="List the element and flow types.")
+@click.option("--heading", default="###", show_default=True,
+              help="Markdown level of the Interaction headings.")
+@click.option("--format", "diagram_format", type=click.Choice(sorted(DIAGRAM_RENDERERS)),
+              default="d2", show_default=True, help="Diagram language of the data flow diagram.")
+def threats_command(
+    model_file: Path | None, list_types: bool, heading: str, diagram_format: str
+) -> None:
+    """Generate a threat model like the Microsoft Threat Modeling Tool.
+
+    MODEL_FILE (YAML) lists `elements` (name, type), `boundaries` (name, type, contains)
+    and `flows` (name, from, to, type). Prints the data flow diagram (D2) and the report:
+    the threats Microsoft's SDL TM Knowledge Base generates for every flow, per
+    interaction, with state, priority and justification columns to fill in.
+    """
+    kb = load_knowledge_base()
+    if list_types:
+        for type_id, element in kb.elements.items():
+            ancestors = kb.ancestors(type_id)
+            generic = next((g for g in ("GE.TB.L", "GE.TB.B", "GE.DF") if g in ancestors), None)
+            group = {"GE.DF": "Data Flow", "GE.TB.L": "Trust Boundary",
+                     "GE.TB.B": "Trust Boundary"}.get(generic or "") or kind(kb, type_id)
+            click.echo(f"{group}: {element.name} ({type_id})")
+        return
+    if model_file is None:
+        raise click.UsageError("Give a MODEL_FILE, or --types.")
+    try:
+        data = yaml.safe_load(model_file.read_text(encoding="utf-8")) or {}
+        model = parse_threat_model(data, kb)
+        threats = generate_threats(model, kb)
+    except (OSError, yaml.YAMLError, KingmaDocError, AttributeError) as exc:
+        raise click.ClickException(f"{model_file}: {exc}") from exc
+    click.echo(render_diagram(model, kb, diagram_format) + "\n\n"
+               + render_report(model, threats, kb, heading))
 
 
 @cli.group("explain")
@@ -521,6 +651,81 @@ def explain_new(name: str, root: Path) -> None:
     if not created:
         click.echo(f"Reusing {folder.name} (explained before).", err=True)
     click.echo(folder / EXPLAINER_FILE)
+
+
+@explain_group.command("scaffold")
+@click.argument("name")
+@ROOT_OPTION
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=None,
+    help=f"Config file (default: <root>/{CONFIG_FILENAME}).",
+)
+@click.option("--format", "fmt", type=click.Choice(EXPLAIN_FORMATS), default=None,
+              help="arc42 or c4 (default: explain.format).")
+@click.option("--documents", type=click.Choice(EXPLAIN_DOCUMENTS), default=None,
+              help="single, split (FO + TO), functional or technical "
+              "(default: explain.documents).")
+@click.option("--models", default=None,
+              help="Models that may be drawn, comma-separated (default: explain.models).")
+@click.option("--base", default=None, help="The subject is the current branch compared with BASE.")
+@click.option("--scope", default=None,
+              help='Scope row, e.g. "project" or "part `src/api`" '
+              "(default: feature, or the branch).")
+@click.option("--force", is_flag=True, help="Overwrite documents that already exist.")
+def explain_scaffold(
+    name: str, root: Path, config_path: Path | None, fmt: str | None, documents: str | None,
+    models: str | None, base: str | None, scope: str | None, force: bool,
+) -> None:
+    """Write the empty explainer for NAME and print its paths, to fill in.
+
+    The documents follow the skill's reference formats for the chosen format, documents
+    and models, with the key facts (stack, entry points, commit, date) and the figure
+    numbers already filled in. Existing documents are kept unless --force.
+    """
+    try:
+        config = load_config(root, config_path)
+        chosen = (tuple(m.strip() for m in models.split(",") if m.strip())
+                  if models is not None else config.explain.models)
+        unknown = [m for m in chosen if m not in EXPLAIN_MODELS]
+        if unknown:
+            raise click.UsageError(
+                f"Unknown model {unknown[0]!r}; supported: {', '.join(EXPLAIN_MODELS)}")
+        report = analyze(root, config.analyzer)
+        _warn_if_truncated(report)
+        skill = bundled_skill("explaining-code")
+        meta = skill.read_text(encoding="utf-8").split("---", 2)[1]
+        version = str(yaml.safe_load(meta).get("version", ""))
+        references = {n: (skill.parent / "reference" / n).read_text(encoding="utf-8")
+                      for n in REFERENCE_FILES}
+        branch = (run_git(root, "rev-parse", "--abbrev-ref", "HEAD") or "HEAD").strip()
+        facts = KeyFacts(
+            name=name,
+            scope=scope or (f"branch `{branch}` vs `{base}`" if base else "feature"),
+            stack=", ".join(report.detected_stack),
+            entry_points=", ".join(f"`{p}`" for p in report.entry_points[:6]),
+            commit=short_head(root) or "",
+            date=date.today().isoformat(),
+            version=version,
+        )
+        files = scaffold(references, facts, fmt or config.explain.format,
+                         documents or config.explain.documents, chosen, branch=base is not None)
+        folder, _created = explainer_folder(root, name)
+        existing = [n for n in files if (folder / n).exists()]
+        if existing and not force:
+            raise click.ClickException(
+                f"{folder} already has {', '.join(existing)}: edit it (run `kingmadoc explain "
+                "status` first), or use --force to start over")
+        for file_name, text in files.items():
+            (folder / file_name).write_text(text, encoding="utf-8")
+        _write_explain_index(folder.parent)
+    except KingmaDocError as exc:
+        raise click.ClickException(str(exc)) from exc
+    for file_name in files:
+        click.echo(folder / file_name)
 
 
 @explain_group.command("facts")
@@ -563,6 +768,28 @@ def explain_facts(
         click.echo(json.dumps(facts_to_dict(facts), indent=2, ensure_ascii=False))
     else:
         click.echo(facts_markdown(facts, only), nl=False)
+
+
+@explain_group.command("check")
+@click.argument("folders", nargs=-1, required=True,
+                type=click.Path(exists=True, file_okay=False, path_type=Path))
+def explain_check(folders: tuple[Path, ...]) -> None:
+    """Fail unless each explainer FOLDER is finished: filled in, rendered, pictures shown.
+
+    Run it last: an explainer is only done when this passes.
+    """
+    failed = False
+    for folder in folders:
+        problems = check_explainer(folder)
+        for problem in problems:
+            click.echo(f"{folder}/{problem}", err=True)
+        if problems:
+            failed = True
+        else:
+            images = len(list((folder / "img").glob("*.png")))
+            click.echo(f"{folder}: finished ({images} pictures)")
+    if failed:
+        raise SystemExit(1)
 
 
 @explain_group.command("status")

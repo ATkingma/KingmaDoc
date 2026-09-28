@@ -48,7 +48,7 @@ def test_frontmatter() -> None:
 
     assert meta["name"] == "kingmadoc"
     assert re.fullmatch(r"[a-z0-9-]{1,64}", meta["name"])
-    assert meta["version"] == "1.1.0"
+    assert meta["version"] == "1.2.0"
     assert meta["allowed-tools"] == ["Read", "Write", "Glob", "Grep", "Bash"]
     assert 0 < len(meta["description"]) <= 1024
     assert "Use when" in meta["description"]

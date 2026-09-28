@@ -14,6 +14,7 @@ checks:
         - "## 8. Cross-cutting concepts"
         - "**Based on**"
   - pictures_only: docs/explain/0001-*/*.md
+  - explain_check: docs/explain/0001-*
   - max_questions:
       files: docs/explain/0001-*/README.md
       max: 3

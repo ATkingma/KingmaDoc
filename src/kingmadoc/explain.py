@@ -276,3 +276,55 @@ def _folders(directory: Path) -> list[tuple[int, Path]]:
     found = [(int(m.group(1)), p) for p in directory.iterdir()
              if p.is_dir() and (m := _FOLDER.fullmatch(p.name))]
     return sorted(found)
+
+
+# A placeholder the scaffold or a reference format left, e.g. "<one line>"; HTML tags
+# and the render comment are not placeholders.
+_PLACEHOLDER = re.compile(
+    r"<(?!!--|/?(?:details|summary|br|code|img|sub|sup|kbd|a)\b|https?:|mailto:)"
+    r"(?![^<>\n]*@[^<>\n]*>)[^<>\n]{2,}>"
+)
+_IMAGE_LINK = re.compile(r"!\[[^\]]*\]\(([^)\s]+)\)")
+EXPLAINER_DOCUMENTS = ("README.md", "functional.md", "technical.md")
+
+
+def check_explainer(folder: Path) -> list[str]:
+    """Everything that keeps an explainer from being finished; empty when it is.
+
+    An explainer is finished when every document is filled in (no ``<placeholder>``
+    left), every diagram is rendered (no D2 source), every image it links exists, and
+    each document with figures shows at least one picture. The index and a split
+    cover page need no picture.
+
+    Args:
+        folder: ``docs/explain/<NNNN>-<slug>``.
+
+    Returns:
+        One message per problem, with the file it is in.
+    """
+    documents = [folder / name for name in EXPLAINER_DOCUMENTS if (folder / name).is_file()]
+    if not documents:
+        return [f"{folder}: no explainer documents (README.md) yet"]
+    problems = []
+    for document in documents:
+        text = document.read_text(encoding="utf-8", errors="replace")
+        prose = _FENCE.sub("", text)
+        name = document.name
+        if not prose.strip():
+            problems.append(f"{name}: empty")
+            continue
+        if "```d2" in text:
+            problems.append(f"{name}: D2 source not rendered (run kingmadoc render)")
+        # Code spans may hold generics like `List<Order>`; they are never placeholders.
+        left = sorted(set(_PLACEHOLDER.findall(_CODE_SPAN.sub("", prose))))
+        if left:
+            shown = ", ".join(left[:3]) + (" …" if len(left) > 3 else "")
+            problems.append(f"{name}: {len(left)} placeholders not filled in: {shown}")
+        links = [t for t in _IMAGE_LINK.findall(text) if "://" not in t]
+        missing = [t for t in links if not (document.parent / t).is_file()]
+        if missing:
+            problems.append(f"{name}: missing images: {', '.join(missing)}")
+        figures = "**Figure " in text
+        if figures and not links:
+            problems.append(f"{name}: has figure captions but shows no pictures")
+    return problems
