@@ -126,7 +126,7 @@ The classes this feature touches and their direct collaborators.
 
 Omit "**Answered while planning**" when nothing was answered.
 
-- Every diagram is a ` ```mermaid ` block with its PNG below it (see
+- Every diagram is its PNG, with the Mermaid source in a `.mmd` file (see
   [Rendering](diagram-rules.md#rendering)); a disabled diagram keeps its section with
   _Disabled in `.featuredoc.yml` (`diagrams`)._
 - **Generated** is the real system time (`date -Iminutes`), never a guess.

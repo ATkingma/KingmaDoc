@@ -3,8 +3,8 @@
 - **Always Mermaid** (ignore `diagram_format`; PlantUML/D2 are CLI-only). Mermaid is
   the source of truth; every diagram is also rendered to a PNG and embedded in the
   Markdown (see [Rendering](#rendering)).
-- **Always fenced**: every diagram is a complete ` ```mermaid ` … ` ``` `
-  block, with nothing else inside it.
+- **Always complete**: every diagram is a complete Mermaid diagram (a ` ```mermaid `
+  block, or its `.mmd` file once rendered), with nothing else in it.
 - **Always labeled**:
   - C4 and `sequenceDiagram`: the first line after the diagram type is `title <text>`
     (`System Context: <project>`, `Containers: <project>`);
@@ -62,7 +62,7 @@ this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
 
 `diagrams_png` in `.featuredoc.yml` [`embed`]: `embed` (below), `file` (the PNG goes to
 `<output_dir>/img/<slug>-<diagram>.png`, linked with `![<title>](img/<slug>-<diagram>.png)`)
-or `off` (no image, only the Mermaid block).
+or `off` (no image; the ` ```mermaid ` block stays in the document).
 
 - **Mode comes only from `.featuredoc.yml`.** No file or no `diagrams_png` key → `embed`.
   Never infer the mode from existing files (an `img/` folder, how an earlier doc did it).
@@ -70,23 +70,29 @@ or `off` (no image, only the Mermaid block).
   `![...](data:image/png;base64,`. A relative path such as `](img/` is an error: embed it and
   delete the loose PNG.
 - Embed the PNG with a script (read file → base64 → replace the line), never by hand.
+- **No Mermaid source in the document** once its PNG is there: no ` ```mermaid ` block
+  and no `<details>` with the source. The source lives in
+  `<output_dir>/diagrams/<slug>-<diagram>.mmd`.
 
-1. Write each ` ```mermaid ` block to a temporary `.mmd` file outside the repo and run:
-   `npx -y @mermaid-js/mermaid-cli -i <tmp>.mmd -o <tmp>.png -s 2 -b white -t default -p <puppeteer.json>`
+1. Write each diagram to `<output_dir>/diagrams/<slug>-<diagram>.mmd` (`<diagram>`:
+   `c4-context`, `c4-container`, `class`, `sequence-current`, `sequence-new`) and run:
+   `npx -y @mermaid-js/mermaid-cli -i <that>.mmd -o <tmp>.png -s 2 -b white -t default -p <puppeteer.json>`
    (`-t default`: Mermaid's normal theme; newer versions otherwise colour every shape).
 2. Set `PUPPETEER_SKIP_DOWNLOAD=true`, and let `puppeteer.json` point at an installed
    browser, so no Chromium is downloaded:
    `{"executablePath": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"}`
    (or Chrome). Ask the user once before the first npm download: package
    `@mermaid-js/mermaid-cli`, from the npm registry, about 50 MB with dependencies.
-3. Directly below the block, after one empty line:
+3. In the document, in place of the block, two lines:
+   `<!-- kingmadoc:diagram diagrams/<slug>-<diagram>.mmd -->` and
    `![<diagram title>](data:image/png;base64,<base64 of the PNG>)`.
-   No separate image files go into the repo.
-4. The ` ```mermaid ` block always stays (GitHub shows no data URIs; the block is the
-   source for the next render). On a new render, replace only the image line below
-   the same block.
+   No separate image files go into the repo (`file` mode aside).
+4. To change a diagram, edit its `.mmd` file and render again; replace only the image
+   line below its comment. (GitHub shows no data-URI images; there the `.mmd` file is
+   the readable version.)
 5. Look at every PNG after rendering (Read): not empty, no labels cut off at the edge,
    no unexpected extra participants. If needed, fix the Mermaid (split or shorten a
    label) and render again.
-6. If rendering fails, write `_TODO: PNG not generated: <reason>._` below the block
-   (in `language`) and carry on; the document stays valid.
+6. If rendering fails, keep the ` ```mermaid ` block in the document, write
+   `_TODO: PNG not generated: <reason>._` below it (in `language`) and carry on; the
+   document stays valid.
