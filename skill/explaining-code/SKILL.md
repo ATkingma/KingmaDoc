@@ -41,7 +41,8 @@ Rules:
   stops it; never a proposal.
 - **Picture, caption, table. No stories.** Every figure has a numbered caption
   (`**Figure 3.** …`, no gaps) and at most three sentences; a table decodes it. Never
-  describe a diagram in prose, never paste code as an image, no filler.
+  describe a diagram in prose, never paste code as an image, no filler. Where a code
+  snippet would explain a class or signature, draw a small UML class diagram instead.
 - **Zoom in step by step,** one small diagram per level (at most about fifteen elements).
 - **Every figure follows its model's notation** ([reference/c4-model.md](reference/c4-model.md),
   [reference/models.md](reference/models.md)) and passes its checklist: a title, a

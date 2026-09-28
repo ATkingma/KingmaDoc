@@ -146,7 +146,8 @@ the diagrams, but never beyond what the user said or the code shows.
   vague REQ or invented ones. Under each: `Verified by: <test, test case or command>`
   (or `_TODO_`).
 - **Planned changes**: per `files_expected` path what changes and why (the "how" of
-  answer 4), one to three lines, no code blocks. Risks and assumptions may add code
+  answer 4), one to three lines, no code blocks; where a code snippet would help
+  (a new method, a changed signature), draw a small `classDiagram` with just those members. Risks and assumptions may add code
   findings marked _(inferred)_.
 - **Generated**: the real system time (`date -Iminutes`).
 - External systems: those from answer 3, plus systems the code demonstrably uses
@@ -374,7 +375,8 @@ files_expected: [<existing files or folders the user said will change>]
 ## Planned changes
 
 - `<path from files_expected>`: <what changes and why, one to three lines, no code
-  blocks; the "how" from answer 4, or> _TODO: what changes here and why._
+  blocks (a small classDiagram with the changed members instead of a snippet); the "how"
+  from answer 4, or> _TODO: what changes here and why._
 
 ## Requirements
 

@@ -44,7 +44,8 @@ files_expected: [<existing files or folders the user said will change>]
 ## Planned changes
 
 - `<path from files_expected>`: <what changes and why, one to three lines, no code
-  blocks; the "how" from answer 4, or> _TODO: what changes here and why._
+  blocks (a small classDiagram with the changed members instead of a snippet); the "how"
+  from answer 4, or> _TODO: what changes here and why._
 
 ## Requirements
 
