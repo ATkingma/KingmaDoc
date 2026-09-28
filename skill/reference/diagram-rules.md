@@ -22,6 +22,9 @@
   `System_Boundary` alias ends in `_boundary` and is never used in `Rel`.
 - **Escaping**: inside quoted labels write `"` as `#quot;`. In titles, leave quotes as
   they are and drop `#` and `;` (they end a C4 title). Put everything on one line.
+- **Colour**: the normal Mermaid theme. No `style`, `classDef` or `%%{init}%%` colours in
+  UML (class, sequence) diagrams; colour only to make one thing stand out, such as the
+  changed containers below.
 - **Short labels**: about 50 characters at most; split a long message in two.
 - **Sequence aliases**: never `x`, `X`, `o` or `O` (they clash with the `-x` and `-o`
   arrows); use abbreviations of two or more letters (`ct`, `svc`).
@@ -69,7 +72,8 @@ or `off` (no image, only the Mermaid block).
 - Embed the PNG with a script (read file → base64 → replace the line), never by hand.
 
 1. Write each ` ```mermaid ` block to a temporary `.mmd` file outside the repo and run:
-   `npx -y @mermaid-js/mermaid-cli -i <tmp>.mmd -o <tmp>.png -s 2 -b white -p <puppeteer.json>`
+   `npx -y @mermaid-js/mermaid-cli -i <tmp>.mmd -o <tmp>.png -s 2 -b white -t default -p <puppeteer.json>`
+   (`-t default`: Mermaid's normal theme; newer versions otherwise colour every shape).
 2. Set `PUPPETEER_SKIP_DOWNLOAD=true`, and let `puppeteer.json` point at an installed
    browser, so no Chromium is downloaded:
    `{"executablePath": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"}`
