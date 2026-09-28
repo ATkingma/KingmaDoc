@@ -225,7 +225,8 @@ check passed without running it.
 Write `<output_dir>/<slug>-verify.md` next to the plan in the
 [verify format](reference/formats.md#verify-doc-docsfeaturesslug-verifymd) (ask first if it exists). Set
 **Status** to `Matches plan`, `Deviations found`, or `Not verified` (when checks could
-not run). Show the user the path, the number of deviations, and any failing check.
+not run). Diagrams in the verify doc follow the same `diagrams_png` mode as the plan.
+Show the user the path, the number of deviations, and any failing check.
 
 ## Diagram rules
 

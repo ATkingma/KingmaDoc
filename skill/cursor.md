@@ -226,7 +226,8 @@ check passed without running it.
 Write `<output_dir>/<slug>-verify.md` next to the plan in the
 [verify format](#verify-doc-docsfeaturesslug-verifymd) (ask first if it exists). Set
 **Status** to `Matches plan`, `Deviations found`, or `Not verified` (when checks could
-not run). Show the user the path, the number of deviations, and any failing check.
+not run). Diagrams in the verify doc follow the same `diagrams_png` mode as the plan.
+Show the user the path, the number of deviations, and any failing check.
 
 ## Diagram rules
 
@@ -290,6 +291,13 @@ this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
 `diagrams_png` in `.featuredoc.yml` [`embed`]: `embed` (below), `file` (the PNG goes to
 `<output_dir>/img/<slug>-<diagram>.png`, linked with `![<title>](img/<slug>-<diagram>.png)`)
 or `off` (no image, only the Mermaid block).
+
+- **Mode comes only from `.featuredoc.yml`.** No file or no `diagrams_png` key → `embed`.
+  Never infer the mode from existing files (an `img/` folder, how an earlier doc did it).
+- **Check before you finish:** in `embed` mode every image line starts with
+  `![...](data:image/png;base64,`. A relative path such as `](img/` is an error: embed it and
+  delete the loose PNG.
+- Embed the PNG with a script (read file → base64 → replace the line), never by hand.
 
 1. Write each ` ```mermaid ` block to a temporary `.mmd` file outside the repo and run:
    `npx -y @mermaid-js/mermaid-cli -i <tmp>.mmd -o <tmp>.png -s 2 -b white -p <puppeteer.json>`

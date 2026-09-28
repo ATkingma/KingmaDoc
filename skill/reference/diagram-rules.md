@@ -61,6 +61,13 @@ this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
 `<output_dir>/img/<slug>-<diagram>.png`, linked with `![<title>](img/<slug>-<diagram>.png)`)
 or `off` (no image, only the Mermaid block).
 
+- **Mode comes only from `.featuredoc.yml`.** No file or no `diagrams_png` key → `embed`.
+  Never infer the mode from existing files (an `img/` folder, how an earlier doc did it).
+- **Check before you finish:** in `embed` mode every image line starts with
+  `![...](data:image/png;base64,`. A relative path such as `](img/` is an error: embed it and
+  delete the loose PNG.
+- Embed the PNG with a script (read file → base64 → replace the line), never by hand.
+
 1. Write each ` ```mermaid ` block to a temporary `.mmd` file outside the repo and run:
    `npx -y @mermaid-js/mermaid-cli -i <tmp>.mmd -o <tmp>.png -s 2 -b white -p <puppeteer.json>`
 2. Set `PUPPETEER_SKIP_DOWNLOAD=true`, and let `puppeteer.json` point at an installed
