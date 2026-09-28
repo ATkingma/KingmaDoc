@@ -35,6 +35,14 @@ files_expected: [{% for path in files_expected %}{{ path | tojson }}{{ ", " if n
 
 - _TODO: what it deliberately does not do._
 
+## Planned changes
+
+{% for path in files_expected %}
+- `{{ path }}`: _TODO: what changes here and why._
+{% else %}
+- _TODO: per changed file, what changes and why (one to three lines)._
+{% endfor %}
+
 ## Requirements
 
 {% if requirements %}
@@ -42,9 +50,11 @@ _Rewrite each in EARS: WHEN <trigger> THE SYSTEM SHALL <response>._
 
 {% for requirement in requirements %}
 - **REQ-{{ loop.index }}**: {{ requirement }}
+  Verified by: _TODO_
 {% endfor %}
 {% else %}
 - **REQ-1**: _TODO: WHEN <trigger> THE SYSTEM SHALL <response>._
+  Verified by: _TODO_
 {% endif %}
 
 ## Assumptions
@@ -69,6 +79,31 @@ Who uses the system and which external systems it depends on.
 The runnable units inside the system _(inferred from source directories)_.
 
 {{ c4_container or "_Disabled in `.featuredoc.yml` (`diagrams`)._" }}
+
+## Class diagram ({{ diagram_label }})
+
+The classes this feature touches and their direct collaborators.
+
+{% if class_diagram %}
+_TODO: class diagram; `<<changed>>` on existing classes that change, `<<new>>` on new ones._
+{% else %}
+_Disabled in `.featuredoc.yml` (`diagrams`)._
+{% endif %}
+
+## Sequence diagram ({{ diagram_label }})
+
+{% for part, todo in [("Current (inferred)", "today's flow from the entry point to the result, with a note where it goes wrong"), ("New", "the flow after the change")] %}
+### {{ part }}
+
+{% if sequence_diagram %}
+_TODO: sequence diagram of {{ todo }}._
+{% else %}
+_Disabled in `.featuredoc.yml` (`diagrams`)._
+{% endif %}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
 
 ## Open questions
 

@@ -35,7 +35,9 @@ DEFAULT_EXCLUDE_DIRS: tuple[str, ...] = (
 # Hard ceiling on analyzed files, so huge repos cannot make `plan` run away.
 MAX_FILES_LIMIT = 5000
 
-SUPPORTED_DIAGRAMS: frozenset[str] = frozenset({"c4_context", "c4_container"})
+SUPPORTED_DIAGRAMS: frozenset[str] = frozenset({"c4_context", "c4_container", "class", "sequence"})
+# How the skill embeds a rendered PNG below each Mermaid block (the CLI writes none).
+DIAGRAMS_PNG_MODES: tuple[str, ...] = ("embed", "file", "off")
 # Models each extra design document can contain, in document order. Must match the
 # renderers in kingmadoc.plan.models (checked when that module is imported).
 DOCUMENT_MODELS: Mapping[str, tuple[str, ...]] = MappingProxyType({
@@ -182,8 +184,10 @@ class FeatureDocConfig:
     max_questions: int = 5
     project: ProjectConfig = field(default_factory=ProjectConfig)
     analyzer: AnalyzerConfig = field(default_factory=AnalyzerConfig)
-    diagrams: tuple[str, ...] = ("c4_context", "c4_container")
+    diagrams: tuple[str, ...] = ("c4_context", "c4_container", "class", "sequence")
     diagram_format: str = "mermaid"
+    diagrams_png: str = "embed"
+    language: str = "en"
     extra_designs: ExtraDesignsConfig = field(default_factory=ExtraDesignsConfig)
     adr: AdrConfig = field(default_factory=AdrConfig)
     explain: ExplainConfig = field(default_factory=ExplainConfig)
@@ -333,6 +337,8 @@ def parse_config(data: Any) -> FeatureDocConfig:
             "analyzer",
             "diagrams",
             "diagram_format",
+            "diagrams_png",
+            "language",
             "extra_designs",
             "adr",
             "explain",
@@ -360,6 +366,12 @@ def parse_config(data: Any) -> FeatureDocConfig:
             f"Unknown diagram_format {diagram_format!r}; supported: {', '.join(DIAGRAM_FORMATS)}"
         )
 
+    diagrams_png = _get(data, "diagrams_png", str, defaults.diagrams_png)
+    if diagrams_png not in DIAGRAMS_PNG_MODES:
+        raise ConfigError(
+            f"Unknown diagrams_png {diagrams_png!r}; supported: {', '.join(DIAGRAMS_PNG_MODES)}"
+        )
+
     return FeatureDocConfig(
         output_dir=Path(_get(data, "output_dir", str, str(defaults.output_dir))),
         template=_get(data, "template", str, defaults.template),
@@ -368,6 +380,8 @@ def parse_config(data: Any) -> FeatureDocConfig:
         analyzer=_parse_analyzer(data.get("analyzer")),
         diagrams=diagrams,
         diagram_format=diagram_format,
+        diagrams_png=diagrams_png,
+        language=_get(data, "language", str, defaults.language),
         extra_designs=_parse_extra_designs(data.get("extra_designs")),
         adr=_parse_adr(data.get("adr")),
         explain=_parse_explain(data.get("explain")),
@@ -408,9 +422,17 @@ analyzer:
 diagrams:
   - c4_context
   - c4_container
+  - class
+  - sequence
 
 # Diagram language: mermaid, plantuml (C4-PlantUML) or d2.
 diagram_format: mermaid
+
+# PNG below each Mermaid block (skill): embed (data URI), file (img/) or off.
+diagrams_png: embed
+
+# Language of fixed sentences, notes and captions; headings stay English.
+language: en
 
 # Optional extra documents written by `plan` next to the plan doc. `template` is a
 # bundled name or an explicit path (e.g. ./my_design.md.j2); templates run sandboxed.

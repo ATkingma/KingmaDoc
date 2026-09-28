@@ -39,3 +39,10 @@ def test_max_files_above_limit_raises(tmp_path: Path) -> None:
     (tmp_path / ".featuredoc.yml").write_text("analyzer:\n  max_files: 5001\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="max_files"):
         load_config(tmp_path)
+
+
+def test_diagrams_png_and_language() -> None:
+    config = parse_config({"diagrams_png": "off", "language": "nl", "diagrams": ["class"]})
+    assert (config.diagrams_png, config.language, config.diagrams) == ("off", "nl", ("class",))
+    with pytest.raises(ConfigError, match="diagrams_png"):
+        parse_config({"diagrams_png": "inline"})

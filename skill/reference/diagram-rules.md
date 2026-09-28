@@ -1,11 +1,16 @@
 ## Diagram rules
 
-- **Always Mermaid** (ignore `diagram_format`; PlantUML/D2 are CLI-only). No images.
+- **Always Mermaid** (ignore `diagram_format`; PlantUML/D2 are CLI-only). Mermaid is
+  the source of truth; every diagram is also rendered to a PNG and embedded in the
+  Markdown (see [Rendering](#rendering)).
 - **Always fenced**: every diagram is a complete ` ```mermaid ` … ` ``` `
   block, with nothing else inside it.
 - **Always labeled**:
-  - the first line after the diagram type is `title <text>`
+  - C4 and `sequenceDiagram`: the first line after the diagram type is `title <text>`
     (`System Context: <project>`, `Containers: <project>`);
+  - `classDiagram`, `erDiagram` and `flowchart` have no `title` line; put frontmatter
+    before the diagram type instead: `---`, `title: "<text>"`, `---` (quote the
+    title: an unquoted `:` breaks the YAML and the render);
   - every element has a quoted label: `Person(alias, "Label", "Description")`,
     `System(alias, "Label", "Description")`, `System_Ext(…)`,
     `Container(alias, "Label", "Technology", "Description")`. Omit an unknown
@@ -17,9 +22,18 @@
   `System_Boundary` alias ends in `_boundary` and is never used in `Rel`.
 - **Escaping**: inside quoted labels write `"` as `#quot;`. In titles, leave quotes as
   they are and drop `#` and `;` (they end a C4 title). Put everything on one line.
+- **Short labels**: about 50 characters at most; split a long message in two.
+- **Sequence aliases**: never `x`, `X`, `o` or `O` (they clash with the `-x` and `-o`
+  arrows); use abbreviations of two or more letters (`ct`, `svc`).
 - **Inferred content**: anything derived from the code (containers, technologies)
   must be marked _(inferred)_ in the text around the diagram. Do not add systems nobody
   mentioned and the code does not show.
+- **External systems** (Context diagram): the systems from answer 3, plus systems the
+  code demonstrably uses; the latter are marked _(inferred)_ in the text below the
+  diagram.
+- **Changed containers**: in the Container diagram, mark each container the feature
+  touches with `UpdateElementStyle(<alias>, $bgColor="#d9822b")` or `(changes)` at the
+  end of its description.
 - **Container diagram layout**: the `System_Boundary` holds the containers; the `User`
   person sits outside it, with `Rel(user, <first container>, "Uses")`.
 
@@ -37,5 +51,31 @@ C4Context
     Rel(shop, sendgrid, "Sends email via")
 ```
 
-If a diagram is disabled in `.featuredoc.yml`, keep its section and replace the
-diagram with this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
+`diagrams` in `.featuredoc.yml` [`c4_context`, `c4_container`, `class`, `sequence`]
+selects the diagrams. If one is disabled, keep its section and replace the diagram with
+this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
+
+## Rendering
+
+`diagrams_png` in `.featuredoc.yml` [`embed`]: `embed` (below), `file` (the PNG goes to
+`<output_dir>/img/<slug>-<diagram>.png`, linked with `![<title>](img/<slug>-<diagram>.png)`)
+or `off` (no image, only the Mermaid block).
+
+1. Write each ` ```mermaid ` block to a temporary `.mmd` file outside the repo and run:
+   `npx -y @mermaid-js/mermaid-cli -i <tmp>.mmd -o <tmp>.png -s 2 -b white -p <puppeteer.json>`
+2. Set `PUPPETEER_SKIP_DOWNLOAD=true`, and let `puppeteer.json` point at an installed
+   browser, so no Chromium is downloaded:
+   `{"executablePath": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"}`
+   (or Chrome). Ask the user once before the first npm download: package
+   `@mermaid-js/mermaid-cli`, from the npm registry, about 50 MB with dependencies.
+3. Directly below the block, after one empty line:
+   `![<diagram title>](data:image/png;base64,<base64 of the PNG>)`.
+   No separate image files go into the repo.
+4. The ` ```mermaid ` block always stays (GitHub shows no data URIs; the block is the
+   source for the next render). On a new render, replace only the image line below
+   the same block.
+5. Look at every PNG after rendering (Read): not empty, no labels cut off at the edge,
+   no unexpected extra participants. If needed, fix the Mermaid (split or shorten a
+   label) and render again.
+6. If rendering fails, write `_TODO: PNG not generated: <reason>._` below the block
+   (in `language`) and carry on; the document stays valid.

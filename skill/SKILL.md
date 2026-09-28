@@ -1,6 +1,6 @@
 ---
 name: kingmadoc
-description: Generates a Feature Design Doc (plan) before a feature is implemented and a Feature Verification Doc afterwards, with Mermaid C4 diagrams inferred from the codebase. Use when the user asks to plan, design, or scope a new feature before writing code, or to verify, review, or check what was built against its plan. Works without installing anything; uses the kingmadoc CLI when it is available.
+description: Generates a Feature Design Doc (plan) before a feature is implemented and a Feature Verification Doc afterwards, with Mermaid C4 diagrams inferred from the codebase. Use when the user asks to plan, design, or scope a new feature before writing code (also "feature design", "technical design", "document over een issue/fix", "ontwerp", "plan", "hoe gaan we dit oplossen", "technisch ontwerp"), or to verify, review, or check what was built against its plan. Works without installing anything; uses the kingmadoc CLI when it is available.
 version: 1.2.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
@@ -52,7 +52,11 @@ brackets); ignore the file if it is absent:
 - `analyzer.exclude_dirs` [`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`,
   `dist`, `build`, `*.egg-info`, tool caches], `analyzer.max_files` [`5000`],
   `analyzer.tree_depth` [`3`].
-- `diagrams` [`c4_context`, `c4_container`]: which C4 sections get a diagram.
+- `diagrams` [`c4_context`, `c4_container`, `class`, `sequence`]: which sections get
+  a diagram.
+- `diagrams_png` [`embed`]: `embed`, `file` or `off`; see
+  [Rendering](reference/diagram-rules.md#rendering).
+- `language` [`en`]: language of fixed sentences, notes and captions (headings stay English).
 - `extra_designs.functional_design.enabled` / `extra_designs.technical_design.enabled`
   [`false`]: also write a functional and/or technical design doc. By default only the
   plan is written. The request decides directly, without asking back: "FO and TO",
@@ -75,7 +79,8 @@ step. Otherwise use Glob/Grep (never read the whole codebase):
    and note in the appendix that the analysis is truncated.
 2. **Languages.** Count files per extension: `.py` python, `.js/.jsx/.mjs` javascript,
    `.ts/.tsx` typescript, `.go` go, `.rs` rust, `.java` java, `.kt` kotlin, `.rb` ruby,
-   `.php` php, `.cs` csharp, `.md` markdown, `.json` json, `.toml` toml,
+   `.php` php, `.cs` csharp, `.vb` vb, `.ps1` powershell, `.sql` sql, `.xml` xml,
+   `.sh` shell, `.cshtml` razor, `.md` markdown, `.json` json, `.toml` toml,
    `.yml/.yaml` yaml, and so on. Sort by count, highest first.
 3. **Top-level directories** that contain files.
 4. **Entry points**: files named `main.py`, `app.py`, `__main__.py`, `manage.py`,
@@ -95,8 +100,13 @@ step. Otherwise use Glob/Grep (never read the whole codebase):
    what you actually found.
 8. **Containers** for the C4 Container diagram: directories with source code
    (`src/<pkg>` counts as `<pkg>`; skip `tests`, `docs`, `examples`, `scripts`, hidden
-   directories), at most 6. Technology = the most common language inside. If there are
-   none, use one container named after the project, described as "Main application".
+   directories), at most 6. Technology: first the project files (`.csproj` → C#,
+   `.vbproj` → VB.NET, `package.json` → JavaScript/TypeScript, `pyproject.toml` →
+   Python), only then the most common extension inside, not counting test data and
+   fixtures. If there are none, use one container named after the project, described
+   as "Main application".
+9. **Open changes**: `git status --short` and `git stash list`; note the ones that
+   touch the feature (see the plan format's Appendix).
 
 ### Step 3. Ask clarifying questions
 
@@ -109,6 +119,8 @@ message, and say they may skip any:
 4. Which existing modules will change? (mention the detected containers)
 5. How will you know it works? List the acceptance criteria.
 
+Answers already in the conversation or the request are filled in as a proposal
+("Proposal: … — is this right?"), so the user only confirms or corrects them.
 If you cannot ask (non-interactive run), or the user skips a question, list it under
 **Open questions** instead. Use the answers to fill in scope, assumptions, risks and
 the diagrams, but never beyond what the user said or the code shows.
@@ -128,8 +140,17 @@ the diagrams, but never beyond what the user said or the code shows.
   the existing files or folders from answer 4 (`[]` if none). Tools read this block.
 - **Requirements**: each acceptance criterion from answer 5 becomes `- **REQ-n**:` in EARS
   (`WHEN <trigger> THE SYSTEM SHALL <response>`, `IF <condition> THEN THE SYSTEM SHALL …`),
-  numbered from 1; none given: one `_TODO_` requirement.
-- External systems named in answer 3 go into the C4 Context diagram as `System_Ext`.
+  numbered from 1; none given: one `_TODO_` requirement. A vague criterion ("all tests
+  pass"): propose concrete EARS requirements and ask for confirmation, rather than one
+  vague REQ or invented ones. Under each: `Verified by: <test, test case or command>`
+  (or `_TODO_`).
+- **Planned changes**: per `files_expected` path what changes and why (the "how" of
+  answer 4), one to three lines, no code blocks. Risks and assumptions may add code
+  findings marked _(inferred)_.
+- **Generated**: the real system time (`date -Iminutes`).
+- External systems: those from answer 3, plus systems the code demonstrably uses
+  (the latter marked _(inferred)_ below the diagram), as `System_Ext` in the Context
+  diagram.
 - Follow the [diagram rules](reference/diagram-rules.md).
 
 ### Step 5. Write the file and ask for approval
@@ -187,7 +208,9 @@ Check each item and record every mismatch as a deviation:
 - **Requirements**: each `REQ-n` is met (name the code or test), partly met, or not met.
   Files in `files_expected` that were never touched are deviations too.
 - **Architecture**: containers and external systems in the code match the C4
-  diagrams (new services, databases, queues or APIs count as deviations).
+  diagrams (new services, databases, queues or APIs count as deviations), and the
+  built classes and calls match the class and sequence diagrams (Area: Architecture).
+  If the diagrams in the plan changed, render them again.
 - **Assumptions**: still true in the code (e.g. "uses the existing auth module").
 - **Risks**: each risk is mitigated, accepted, or still open.
 - **Open questions**: resolved by the implementation, or still open.

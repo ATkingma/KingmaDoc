@@ -41,18 +41,27 @@ files_expected: [<existing files or folders the user said will change>]
 
 - <from the answers, or> _TODO: what it deliberately does not do._
 
+## Planned changes
+
+- `<path from files_expected>`: <what changes and why, one to three lines, no code
+  blocks; the "how" from answer 4, or> _TODO: what changes here and why._
+
 ## Requirements
 
 - **REQ-1**: <WHEN <trigger> THE SYSTEM SHALL <response>, from the acceptance criteria, or>
   _TODO: WHEN <trigger> THE SYSTEM SHALL <response>._
+  Verified by: <test, test case or command, or> _TODO_
 
 ## Assumptions
 
 - _(inferred)_ Built on the existing stack: <stack>.
+- <from the answers, or a code finding marked> _(inferred)_
 - _TODO: what must be true for this plan to work (users, data, services, limits)._
 
 ## Risks
 
+- <from the answers, or a code finding marked> _(inferred)_ <e.g. a shared base class
+  other parts also use>
 - _TODO: what could go wrong, and how you will notice or limit it._
 
 ## C4 Context (Mermaid)
@@ -65,7 +74,23 @@ Who uses the system and which external systems it depends on.
 
 The runnable units inside the system _(inferred from source directories)_.
 
-<C4Container diagram>
+<C4Container diagram; containers the feature touches are marked>
+
+## Class diagram (Mermaid)
+
+The classes this feature touches and their direct collaborators.
+
+<classDiagram>
+
+## Sequence diagram (Mermaid)
+
+### Current (inferred)
+
+<sequenceDiagram of today's flow, with the place where it goes wrong as a Note>
+
+### New
+
+<sequenceDiagram of the flow after the change>
 
 ## Open questions
 
@@ -82,6 +107,8 @@ The runnable units inside the system _(inferred from source directories)_.
 - **Entry points:** <`path`, … or _none found_>
 - **Config files:** <`path`, … or _none found_>
 - **Test directories:** <`path`, … or _none found_>
+- **Open changes:** <`git status --short` / `git stash list` entries that touch the
+  feature, or _none_>
 
 | Language   | Files   |
 | ---------- | ------- |
@@ -98,6 +125,38 @@ The runnable units inside the system _(inferred from source directories)_.
 ````
 
 Omit "**Answered while planning**" when nothing was answered.
+
+- Every diagram is a ` ```mermaid ` block with its PNG below it (see
+  [Rendering](diagram-rules.md#rendering)); a disabled diagram keeps its section with
+  _Disabled in `.featuredoc.yml` (`diagrams`)._
+- **Generated** is the real system time (`date -Iminutes`), never a guess.
+- **Class diagram**: a `classDiagram` of the classes the feature touches and their
+  direct collaborators (inherits, calls, creates), with only the relevant members.
+  `<<changed>>` on existing classes that change, `<<new>>` on new ones, and a `note for
+  <Class>` saying what is new or changed. Existing classes and relations come from the
+  code and are _(inferred)_; new ones only when the user or "Planned changes" name them.
+- **Sequence diagram**: two diagrams, from the entry point (a test or command) to the
+  result, with real classes as participants and real method names as messages;
+  `activate`/`deactivate` for nested calls, `alt`/`opt` for branches. In **Current**,
+  a `Note` marks where it goes wrong.
+- **Open changes**: when an uncommitted change or stash touches the feature, also list
+  it under Open questions.
+- `language` in `.featuredoc.yml` [`en`]: headings stay English (the CLI's), but fixed
+  sentences, notes and captions are written in that language.
+
+File tree example (`tree_depth: 3`; `…` indented under every cut-off folder):
+
+```text
+shop/
+  src/
+    shop/
+      …
+  tests/
+    unit/
+      …
+    conftest.py
+  pyproject.toml
+```
 
 ### Functional design doc: `docs/features/<slug>-functional-design.md`
 

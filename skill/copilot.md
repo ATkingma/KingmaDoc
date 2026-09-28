@@ -52,7 +52,11 @@ brackets); ignore the file if it is absent:
 - `analyzer.exclude_dirs` [`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`,
   `dist`, `build`, `*.egg-info`, tool caches], `analyzer.max_files` [`5000`],
   `analyzer.tree_depth` [`3`].
-- `diagrams` [`c4_context`, `c4_container`]: which C4 sections get a diagram.
+- `diagrams` [`c4_context`, `c4_container`, `class`, `sequence`]: which sections get
+  a diagram.
+- `diagrams_png` [`embed`]: `embed`, `file` or `off`; see
+  [Rendering](#rendering).
+- `language` [`en`]: language of fixed sentences, notes and captions (headings stay English).
 - `extra_designs.functional_design.enabled` / `extra_designs.technical_design.enabled`
   [`false`]: also write a functional and/or technical design doc. By default only the
   plan is written. The request decides directly, without asking back: "FO and TO",
@@ -75,7 +79,8 @@ step. Otherwise use file search and text search (never read the whole codebase):
    and note in the appendix that the analysis is truncated.
 2. **Languages.** Count files per extension: `.py` python, `.js/.jsx/.mjs` javascript,
    `.ts/.tsx` typescript, `.go` go, `.rs` rust, `.java` java, `.kt` kotlin, `.rb` ruby,
-   `.php` php, `.cs` csharp, `.md` markdown, `.json` json, `.toml` toml,
+   `.php` php, `.cs` csharp, `.vb` vb, `.ps1` powershell, `.sql` sql, `.xml` xml,
+   `.sh` shell, `.cshtml` razor, `.md` markdown, `.json` json, `.toml` toml,
    `.yml/.yaml` yaml, and so on. Sort by count, highest first.
 3. **Top-level directories** that contain files.
 4. **Entry points**: files named `main.py`, `app.py`, `__main__.py`, `manage.py`,
@@ -95,8 +100,13 @@ step. Otherwise use file search and text search (never read the whole codebase):
    what you actually found.
 8. **Containers** for the C4 Container diagram: directories with source code
    (`src/<pkg>` counts as `<pkg>`; skip `tests`, `docs`, `examples`, `scripts`, hidden
-   directories), at most 6. Technology = the most common language inside. If there are
-   none, use one container named after the project, described as "Main application".
+   directories), at most 6. Technology: first the project files (`.csproj` → C#,
+   `.vbproj` → VB.NET, `package.json` → JavaScript/TypeScript, `pyproject.toml` →
+   Python), only then the most common extension inside, not counting test data and
+   fixtures. If there are none, use one container named after the project, described
+   as "Main application".
+9. **Open changes**: `git status --short` and `git stash list`; note the ones that
+   touch the feature (see the plan format's Appendix).
 
 ### Step 3. Ask clarifying questions
 
@@ -109,6 +119,8 @@ message, and say they may skip any:
 4. Which existing modules will change? (mention the detected containers)
 5. How will you know it works? List the acceptance criteria.
 
+Answers already in the conversation or the request are filled in as a proposal
+("Proposal: … — is this right?"), so the user only confirms or corrects them.
 If you cannot ask (non-interactive run), or the user skips a question, list it under
 **Open questions** instead. Use the answers to fill in scope, assumptions, risks and
 the diagrams, but never beyond what the user said or the code shows.
@@ -128,8 +140,17 @@ the diagrams, but never beyond what the user said or the code shows.
   the existing files or folders from answer 4 (`[]` if none). Tools read this block.
 - **Requirements**: each acceptance criterion from answer 5 becomes `- **REQ-n**:` in EARS
   (`WHEN <trigger> THE SYSTEM SHALL <response>`, `IF <condition> THEN THE SYSTEM SHALL …`),
-  numbered from 1; none given: one `_TODO_` requirement.
-- External systems named in answer 3 go into the C4 Context diagram as `System_Ext`.
+  numbered from 1; none given: one `_TODO_` requirement. A vague criterion ("all tests
+  pass"): propose concrete EARS requirements and ask for confirmation, rather than one
+  vague REQ or invented ones. Under each: `Verified by: <test, test case or command>`
+  (or `_TODO_`).
+- **Planned changes**: per `files_expected` path what changes and why (the "how" of
+  answer 4), one to three lines, no code blocks. Risks and assumptions may add code
+  findings marked _(inferred)_.
+- **Generated**: the real system time (`date -Iminutes`).
+- External systems: those from answer 3, plus systems the code demonstrably uses
+  (the latter marked _(inferred)_ below the diagram), as `System_Ext` in the Context
+  diagram.
 - Follow the [diagram rules](#diagram-rules).
 
 ### Step 5. Write the file and ask for approval
@@ -187,7 +208,9 @@ Check each item and record every mismatch as a deviation:
 - **Requirements**: each `REQ-n` is met (name the code or test), partly met, or not met.
   Files in `files_expected` that were never touched are deviations too.
 - **Architecture**: containers and external systems in the code match the C4
-  diagrams (new services, databases, queues or APIs count as deviations).
+  diagrams (new services, databases, queues or APIs count as deviations), and the
+  built classes and calls match the class and sequence diagrams (Area: Architecture).
+  If the diagrams in the plan changed, render them again.
 - **Assumptions**: still true in the code (e.g. "uses the existing auth module").
 - **Risks**: each risk is mitigated, accepted, or still open.
 - **Open questions**: resolved by the implementation, or still open.
@@ -206,12 +229,17 @@ not run). Show the user the path, the number of deviations, and any failing chec
 
 ## Diagram rules
 
-- **Always Mermaid** (ignore `diagram_format`; PlantUML/D2 are CLI-only). No images.
+- **Always Mermaid** (ignore `diagram_format`; PlantUML/D2 are CLI-only). Mermaid is
+  the source of truth; every diagram is also rendered to a PNG and embedded in the
+  Markdown (see [Rendering](#rendering)).
 - **Always fenced**: every diagram is a complete ` ```mermaid ` … ` ``` `
   block, with nothing else inside it.
 - **Always labeled**:
-  - the first line after the diagram type is `title <text>`
+  - C4 and `sequenceDiagram`: the first line after the diagram type is `title <text>`
     (`System Context: <project>`, `Containers: <project>`);
+  - `classDiagram`, `erDiagram` and `flowchart` have no `title` line; put frontmatter
+    before the diagram type instead: `---`, `title: "<text>"`, `---` (quote the
+    title: an unquoted `:` breaks the YAML and the render);
   - every element has a quoted label: `Person(alias, "Label", "Description")`,
     `System(alias, "Label", "Description")`, `System_Ext(…)`,
     `Container(alias, "Label", "Technology", "Description")`. Omit an unknown
@@ -223,9 +251,18 @@ not run). Show the user the path, the number of deviations, and any failing chec
   `System_Boundary` alias ends in `_boundary` and is never used in `Rel`.
 - **Escaping**: inside quoted labels write `"` as `#quot;`. In titles, leave quotes as
   they are and drop `#` and `;` (they end a C4 title). Put everything on one line.
+- **Short labels**: about 50 characters at most; split a long message in two.
+- **Sequence aliases**: never `x`, `X`, `o` or `O` (they clash with the `-x` and `-o`
+  arrows); use abbreviations of two or more letters (`ct`, `svc`).
 - **Inferred content**: anything derived from the code (containers, technologies)
   must be marked _(inferred)_ in the text around the diagram. Do not add systems nobody
   mentioned and the code does not show.
+- **External systems** (Context diagram): the systems from answer 3, plus systems the
+  code demonstrably uses; the latter are marked _(inferred)_ in the text below the
+  diagram.
+- **Changed containers**: in the Container diagram, mark each container the feature
+  touches with `UpdateElementStyle(<alias>, $bgColor="#d9822b")` or `(changes)` at the
+  end of its description.
 - **Container diagram layout**: the `System_Boundary` holds the containers; the `User`
   person sits outside it, with `Rel(user, <first container>, "Uses")`.
 
@@ -243,8 +280,34 @@ C4Context
     Rel(shop, sendgrid, "Sends email via")
 ```
 
-If a diagram is disabled in `.featuredoc.yml`, keep its section and replace the
-diagram with this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
+`diagrams` in `.featuredoc.yml` [`c4_context`, `c4_container`, `class`, `sequence`]
+selects the diagrams. If one is disabled, keep its section and replace the diagram with
+this line: _Disabled in `.featuredoc.yml` (`diagrams`)._
+
+## Rendering
+
+`diagrams_png` in `.featuredoc.yml` [`embed`]: `embed` (below), `file` (the PNG goes to
+`<output_dir>/img/<slug>-<diagram>.png`, linked with `![<title>](img/<slug>-<diagram>.png)`)
+or `off` (no image, only the Mermaid block).
+
+1. Write each ` ```mermaid ` block to a temporary `.mmd` file outside the repo and run:
+   `npx -y @mermaid-js/mermaid-cli -i <tmp>.mmd -o <tmp>.png -s 2 -b white -p <puppeteer.json>`
+2. Set `PUPPETEER_SKIP_DOWNLOAD=true`, and let `puppeteer.json` point at an installed
+   browser, so no Chromium is downloaded:
+   `{"executablePath": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"}`
+   (or Chrome). Ask the user once before the first npm download: package
+   `@mermaid-js/mermaid-cli`, from the npm registry, about 50 MB with dependencies.
+3. Directly below the block, after one empty line:
+   `![<diagram title>](data:image/png;base64,<base64 of the PNG>)`.
+   No separate image files go into the repo.
+4. The ` ```mermaid ` block always stays (GitHub shows no data URIs; the block is the
+   source for the next render). On a new render, replace only the image line below
+   the same block.
+5. Look at every PNG after rendering (Read): not empty, no labels cut off at the edge,
+   no unexpected extra participants. If needed, fix the Mermaid (split or shorten a
+   label) and render again.
+6. If rendering fails, write `_TODO: PNG not generated: <reason>._` below the block
+   (in `language`) and carry on; the document stays valid.
 
 ## Output format
 
@@ -289,18 +352,27 @@ files_expected: [<existing files or folders the user said will change>]
 
 - <from the answers, or> _TODO: what it deliberately does not do._
 
+## Planned changes
+
+- `<path from files_expected>`: <what changes and why, one to three lines, no code
+  blocks; the "how" from answer 4, or> _TODO: what changes here and why._
+
 ## Requirements
 
 - **REQ-1**: <WHEN <trigger> THE SYSTEM SHALL <response>, from the acceptance criteria, or>
   _TODO: WHEN <trigger> THE SYSTEM SHALL <response>._
+  Verified by: <test, test case or command, or> _TODO_
 
 ## Assumptions
 
 - _(inferred)_ Built on the existing stack: <stack>.
+- <from the answers, or a code finding marked> _(inferred)_
 - _TODO: what must be true for this plan to work (users, data, services, limits)._
 
 ## Risks
 
+- <from the answers, or a code finding marked> _(inferred)_ <e.g. a shared base class
+  other parts also use>
 - _TODO: what could go wrong, and how you will notice or limit it._
 
 ## C4 Context (Mermaid)
@@ -313,7 +385,23 @@ Who uses the system and which external systems it depends on.
 
 The runnable units inside the system _(inferred from source directories)_.
 
-<C4Container diagram>
+<C4Container diagram; containers the feature touches are marked>
+
+## Class diagram (Mermaid)
+
+The classes this feature touches and their direct collaborators.
+
+<classDiagram>
+
+## Sequence diagram (Mermaid)
+
+### Current (inferred)
+
+<sequenceDiagram of today's flow, with the place where it goes wrong as a Note>
+
+### New
+
+<sequenceDiagram of the flow after the change>
 
 ## Open questions
 
@@ -330,6 +418,8 @@ The runnable units inside the system _(inferred from source directories)_.
 - **Entry points:** <`path`, … or _none found_>
 - **Config files:** <`path`, … or _none found_>
 - **Test directories:** <`path`, … or _none found_>
+- **Open changes:** <`git status --short` / `git stash list` entries that touch the
+  feature, or _none_>
 
 | Language   | Files   |
 | ---------- | ------- |
@@ -346,6 +436,38 @@ The runnable units inside the system _(inferred from source directories)_.
 ````
 
 Omit "**Answered while planning**" when nothing was answered.
+
+- Every diagram is a ` ```mermaid ` block with its PNG below it (see
+  [Rendering](diagram-rules.md#rendering)); a disabled diagram keeps its section with
+  _Disabled in `.featuredoc.yml` (`diagrams`)._
+- **Generated** is the real system time (`date -Iminutes`), never a guess.
+- **Class diagram**: a `classDiagram` of the classes the feature touches and their
+  direct collaborators (inherits, calls, creates), with only the relevant members.
+  `<<changed>>` on existing classes that change, `<<new>>` on new ones, and a `note for
+  <Class>` saying what is new or changed. Existing classes and relations come from the
+  code and are _(inferred)_; new ones only when the user or "Planned changes" name them.
+- **Sequence diagram**: two diagrams, from the entry point (a test or command) to the
+  result, with real classes as participants and real method names as messages;
+  `activate`/`deactivate` for nested calls, `alt`/`opt` for branches. In **Current**,
+  a `Note` marks where it goes wrong.
+- **Open changes**: when an uncommitted change or stash touches the feature, also list
+  it under Open questions.
+- `language` in `.featuredoc.yml` [`en`]: headings stay English (the CLI's), but fixed
+  sentences, notes and captions are written in that language.
+
+File tree example (`tree_depth: 3`; `…` indented under every cut-off folder):
+
+```text
+shop/
+  src/
+    shop/
+      …
+  tests/
+    unit/
+      …
+    conftest.py
+  pyproject.toml
+```
 
 ### Functional design doc: `docs/features/<slug>-functional-design.md`
 
