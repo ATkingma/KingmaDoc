@@ -103,7 +103,8 @@ def test_description_triggers_on_the_ways_people_ask() -> None:
     for trigger in (
         "explain", "document", "diagram", "overview", "how something works", "what it does",
         "PR", "onboarding", "walkthrough", "C4", "UML", "any language",
-        "Not for features that are not built yet",
+        "Not for features that are not built yet", "only the classes or files the user names",
+        "new pattern",
     ):
         assert trigger in description, trigger
 

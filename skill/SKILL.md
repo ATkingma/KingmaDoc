@@ -1,6 +1,6 @@
 ---
 name: kingmadoc
-description: Generates a Feature Design Doc (plan) before a feature is implemented and a Feature Verification Doc afterwards, with Mermaid C4 diagrams inferred from the codebase. Use when the user asks to plan, design, or scope a new feature before writing code (also "feature design", "technical design", "document over een issue/fix", "ontwerp", "plan", "hoe gaan we dit oplossen", "technisch ontwerp"), or to verify, review, or check what was built against its plan. Works without installing anything; uses the kingmadoc CLI when it is available.
+description: Generates a Feature Design Doc (plan) before a feature is implemented and a Feature Verification Doc afterwards, with Mermaid C4 diagrams inferred from the codebase. Use when the user asks to plan, design, or scope a new feature before writing code (also "feature design", "technical design", "document over een issue/fix", "ontwerp", "plan", "hoe gaan we dit oplossen", "technisch ontwerp"); for code that already exists, use the explaining-code skill, or to verify, review, or check what was built against its plan. Works without installing anything; uses the kingmadoc CLI when it is available.
 version: 1.2.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---

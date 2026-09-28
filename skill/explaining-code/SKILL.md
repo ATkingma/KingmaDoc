@@ -1,6 +1,6 @@
 ---
 name: explaining-code
-description: "Explains existing code with rendered diagrams (C4 in Simon Brown's notation; UML sequence, state, class, activity, use case; ER; data flow) and short tables, as an arc42 or compact C4 document, one file or split into a functional and a technical design (FO/TO) with a threat model. Fixes code blindness. Scope: a feature, a branch or PR, a whole project, or a folder, service or module. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, a functional or technical design (FO, TO, or only one of them), C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
+description: "Explains existing code with rendered diagrams and short tables, as an arc42 or compact C4 document, one file or split into a functional and a technical design (FO/TO) with a threat model. Fixes code blindness. Scope: a feature, a branch or PR, a whole project, a folder, service or module, or only the classes or files the user names. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed or wants a new pattern in it explained; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, a functional or technical design (FO, TO, or only one of them), C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
 version: 6.0.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
@@ -19,6 +19,7 @@ it fits together, often because an agent wrote it. This skill gives that insight
 | to know what a branch or task changed          | branch  | `branch <branch>`    |
 | an overview of a whole project                 | project | `Project`            |
 | to understand a folder, service or module      | part    | `<folder or module>` |
+| only named classes or files (often from git)   | part    | `<main class>`       |
 
 Each subject has its own folder `docs/explain/<NNNN>-<slug>/README.md` (the explainer,
 or its cover page when split) with `img/`; `docs/explain/README.md` lists them.
@@ -65,6 +66,13 @@ Rules:
 - **Fix, don't rewrite.** Change a diagram in its `img/*.d2` file and render again.
 
 ## Step 1. Pin down the scope, the format and the documents
+
+**Named classes or files** ("see git, only A, B, C; document this, mainly show the new
+pattern"): the scope is exactly those (find them with `git status`, `git diff` and
+`git log`; also the uncommitted changes), their direct collaborators only as context.
+A focus the user names ("the extension of the new pattern") leads: the first figures
+show it (class diagram: what is new or extends what; sequence: how a call flows
+through it), the rest stays short.
 
 Decide the scope (table above); if unclear, search, take the most likely candidate and
 name the others at hand-over. Act on the request directly, without asking back (any
