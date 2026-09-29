@@ -212,7 +212,7 @@ def crowding_warnings(source: str) -> list[str]:
     pairs = [(a, b) for a, _, b in _ARROW.findall(body)]
     if len(pairs) > MAX_ARROWS:
         warnings.append(f"{len(pairs)} arrows (more than {MAX_ARROWS}) are hard to follow; "
-                        "split the figure or combine arrows")
+                        "split the figure or combine arrows, but keep the context's actors")
     seen: dict[frozenset[str], int] = {}
     for a, b in pairs:
         seen[frozenset((a, b))] = seen.get(frozenset((a, b)), 0) + 1

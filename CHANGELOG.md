@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `kingmadoc render` warns about arrow labels of more than four words
   (`MAX_LABEL_WORDS`; a `[protocol]` counts as one) or with a line break, and about
   `shape: class` with its own fill.
+- The same actors on every C4 level: the context's people and external systems appear
+  in the container, component and deployment figures with the same keys, names, classes
+  and order, and no invented or renamed actors (a role without code goes into the
+  stakeholders table). `kingmadoc render` and `explain check` warn about a missing,
+  extra, renamed or reordered actor (`explain.c4_actor_warnings`), `explain scaffold`
+  starts each lower C4 block from the context's actors, and the C4 examples show them
+  on every level. The skill never picks the compact c4 format on its own.
 - `kingmadoc explain check` warns when a `[Screen]` wireframe has a text that the view
   named in its caption does not contain (best effort).
 

@@ -642,3 +642,19 @@ def test_light_images_allow_white_fills() -> None:
 
     assert any("white fill" in w for w in dark_mode_warnings(source))
     assert dark_mode_warnings(source, light=True) == []
+
+
+def test_render_warns_when_a_lower_c4_figure_drops_an_actor(tmp_path: Path, d2: list[str]) -> None:
+    """The same actor check as `explain check`, right after rendering."""
+    context = ('title: "[System Context] Shop" {shape: text}\n'
+               'mail: "E-mail [Software System]" {class: external}\nshop -> mail: "Sends [SMTP]"')
+    container = ('title: "[Container] Shop" {shape: text}\n'
+                 'web: "Web [Container: Django]" {class: container}\nweb -> mail: "Sends [SMTP]"')
+    doc = _doc(tmp_path, f"# T\n\n```d2\n{context}\n```\n\n```d2\n{container}\n```\n")
+
+    result = CliRunner().invoke(
+        cli, ["render", str(doc)], env={"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "`E-mail` from the context is missing" in result.stderr

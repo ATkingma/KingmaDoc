@@ -92,6 +92,18 @@ Each diagram "can stand alone, and be (mostly) understood without a narrative".
   `grid-rows`/`grid-columns` inside a boundary: ELK then draws the arrows as straight
   lines through the blocks.
 - **Nested deployment nodes:** one arrow to the outer node, not one to each child.
+- **The same actors on every level:** the people and external systems of the context
+  diagram appear in the container, component and deployment diagrams with the same
+  key, name, type and colour, people on top and external systems at the bottom,
+  declared in the context's order (ELK places them by that order). A component diagram
+  shows only those that talk to its container, still in the same place and name. No
+  actor lower down that the context does not have, and no actor that is renamed on the
+  way down. A role the code does nothing with (e.g. a reviewer of pull requests) is not
+  an actor: it goes into the stakeholders table of section 1. Actors are concrete and
+  recognisable for the client, named as the project documents and the user name them
+  ("AFAS developer", not "migration developer" or another invented role).
+  `kingmadoc render` and `explain check` warn about missing, extra, renamed or reordered
+  actors.
 - **Colours** consistent across all figures: the palette below. Explain acronyms in the
   legend or the table under the figure.
 - At most about fifteen elements per diagram; split larger ones by area or feature at
@@ -200,6 +212,7 @@ construct and point to their path in the table below the figure.
 
 ```d2
 classes: {
+  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}; width: 250}
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
   component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}; width: 250}
@@ -212,6 +225,7 @@ vars: {
     c: Container {class: container}
     k: Component {class: component}
     d: Container: data store {class: database}
+    x: External software system {class: external}
     bd: Container boundary {class: boundary}
     a: "" {style.opacity: 0}
     b: "" {style.opacity: 0}
@@ -237,9 +251,14 @@ db: |md
   **Database**\
   [Container: PostgreSQL 16]
 | {class: database}
+mail: |md
+  **E-mail service**\
+  [Software System]
+| {class: external}
 web -> api.orders: "Posts orders [HTTPS/JSON]"
 api.orders -> api.store: "Saves the order using"
 api.store -> db: "Reads and writes [SQL]"
+api.orders -> mail: "Sends e-mails [SMTP]"
 ```
 
 **Deployment**: nested deployment nodes (`[Deployment Node: …]`) with the container
@@ -247,6 +266,8 @@ instances they run; infrastructure (proxy, DNS) only when the code configures it
 
 ```d2
 classes: {
+  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}; width: 250}
+  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}; width: 250}
   container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
   database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
   node: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; font-size: 15}}
@@ -255,14 +276,20 @@ title: "[Deployment] Webshop - production" {shape: text; near: top-center; style
 direction: down
 vars: {
   d2-legend: {
+    p: Person {class: person}
     n: Deployment node {class: node}
     c: Container instance {class: container}
     d: Container instance: data store {class: database}
+    x: External software system {class: external}
     a: "" {style.opacity: 0}
     b: "" {style.opacity: 0}
     a -> b: Relationship
   }
 }
+customer: |md
+  **Customer**\
+  [Person]
+| {class: person}
 server: "VPS [Deployment Node: Ubuntu 24.04]" {
   class: node
   docker: "Docker [Deployment Node: Docker Compose]" {
@@ -272,8 +299,14 @@ server: "VPS [Deployment Node: Ubuntu 24.04]" {
     db: "Database [Container: SQLite file]" {class: database}
   }
 }
+mail: |md
+  **E-mail service**\
+  [Software System]
+| {class: external}
+customer -> server: "Places orders [HTTPS]"
 server.docker.web -> server.docker.api: "Places orders [HTTP]"
 server.docker.api -> server.docker.db: "Reads and writes [SQLite]"
+server -> mail: "Sends e-mails [SMTP]"
 ```
 
 **Dynamic**: one feature; the labels are numbered in order. (For many steps or
@@ -356,6 +389,9 @@ Before handing over, check every C4 figure; fix it until every answer is yes.
 - [ ] Every element has a name, a type and (containers, components) a technology; its
       description is in the table under the figure.
 - [ ] Every acronym, colour, shape and line style is explained (legend or table).
+- [ ] The context's people and external systems are in every lower figure that talks
+      to them, with the same names, types, colours and order; no new or invented
+      actors (roles without code go into the stakeholders table).
 - [ ] Every arrow has one direction and a specific label that matches it; arrows
       between containers name the protocol.
 - [ ] One level of abstraction; nothing inside external systems; at most about

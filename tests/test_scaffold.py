@@ -159,3 +159,9 @@ def test_cli_writes_the_folder_and_keeps_existing_documents(tmp_path: Path) -> N
     assert CliRunner().invoke(cli, [*args, "--force"]).exit_code == 0
     bad = CliRunner().invoke(cli, [*args, "--force", "--models", "screenz"])
     assert bad.exit_code == 2 and "screenz" in bad.output
+
+
+def test_lower_c4_blocks_start_from_the_contexts_actors() -> None:
+    doc = _build()["README.md"]
+    line = "<copy the context figure's people and external systems"
+    assert doc.count(line) == 3  # containers, components, deployment

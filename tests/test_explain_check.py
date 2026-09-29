@@ -114,3 +114,58 @@ def test_screen_wireframe_texts_must_come_from_the_view(tmp_path: Path) -> None:
     assert warnings == ["README.md: img/figure-1.d2: `Subscribe` is not in views/contact.html"]
     result = CliRunner().invoke(cli, ["explain", "check", str(folder)])
     assert result.exit_code == 0 and "`Subscribe` is not in" in result.output
+
+
+CONTEXT = '''title: "[System Context] Shop" {shape: text}
+customer: |md
+  **Customer**\\
+  [Person]
+| {class: person}
+shop: "Shop [Software System]" {class: system}
+pay: "Payment provider [Software System]" {class: external}
+mail: "E-mail service [Software System]" {class: external}
+erp: "ERP [Software System]" {class: external}
+customer -> shop: "Places orders using"
+'''
+# Misses `pay` (while it has an arrow to it), renames the customer, swaps mail and erp.
+CONTAINER = '''title: "[Container] Shop" {shape: text}
+customer: |md
+  **Buyer**\\
+  [Person]
+| {class: person}
+web: "Web app [Container: Django]" {class: container}
+erp: "ERP [Software System]" {class: external}
+mail: "E-mail service [Software System]" {class: external}
+customer -> web: "Places orders [HTTPS]"
+web -> pay: "Pays using [HTTPS]"
+web -> mail: "Sends e-mails [SMTP]"
+web -> erp: "Books orders [SOAP]"
+'''
+
+
+def test_c4_levels_keep_the_contexts_actors() -> None:
+    """One missing, one renamed, one reordered actor: three warnings, and none when equal."""
+    from kingmadoc.explain import c4_actor_warnings
+
+    warnings = c4_actor_warnings([("img/figure-1.d2", CONTEXT), ("img/figure-2.d2", CONTAINER)])
+
+    assert len(warnings) == 3, warnings
+    assert "`Payment provider` from the context is missing" in warnings[0]
+    assert "person `Buyer` is called `Customer` in the context" in warnings[1]
+    assert "another order than in the context" in warnings[2]
+    fixed = CONTEXT.replace("[System Context]", "[Container]")
+    assert c4_actor_warnings([("a", CONTEXT), ("b", fixed)]) == []
+    extra = CONTEXT + 'dev: "Reviewer [Person]" {class: person}\n'
+    assert "not in the context" in c4_actor_warnings(
+        [("a", CONTEXT), ("b", extra.replace("[System Context]", "[Component]"))])[0]
+
+
+def test_explain_check_warns_about_c4_actors(tmp_path: Path) -> None:
+    folder = _folder(tmp_path, EMBEDDED, images=())
+    (folder / "img" / "figure-1.d2").write_text(CONTEXT, encoding="utf-8")
+    (folder / "img" / "figure-2.d2").write_text(CONTAINER, encoding="utf-8")
+
+    result = CliRunner().invoke(cli, ["explain", "check", str(folder)])
+
+    assert result.exit_code == 0  # warnings, not failures
+    assert result.output.count("(warning)") == 3

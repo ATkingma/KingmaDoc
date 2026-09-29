@@ -219,6 +219,7 @@ per story (use case, screen, evil user stories), as split.md sections 3 to 5 sho
 ### Level 1: containers (C4 level 2)
 
 ```d2
+<copy the context figure's people and external systems: same keys, names, classes, order>
 <containers diagram>
 ```
 
@@ -231,6 +232,7 @@ per story (use case, screen, evil user stories), as split.md sections 3 to 5 sho
 ### Level 2: components of <container> (C4 level 3)
 
 ```d2
+<copy the context figure's people and external systems: same keys, names, classes, order>
 <components diagram>
 ```
 
@@ -265,6 +267,7 @@ per story (use case, screen, evil user stories), as split.md sections 3 to 5 sho
 ## 8. Deployment view
 
 ```d2
+<copy the context figure's people and external systems: same keys, names, classes, order>
 <deployment diagram: hosts, containers, ports>
 ```
 

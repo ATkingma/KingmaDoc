@@ -1,0 +1,173 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "explain-branch",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 48,
+        "total_cost_usd": 0.316994,
+        "num_turns": 18,
+        "tokens": {
+          "input_tokens": 28,
+          "cache_creation_input_tokens": 31670,
+          "cache_read_input_tokens": 650640,
+          "output_tokens": 6013
+        },
+        "reply": "_order` now sets `order.total = apply_discount(total)` instead of `total`. Stock, order lines and payment work as before.\n\nThe discount is worked out once, on the sum of all lines, and exactly 100 gets it. The stored `Order.total` is the discounted amount, and the full price is not stored anywhere.\n\nThe branch also adds the KingmaDoc skill files under `.claude/skills/`. They are not part of the shop.\n\n**Couldn't work out:** are there tests for the discount? None were found in the project.\n\nI also created the `docs/explain/` folder with `README.md` and `img/`, and I haven't committed any of it."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "4 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "1 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "14 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 6
+    },
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 60,
+        "total_cost_usd": 0.30278080000000007,
+        "num_turns": 15,
+        "tokens": {
+          "input_tokens": 24,
+          "cache_creation_input_tokens": 27376,
+          "cache_read_input_tokens": 528544,
+          "output_tokens": 8752
+        },
+        "reply": "ay/`. It only works on the customer's own orders. It changes the status from `new` to `paid`, and any other status gives 409. There is no payment provider.\n\nThe figures are context, containers, components, the order sequence, the status changes and the data tables.\n\nTwo things I couldn't work out from the code:\n- **Customer rows:** Nothing creates them, and `create_order` fails if none matches the user's email.\n- **`shipped` status:** Nothing sets it.\n\nI also can't tell whether you want VS Code to open explainers as a preview by default. Say so and I'll run `kingmadoc skills install --vscode`."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": false,
+          "detail": "docs/explain/0001-placing-an-order/README.md: '## 1. Introduction and goals'; docs/explain/0001-placing-an-order/README.md: '## 5. Building block view'; docs/explain/0001-placing-an-order/README.md: '## 6. Runtime view'; docs/explain/0001-placing-an-order/README.md: '## 8. Cross-cutting concepts'"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "6 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "2 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "20 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 7
+    },
+    {
+      "scenario": "explain-fo-to",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 223,
+        "total_cost_usd": 1.0373367999999998,
+        "num_turns": 49,
+        "tokens": {
+          "input_tokens": 58,
+          "cache_creation_input_tokens": 76889,
+          "cache_read_input_tokens": 2180874,
+          "output_tokens": 29349
+        },
+        "reply": " Shop API twee aparte pijlen. Dat volgt de notatie van het model en is zo gelaten.\n\nWat ik uit de code niet kon opmaken (staat als vragen onderaan beide documenten):\n1. Waarom 10% vanaf \u20ac 100? Daar staat geen reden voor in de code of de commits.\n2. `shop/settings.py` heeft geen `MIDDLEWARE`. Dan werken `login_required` en de CSRF-controle niet zoals bedoeld. Draait de echte app met andere instellingen?\n3. Er zijn geen migraties. Dat maakt onduidelijk of de database een negatief aantal weigert; de code zelf controleert dat niet.\n\nCtrl+Shift+V in VS Code toont de plaatjes in de Markdown-preview."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/functional.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/functional.md"
+        },
+        {
+          "check": "exists docs/explain/0001-*/technical.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/technical.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/functional.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "contains docs/explain/0001-*/technical.md",
+          "ok": false,
+          "detail": "docs/explain/0001-branch-feature-discount/technical.md: 'Level 2 | Niveau 2'"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "10 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "3 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "35 change(s), all allowed"
+        }
+      ],
+      "passed": 7,
+      "total": 8
+    }
+  ]
+}

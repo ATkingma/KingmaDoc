@@ -95,8 +95,10 @@ language):
 | "only a TO", "just the technical design"                                            | `technical`  | `explain.format` for the TO     |
 
 Otherwise `explain.documents` and `explain.format` in `.featuredoc.yml`, otherwise
-**single** (one arc42 document). The formats: `arc42` (default, the twelve sections,
+**single** (one arc42 document). The formats: `arc42` (default, the numbered sections,
 [reference/arc42.md](reference/arc42.md)) or `c4` (compact, [reference/c4.md](reference/c4.md)).
+Never pick `c4` yourself because the subject is small: only when the request or
+`explain.format` says so.
 
 | Documents          | Writes                                                  | Rules in                                 |
 | ------------------ | ------------------------------------------------------- | ---------------------------------------- |
@@ -172,7 +174,15 @@ Write every diagram in **D2** (Step 5 turns them into images).
 7. **C4 blocks:** name plus `[type: technology]` only; the description goes into the
    table. Give each block a fixed `width` (250-260) so D2 does not cut the text. No
    `grid-*` inside a C4 boundary: ELK then draws straight lines through the blocks.
-8. **Activity with swimlanes and loops** gets unreadable with ELK: draw a state diagram
+8. **The same actors on every C4 level:** the people and external systems of the
+   context figure appear in the container, component and deployment figures with the
+   same keys, names, types and colours, people on top and external systems at the
+   bottom in the context's order (a component figure only those that talk to that
+   container). No new actors lower down; a role the code does nothing with (e.g. a pull
+   request reviewer) belongs in the stakeholders table, not in a figure. Name actors as
+   the project documents and the user do ("AFAS developer", not an invented role).
+   Keep them even when a figure gets more than 12 arrows; split the rest instead.
+9. **Activity with swimlanes and loops** gets unreadable with ELK: draw a state diagram
    (linear; `direction: right` when the user wants it horizontal) or a flowchart
    without lanes instead. For a branch, mark new and
    changed parts by border ([reference/arc42.md](reference/arc42.md#branches-marking-changes)).

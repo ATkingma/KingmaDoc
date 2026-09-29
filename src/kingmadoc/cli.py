@@ -34,8 +34,10 @@ from kingmadoc.exceptions import KingmaDocError
 from kingmadoc.explain import (
     EXPLAIN_DIR,
     EXPLAINER_FILE,
+    c4_actor_warnings,
     check_explainer,
     count_pictures,
+    explainer_figures,
     explainer_folder,
     explainer_folders,
     freshness,
@@ -565,6 +567,10 @@ def render_command(
                 if not dark_mode and warning.endswith("(dark mode)"):
                     continue
                 click.echo(f"{source}: {warning}", err=True)
+        figures = [(i.with_suffix(".d2").relative_to(document.parent).as_posix(),
+                    i.with_suffix(".d2").read_text(encoding="utf-8")) for i in images]
+        for warning in c4_actor_warnings(figures):
+            click.echo(f"{document.parent / warning}", err=True)
     if failed:
         noun = "document" if len(failed) == 1 else "documents"
         raise click.ClickException(
@@ -797,6 +803,8 @@ def explain_check(folders: tuple[Path, ...]) -> None:
         for problem in problems:
             click.echo(f"{folder}/{problem}", err=True)
         for warning in screen_warnings(folder, folder.resolve().parent.parent.parent):
+            click.echo(f"{folder}/{warning} (warning)", err=True)
+        for warning in c4_actor_warnings(explainer_figures(folder)):
             click.echo(f"{folder}/{warning} (warning)", err=True)
         if problems:
             failed = True

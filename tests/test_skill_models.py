@@ -351,3 +351,13 @@ def test_diagrams_flow_down(path: Path) -> None:
             assert re.search(r"^direction: (down|right)$", source, re.M), (
                 f"{path.name}:\n{source[:120]}"
             )
+
+
+def test_c4_examples_keep_the_same_actors_on_every_level() -> None:
+    """The container, component and deployment examples repeat the context's actors."""
+    from kingmadoc.explain import c4_actor_warnings
+
+    figures = [(str(n), source) for n, source in enumerate(C4_EXAMPLES)]
+    assert c4_actor_warnings(figures) == []
+    text = re.sub(r"\s+", " ", _read(C4_MODEL))
+    assert "The same actors on every level" in text and "stakeholders table" in text

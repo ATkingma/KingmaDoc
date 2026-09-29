@@ -402,3 +402,112 @@ def screen_warnings(folder: Path, root: Path) -> list[str]:
                     warnings.append(f"{name}: {comment.group(1)}: `{label}` is not in "
                                     f"{', '.join(v.relative_to(root).as_posix() for v in views)}")
     return warnings
+
+
+# C4 actors: people and external systems, as the C4 classes in c4-model.md draw them.
+_C4_KIND = re.compile(r'^title: "\[(System Context|Container|Component|Deployment)\]', re.M)
+_MD_ELEMENT = re.compile(
+    r"^[ \t]*([\w-]+):[ \t]*\|md\n(.*?)\n[ \t]*\|[ \t]*\{([^}\n]*)\}", re.M | re.S
+)
+_LINE_ELEMENT = re.compile(
+    r'^[ \t]*([\w-]+):[ \t]*("[^"\n]*"|[^{\n|"]*?)[ \t]*\{([^}\n]*)\}[ \t]*$', re.M
+)
+_EDGE = re.compile(r"^\s*([\w.-]+)\s*(?:<->|->|<-|--)\s*([\w.-]+)", re.M)
+
+
+_D2_LEGEND = re.compile(r"vars:\s*\{\s*d2-legend:\s*\{.*?^\s*\}\s*^\}", re.S | re.M)
+
+
+def _actors(source: str) -> list[tuple[str, str, str]]:
+    """``(key, name, "person"/"external")`` of a D2 figure's actors, in declaration order."""
+    source = _D2_LEGEND.sub("", source)
+    found = []
+    for pattern, markdown in ((_MD_ELEMENT, True), (_LINE_ELEMENT, False)):
+        for match in pattern.finditer(source):
+            key, label, attrs = match.groups()
+            if "c4-person" in attrs or re.search(r"\bclass: *person\b", attrs):
+                kind = "person"
+            elif re.search(r"\bclass: *external\b", attrs):
+                kind = "external"
+            else:
+                continue
+            if markdown:
+                bold = re.search(r"\*\*(.+?)\*\*", label)
+                name = bold.group(1) if bold else label.strip()
+            else:
+                name = re.sub(r"\s*\[[^\]]*\]\s*$", "", label.strip().strip('"')).strip()
+            found.append((match.start(), key, name or key, kind))
+    return [(key, name, kind) for _, key, name, kind in sorted(found)]
+
+
+def c4_actor_warnings(figures: Sequence[tuple[str, str]]) -> list[str]:
+    """The context's people and external systems, compared with every lower C4 figure.
+
+    Per ``[Container]``, ``[Component]`` and ``[Deployment]`` figure: (a) an actor of the
+    ``[System Context]`` figure that the figure has an arrow to but does not declare,
+    (b) a person or external system the context does not have (new, or renamed), and
+    (c) external systems declared in another order than in the context (ELK places them
+    at the bottom in that order).
+
+    Args:
+        figures: ``(name, D2 source)`` per figure, e.g. ``("img/figure-2.d2", "...")``.
+
+    Returns:
+        One message per problem (empty without a context figure).
+    """
+    kinds = [(name, source, _C4_KIND.search(source)) for name, source in figures]
+    context = next((s for _, s, k in kinds if k and k.group(1) == "System Context"), None)
+    if context is None:
+        return []
+    expected = _actors(context)
+    by_name = {name: (key, kind) for key, name, kind in expected}
+    warnings = []
+    for name, source, kind in kinds:
+        if not kind or kind.group(1) == "System Context":
+            continue
+        actors = _actors(source)
+        names = {actor_name for _, actor_name, _ in actors}
+        keys = {key for key, _, _ in actors}
+        ends = {part for edge in _EDGE.findall(source) for end in edge for part in end.split(".")}
+        for key, actor_name, _ in expected:
+            if actor_name not in names and key not in keys and key in ends:
+                warnings.append(f"{name}: `{actor_name}` from the context is missing; declare it "
+                                "with the same key, name and class")
+        context_names = {key: actor_name for key, actor_name, _ in expected}
+        for key, actor_name, actor_kind in actors:
+            if actor_name in by_name:
+                continue
+            if key in context_names:
+                warnings.append(f"{name}: {actor_kind} `{actor_name}` is called "
+                                f"`{context_names[key]}` in the context; use the same name")
+            else:
+                warnings.append(f"{name}: {actor_kind} `{actor_name}` is not in the context; "
+                                "add it there, or move the role to the stakeholders table")
+        order = [n for _, n, k in expected if k == "external"]
+        here = [n for _, n, k in actors if k == "external" and n in by_name]
+        if here != [n for n in order if n in here]:
+            warnings.append(f"{name}: external systems in another order than in the context "
+                            f"({', '.join(here)}); declare them as {', '.join(order)}")
+    return warnings
+
+
+def explainer_figures(folder: Path) -> list[tuple[str, str]]:
+    """``(img/<name>.d2, source)`` of every rendered figure of an explainer, in order.
+
+    Args:
+        folder: ``docs/explain/<NNNN>-<slug>``.
+
+    Returns:
+        The D2 sources the documents point to (missing files skipped).
+    """
+    figures = []
+    for name in EXPLAINER_DOCUMENTS:
+        document = folder / name
+        if not document.is_file():
+            continue
+        text = document.read_text(encoding="utf-8", errors="replace")
+        for comment in _SOURCE_COMMENT.finditer(text):
+            source = folder / comment.group(1)
+            if source.is_file():
+                figures.append((comment.group(1), source.read_text(encoding="utf-8")))
+    return figures
