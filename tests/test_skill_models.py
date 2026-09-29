@@ -103,8 +103,8 @@ def test_c4_examples_share_one_palette() -> None:
     """Colours are consistent across all figures (same class, same colour)."""
     palettes: dict[str, set[str]] = {}
     for source in C4_EXAMPLES:
-        for name, style in re.findall(r"^  (\w+): \{(shape: [\w-]+; style: \{[^}]*\})\}$",
-                                      source, re.M):
+        pattern = r"^  (\w+): \{(shape: [\w-]+; style: \{[^}]*\})(?:; width: \d+)?\}$"
+        for name, style in re.findall(pattern, source, re.M):
             palettes.setdefault(name, set()).add(style)
     assert palettes
     assert all(len(styles) == 1 for styles in palettes.values()), palettes
@@ -145,7 +145,9 @@ def test_sequence_replies_are_dashed_and_groups_named() -> None:
     source = _model("Sequence")
 
     assert "shape: sequence_diagram" in source
-    assert "style.stroke-dash" in source
+    assert "stroke-dash: 3" in source
+    # draw.io colours: light-blue actors, black messages, grey groups.
+    assert '"#dae8fc"' in source and 'stroke: "#000000"' in source and '"#f5f5f5"' in source
     groups = re.findall(r'^\w+: "(\w+) \[', source, re.M)
     assert groups and set(groups) <= {"alt", "opt", "loop"}
 
@@ -176,7 +178,8 @@ def test_class_diagram_uses_uml_arrowheads() -> None:
     """Hollow triangle for realisation, filled diamond for composition, dashed dependency."""
     source = _model("Class diagram")
 
-    assert "shape: class" in source
+    # |md rectangles: shape: class puts white text on the stroke colour.
+    assert "shape: class" not in source and "|md" in source and "&lt;" in source
     assert "shape: triangle; style.filled: false" in source
     assert "shape: diamond; style.filled: true" in source
     assert "style.stroke-dash" in source

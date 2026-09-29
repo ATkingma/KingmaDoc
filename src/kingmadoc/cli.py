@@ -35,6 +35,7 @@ from kingmadoc.explain import (
     EXPLAIN_DIR,
     EXPLAINER_FILE,
     check_explainer,
+    count_pictures,
     explainer_folder,
     explainer_folders,
     freshness,
@@ -42,6 +43,7 @@ from kingmadoc.explain import (
     index_path,
     is_generated_index,
     read_entries,
+    screen_warnings,
 )
 from kingmadoc.facts.branch import branch_changes
 from kingmadoc.facts.collect import FACT_SECTIONS, collect_facts, facts_markdown, facts_to_dict
@@ -481,7 +483,15 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @click.option(
-    "--light", is_flag=True, help="Light images only (by default they follow dark mode too)."
+    "--light",
+    is_flag=True,
+    help="Light images only (by default they follow dark mode too); use it when you only "
+    "read in light mode: white fills and draw.io colours are fine then.",
+)
+@click.option(
+    "--link",
+    is_flag=True,
+    help="Link img/<name>.<format> instead of embedding the image as a base64 data URI.",
 )
 @click.option("--verbose", is_flag=True, help="Print every image path (default: one line).")
 @click.option(
@@ -493,14 +503,15 @@ def adr(title: str, root: Path, config_path: Path | None, status: str) -> None:
     help="What the document links: png shows in every Markdown viewer; svg follows dark mode.",
 )
 def render_command(
-    documents: tuple[Path, ...], light: bool, verbose: bool, image_format: str
+    documents: tuple[Path, ...], light: bool, link: bool, verbose: bool, image_format: str
 ) -> None:
     """Render the D2 diagrams in DOCUMENTS to images and embed them.
 
-    Each diagram becomes img/<document>-<n>.png (linked: every Markdown viewer shows it)
-    and .svg (sharp, follows dark mode; --format svg links it instead), with its D2 source
-    in img/*.d2; a README.md's images are img/figure-<n>. D2 is downloaded once (pinned,
-    checksum-verified) unless it is on PATH or in KINGMADOC_D2.
+    Each diagram becomes img/<document>-<n>.png (every Markdown viewer shows it) and
+    .svg (sharp, follows dark mode; --format svg shows it instead), with its D2 source
+    in img/*.d2; a README.md's images are img/figure-<n>. The document embeds the image
+    as a base64 data URI (--link: a relative link); rendering again replaces it.
+    D2 is downloaded once (pinned, checksum-verified) unless it is on PATH or in KINGMADOC_D2.
     """
     try:
         d2 = ensure_d2(lambda message: click.echo(message, err=True))
@@ -512,7 +523,9 @@ def render_command(
     # document is rendered, and the failures are reported together at the end.
     for document in documents:
         try:
-            images = render_file(document, d2, dark=not light, image_format=image_format)
+            images = render_file(
+                document, d2, dark=not light, image_format=image_format, link=link
+            )
             index = index_path(document)
             if index is not None:
                 _write_explain_index(index.parent)
@@ -547,7 +560,7 @@ def render_command(
                        "diagram(s); linked the SVG instead", err=True)
         for image in images:
             source = image.with_suffix(".d2")  # next to the .png and .svg
-            for warning in diagram_warnings(source.read_text(encoding="utf-8")):
+            for warning in diagram_warnings(source.read_text(encoding="utf-8"), light=light):
                 dark_mode = not light and image_format == "svg"
                 if not dark_mode and warning.endswith("(dark mode)"):
                     continue
@@ -783,11 +796,12 @@ def explain_check(folders: tuple[Path, ...]) -> None:
         problems = check_explainer(folder)
         for problem in problems:
             click.echo(f"{folder}/{problem}", err=True)
+        for warning in screen_warnings(folder, folder.resolve().parent.parent.parent):
+            click.echo(f"{folder}/{warning} (warning)", err=True)
         if problems:
             failed = True
         else:
-            images = len(list((folder / "img").glob("*.png")))
-            click.echo(f"{folder}: finished ({images} pictures)")
+            click.echo(f"{folder}: finished ({count_pictures(folder)} pictures)")
     if failed:
         raise SystemExit(1)
 

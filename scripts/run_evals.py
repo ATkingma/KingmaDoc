@@ -108,7 +108,8 @@ def check_pictures_only(workspace: Path, pattern: str) -> tuple[bool, str]:
             problems.append(f"{_rel(workspace, f)}: D2 source not rendered")
         for target in re.findall(r"!\[[^\]]*\]\(([^)\s]+)\)", text):
             images += 1
-            if "://" not in target and not (f.parent / target).is_file():
+            embedded = target.startswith("data:")  # kingmadoc render's default
+            if not embedded and "://" not in target and not (f.parent / target).is_file():
                 problems.append(f"{_rel(workspace, f)}: missing image {target}")
     if not images:
         problems.append("no images")

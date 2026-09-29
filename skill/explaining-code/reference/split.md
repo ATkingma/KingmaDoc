@@ -59,7 +59,7 @@ in its first line. `kingmadoc render` takes all three files at once.
 | **Scope**        | <feature / branch `<branch>` vs `<base>` / project / part `<path>`>                 |
 | **Stack**        | <languages, frameworks, data stores>                                                |
 | **Entry points** | <`path`, …>                                                                         |
-| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 6.0.0 (split) |
+| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 6.1.0 (split) |
 
 <at most three plain sentences: what it is, for whom, what it does>
 
@@ -205,21 +205,21 @@ Per section:
   component diagram per container that holds logic) and C4 level 4 (a class or ER
   diagram per key component), as [c4-model.md](c4-model.md) says. In the c4 format the
   same three levels are "Containers", "Components" and a code figure per key component.
-- arc42 section 1 becomes one line pointing to `functional.md`, section 3 keeps only its
-  Technical context (the Business context is `functional.md`), and section 12
+- arc42 section 1 becomes one line pointing to `functional.md`, section 4 keeps only its
+  Technical context (the Business context is `functional.md`), and section 13
   (Glossary) points there too; the c4 format leaves out "In short" and "Terms".
 - The functional models (user stories, use cases, screens, domain model) are not
   repeated; refer to them by ID (`US-1`, `UC-1`).
 - The [rules, permissions and edge cases](#rules-permissions-and-edge-cases) are always
-  there: in arc42 under section 8, in c4 under "Routes and permissions".
+  there: in arc42 under section 9, in c4 under "Routes and permissions".
 - The [threat model](threat-model.md) is always there: in arc42 as `### Threat model`
-  under section 8, in c4 as `## Threat model` before "Where to find what". It lists
+  under section 9, in c4 as `## Threat model` before "Where to find what". It lists
   every `SM-n` that the evil user stories in `functional.md` name.
 
 ## Rules, permissions and edge cases
 
 For developers: how the code enforces what `functional.md` promises. Also used in a
-single arc42 or c4 document (arc42 section 8).
+single arc42 or c4 document (arc42 section 9).
 
 ````markdown
 ### Business rules

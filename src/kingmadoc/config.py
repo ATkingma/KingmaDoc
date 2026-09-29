@@ -122,6 +122,8 @@ EXPLAIN_FORMATS: tuple[str, ...] = ("arc42", "c4")
 # One explainer per subject (default), or split into a functional and a technical one.
 # "functional" / "technical" write only the functional (FO) or technical (TO) document.
 EXPLAIN_DOCUMENTS: tuple[str, ...] = ("single", "split", "functional", "technical")
+# Colours of the explainer figures (reference/c4-model.md): C4 blues, or draw.io.
+EXPLAIN_PALETTES: tuple[str, ...] = ("c4", "drawio")
 # Models the explaining-code skill may draw (default: all; each only when the code has
 # its signal). Names match the sections of its reference files.
 EXPLAIN_MODELS: tuple[str, ...] = (
@@ -140,11 +142,13 @@ class ExplainConfig:
         format: One of :data:`EXPLAIN_FORMATS`.
         documents: One of :data:`EXPLAIN_DOCUMENTS`.
         models: Models the skill may draw, from :data:`EXPLAIN_MODELS` (default: all).
+        palette: One of :data:`EXPLAIN_PALETTES`.
     """
 
     format: str = "arc42"
     documents: str = "single"
     models: tuple[str, ...] = EXPLAIN_MODELS
+    palette: str = "c4"
 
 
 @dataclass(frozen=True)
@@ -481,10 +485,13 @@ adr:
 # functional (only the FO) or technical (only the TO). The request overrides it.
 # models: what the agent may draw (default: all; each only when the code has it). The
 # request can narrow it too ("without screens", "only the threat model").
+# palette: c4 (C4 blues, default) or drawio (light blue #dae8fc, black text; render
+# with --light when you only read in light mode).
 explain:
   format: arc42
   documents: single
   models: [{", ".join(EXPLAIN_MODELS)}]
+  palette: c4
 
 # Verification (`kingmadoc verify`). Build, test and lint commands; null means detected
 # from the project files. They only run with `kingmadoc verify --run-checks`.
@@ -572,7 +579,7 @@ def _parse_explain(data: Any) -> ExplainConfig:
     if data is None:
         return defaults
     data = _require_mapping(data, "explain")
-    _reject_unknown(data, {"format", "documents", "models"}, "explain")
+    _reject_unknown(data, {"format", "documents", "models", "palette"}, "explain")
     fmt = _get(data, "format", str, defaults.format, "explain.")
     if fmt not in EXPLAIN_FORMATS:
         raise ConfigError(
@@ -590,7 +597,12 @@ def _parse_explain(data: Any) -> ExplainConfig:
             f"Unknown model {unknown[0]!r} in explain.models; supported: "
             f"{', '.join(EXPLAIN_MODELS)}"
         )
-    return ExplainConfig(format=fmt, documents=documents, models=models)
+    palette = _get(data, "palette", str, defaults.palette, "explain.")
+    if palette not in EXPLAIN_PALETTES:
+        raise ConfigError(
+            f"Unknown explain.palette {palette!r}; supported: {', '.join(EXPLAIN_PALETTES)}"
+        )
+    return ExplainConfig(format=fmt, documents=documents, models=models, palette=palette)
 
 
 def _parse_verify(data: Any) -> VerifyConfig:

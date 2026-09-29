@@ -46,3 +46,10 @@ def test_diagrams_png_and_language() -> None:
     assert (config.diagrams_png, config.language, config.diagrams) == ("off", "nl", ("class",))
     with pytest.raises(ConfigError, match="diagrams_png"):
         parse_config({"diagrams_png": "inline"})
+
+
+def test_explain_palette() -> None:
+    assert parse_config({"explain": {"palette": "drawio"}}).explain.palette == "drawio"
+    assert parse_config({}).explain.palette == "c4"
+    with pytest.raises(ConfigError, match="explain.palette"):
+        parse_config({"explain": {"palette": "neon"}})

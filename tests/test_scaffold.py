@@ -50,8 +50,10 @@ def test_single_arc42_has_every_section_and_filled_key_facts() -> None:
     assert "| **Stack** | Django, Python |" in doc
     based_on = "abc1234 · 2026-09-28 · KingmaDoc skill explaining-code 9.9.9 (arc42)"
     assert f"| **Based on** | {based_on} |" in doc
-    for number in range(1, 13):
+    for number in range(1, 14):
         assert re.search(rf"^## {number}\. ", doc, re.M), number
+    assert "## 2. Starting situation" in doc and "## 3. Architecture constraints" in doc
+    assert doc.index("## Document control") < doc.index("## 1. Introduction and goals")
     assert "## What changed" not in doc  # no branch
     # The functional part sits in section 3's Business context, the threat model in 8.
     business = doc.split("### Business context")[1].split("### Technical context")[0]

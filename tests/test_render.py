@@ -1,5 +1,6 @@
 """Tests for `kingmadoc render`: D2 diagrams in Markdown become SVG images (roadmap WP11)."""
 
+import base64
 import errno
 import os
 import shutil
@@ -73,7 +74,7 @@ def _doc(tmp_path: Path, text: str = DOC) -> Path:
 def test_diagrams_become_images_and_their_source_moves_out(
     tmp_path: Path, d2: list[str]
 ) -> None:
-    """Each D2 block becomes a PNG (linked) and an SVG; the document keeps only the image."""
+    """Each D2 block becomes a PNG (embedded) and an SVG; the document keeps only the image."""
     doc = _doc(tmp_path)
 
     images = render_file(doc, d2)
@@ -84,8 +85,9 @@ def test_diagrams_become_images_and_their_source_moves_out(
     assert "browser -> api: POST" in (img / "shop-1.svg").read_text(encoding="utf-8")
     assert (img / "shop-1.d2").read_text(encoding="utf-8") == "browser -> api: POST\n"
     text = doc.read_text(encoding="utf-8")
-    assert "![Overview](img/shop-1.png)" in text
-    assert "![How it works](img/shop-2.png)" in text
+    png = base64.b64encode((img / "shop-1.png").read_bytes()).decode()
+    assert f"![Overview](data:image/png;base64,{png})" in text
+    assert "![How it works](data:image/png;base64," in text
     assert "```d2" not in text and "<details>" not in text
     assert "<!-- kingmadoc:diagram img/shop-1.d2 -->" in text  # invisible in previews
     assert "```mermaid\nflowchart TD" in text  # other diagram languages are left alone
@@ -134,7 +136,7 @@ def test_svg_format_links_the_svg(tmp_path: Path, d2: list[str]) -> None:
     doc = _doc(tmp_path)
     render_file(doc, d2)
 
-    images = render_file(doc, d2, image_format="svg")
+    images = render_file(doc, d2, image_format="svg", link=True)
 
     assert [p.name for p in images] == ["shop-1.svg", "shop-2.svg"]
     assert "![Overview](img/shop-1.svg)" in doc.read_text(encoding="utf-8")
@@ -216,7 +218,7 @@ def test_cli_render_verbose_lists_every_image(tmp_path: Path, d2: list[str]) -> 
     not (os.environ.get("D2_BIN") or shutil.which("d2")), reason="d2 not available"
 )
 def test_real_d2_produces_pictures(tmp_path: Path) -> None:
-    """With the real d2 binary: a PNG per diagram, linked, with a valid SVG next to it."""
+    """With the real d2 binary: a PNG per diagram, embedded, with a valid SVG next to it."""
     doc = _doc(tmp_path)
 
     images = render_file(doc, [os.environ.get("D2_BIN") or shutil.which("d2") or "d2"])
@@ -226,7 +228,7 @@ def test_real_d2_produces_pictures(tmp_path: Path) -> None:
     assert "```d2" not in text
     for image in images:
         assert image.suffix == ".png" and image.read_bytes().startswith(b"\x89PNG")
-        assert image.relative_to(doc.parent).as_posix() in text
+        assert base64.b64encode(image.read_bytes()).decode() in text
         assert "<svg" in image.with_suffix(".svg").read_text(encoding="utf-8")[:500]
 
 
@@ -239,7 +241,7 @@ def test_older_folded_source_format_is_converted(tmp_path: Path, d2: list[str]) 
     )
     doc = _doc(tmp_path, old)
 
-    render_file(doc, d2)
+    render_file(doc, d2, link=True)
 
     text = doc.read_text(encoding="utf-8")
     assert "<details>" not in text and "```d2" not in text
@@ -263,7 +265,7 @@ def test_readme_explainer_images_are_named_figure(tmp_path: Path, d2: list[str])
     doc.parent.mkdir(parents=True)
     doc.write_text(DOC, encoding="utf-8")
 
-    images = render_file(doc, d2)
+    images = render_file(doc, d2, link=True)
 
     assert [p.name for p in images] == ["figure-1.png", "figure-2.png"]
     assert "![Overview](img/figure-1.png)" in doc.read_text(encoding="utf-8")
@@ -502,7 +504,7 @@ def test_cli_format_svg_and_the_dark_mode_warnings(tmp_path: Path, d2: list[str]
     env = {"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
 
     png = CliRunner().invoke(cli, ["render", str(doc)], env=env)
-    svg = CliRunner().invoke(cli, ["render", "--format", "svg", str(doc)], env=env)
+    svg = CliRunner().invoke(cli, ["render", "--format", "svg", "--link", str(doc)], env=env)
 
     assert png.exit_code == 0 and "dark mode" not in png.stderr, png.output
     assert svg.exit_code == 0 and "dark mode" in svg.stderr, svg.output
@@ -528,8 +530,7 @@ def test_a_failing_png_falls_back_to_svg(
     text = doc.read_text(encoding="utf-8")
     assert images and all(i.suffix == ".svg" and i.is_file() for i in images)
     assert "```d2" not in text
-    for image in images:
-        assert image.relative_to(doc.parent).as_posix() in text
+    assert text.count("](data:image/svg+xml;base64,") == len(images)
 
 
 def test_the_cli_starts_without_resvg() -> None:
@@ -570,3 +571,74 @@ def test_one_broken_document_does_not_cost_the_others_their_pictures(
     assert "1 document not rendered" in result.output
     assert "```d2" not in good.read_text(encoding="utf-8")  # rendered after the failure
     assert "```d2\nBAD" in broken.read_text(encoding="utf-8")  # untouched, to fix
+
+
+def test_embedding_is_the_default_and_link_links(tmp_path: Path, d2: list[str]) -> None:
+    """The image is a data URI by default; --link writes the relative link; both keep img/."""
+    doc = _doc(tmp_path)
+    env = {"KINGMADOC_D2": str(_wrapper(tmp_path, d2))}
+
+    CliRunner().invoke(cli, ["render", "--link", str(doc)], env=env)
+    linked = doc.read_text(encoding="utf-8")
+    CliRunner().invoke(cli, ["render", str(doc)], env=env)  # converts the relative links
+    embedded = doc.read_text(encoding="utf-8")
+
+    assert "![Overview](img/shop-1.png)" in linked
+    assert "](img/" not in embedded and embedded.count("](data:image/png;base64,") == 2
+    assert all((doc.parent / "img" / f"shop-1.{s}").is_file() for s in ("d2", "svg", "png"))
+
+
+def test_rendering_an_embedded_document_again_replaces_the_image(
+    tmp_path: Path, d2: list[str]
+) -> None:
+    """A second render replaces the data URI under the same comment; it never duplicates."""
+    doc = _doc(tmp_path)
+    render_file(doc, d2)
+    first = doc.read_text(encoding="utf-8")
+
+    render_file(doc, d2)
+
+    text = doc.read_text(encoding="utf-8")
+    assert text == first
+    assert text.count("<!-- kingmadoc:diagram img/shop-1.d2 -->") == 1
+    assert text.count("data:image/png;base64,") == 2
+
+
+def test_long_and_multiline_arrow_labels_are_warned_about() -> None:
+    """More than four words (a [protocol] counts as one) or a line break in a label."""
+    from kingmadoc.render import MAX_LABEL_WORDS, crowding_warnings
+
+    source = (
+        'a -> b: "sends the whole order to it"\n'
+        "c -> d: first\\nsecond\n"
+        'e -> f: "reads orders [JSON/HTTPS]"\n'
+        "g -> h\n"
+    )
+    warnings = crowding_warnings(source)
+
+    assert MAX_LABEL_WORDS == 4
+    assert len(warnings) == 2
+    assert "`sends the whole order to it` has 6 words" in warnings[0]
+    assert "keep arrow labels to 4 words, protocol in brackets, one line" in warnings[0]
+    assert "first\\nsecond" in warnings[1]
+
+
+def test_class_shape_with_a_fill_is_warned_about() -> None:
+    """D2 puts white text on a class body coloured with the stroke; use an |md rectangle."""
+    from kingmadoc.render import diagram_warnings
+
+    warnings = diagram_warnings('Order: {shape: class; style: {fill: "#dae8fc"}}\n')
+    plain = diagram_warnings("Order: {shape: class}\n")
+
+    assert any("use an |md rectangle for classes, see models.md" in w for w in warnings)
+    assert not any("|md" in w for w in plain)
+
+
+def test_light_images_allow_white_fills() -> None:
+    """--light: draw.io colours on white are wanted, so a white fill is no problem."""
+    from kingmadoc.render import dark_mode_warnings
+
+    source = 'a: A {style: {fill: "#ffffff"}}\n'
+
+    assert any("white fill" in w for w in dark_mode_warnings(source))
+    assert dark_mode_warnings(source, light=True) == []

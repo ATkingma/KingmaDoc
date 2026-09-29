@@ -270,3 +270,14 @@ def test_a_limit_message_is_the_error_not_success(tmp_path: Path) -> None:
     info = evals.run_agent(tmp_path, "Plan", agent)
 
     assert info["error"] == "You've hit your monthly spend limit"
+
+
+def test_pictures_only_counts_embedded_images(tmp_path: Path) -> None:
+    """`kingmadoc render` embeds data URIs by default; they are pictures, not missing files."""
+    doc = tmp_path / "docs" / "explain" / "0001-shop" / "README.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text("# S\n\n![Context](data:image/png;base64,iVBORw0KGgo=)\n", encoding="utf-8")
+
+    passed, detail = _runner().check_pictures_only(tmp_path, "docs/explain/*/README.md")
+
+    assert passed and detail == "1 images"

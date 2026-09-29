@@ -4,7 +4,7 @@ Contents: Rules per part · Screens: wireframe first, screenshots when allowed.
 
 The functional red thread, for the models `user_stories`, `use_case`, `screens` and
 `evil_user_stories`. Where it goes: `functional.md` sections 4 to 6 in an FO/TO
-([split.md](split.md)), arc42 section 3 (Business context) or the c4 format's "How it
+([split.md](split.md)), arc42 section 4 (Business context) or the c4 format's "How it
 works" in a single document. `kingmadoc explain scaffold` writes the empty tables; the
 format is the `functional.md` block in [split.md](split.md).
 
@@ -47,27 +47,59 @@ screenshots replace them when you may use the app:
    buttons and messages as the template or component names them, top to bottom. Say
    "wireframe" in the title and caption.
 
-Rules: one container per screen named after its route or window, a one-column grid,
-input fields as `Label [ ___ ]`, the main button filled, an error message as a dashed
-red box; only elements the view code has.
+**A "design" is a wireframe.** When the user asks for a design ("ontwerp", mock-up),
+never use screenshots: draw black-and-white, Balsamiq-style wireframes with
+`vars: {d2-config: {sketch: true}}` and black strokes (`stroke: "#000000"`).
+
+Rules: one container per screen named after its route or window; only elements the
+view code has, with its texts **literally and in the same order**. Widgets:
+
+| Widget          | Drawn as                                                                     |
+| --------------- | ---------------------------------------------------------------------------- |
+| Input field     | `Label` above `[ placeholder ]` with the placeholder text grey (`#999999`)   |
+| Dropdown        | `[ <default value>  v ]`                                                     |
+| Primary button  | fill `#333333`, white text; other buttons unfilled                           |
+| Checkbox        | `☐ Label` / `☑ Label`                                                        |
+| Tile            | a small box with its title and number                                        |
+| Table           | a grid: header row fill `#e6e6e6`, then two or three example rows            |
+| Chart           | a circle with a fixed `width` **and** `height` (a placeholder, not data)     |
+| Error message   | a dashed red box                                                             |
+
+Grids, or the layout breaks:
+
+- **Always `grid-rows` and `grid-columns` together.** Only `grid-columns` fills column by
+  column (a table comes out transposed); only `grid-rows` spreads the cells unevenly.
+- A text shape never has an empty label: use `" "` with a transparent style.
+- `top` is reserved in D2: never name a shape `top`.
+- A wide control panel and a pie next to a table go in separate sub-rows, or the circle
+  stretches.
+
+**Check before rendering:** dump every heading, label, button text, placeholder,
+dropdown default, hint and table column from the view (HTML, template, JS) and check
+that each is in the wireframe literally and in the same order. Name the view file in
+the caption in a code span (`` `src/views/contact.html` ``): `kingmadoc explain check`
+then warns about every wireframe text the view does not have.
 
 ```d2
 title: "[Screen] Contact form - wireframe of /contact" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
+vars: {d2-config: {sketch: true}}
 direction: down
 screen: "/contact" {
+  grid-rows: 5
   grid-columns: 1
   grid-gap: 12
-  style: {fill: transparent}
-  name: "Name *   [ ______________________ ]" {style: {fill: transparent}}
-  email: "E-mail *   [ ______________________ ]" {style: {fill: transparent}}
-  message: "Message *   [ ______________________ ]" {height: 100; style: {fill: transparent}}
+  style: {fill: transparent; stroke: "#000000"}
+  name: "Name *   [ Your name ]" {style: {fill: transparent; stroke: "#000000"}}
+  subject: "Subject   [ General question  v ]" {style: {fill: transparent; stroke: "#000000"}}
+  message: "Message *   [ Your message ]" {height: 100; style: {fill: transparent; stroke: "#000000"}}
   error: "! Fill in a valid e-mail address" {style: {fill: transparent; stroke: "#dc2626"; stroke-dash: 3}}
-  buttons: "" {
+  buttons: " " {
+    grid-rows: 1
     grid-columns: 2
     grid-gap: 12
     style: {fill: transparent; stroke: transparent}
-    cancel: Cancel {style: {fill: transparent; border-radius: 8}}
-    send: Send {style: {fill: "#438dd5"; font-color: "#ffffff"; border-radius: 8}}
+    cancel: Cancel {style: {fill: transparent; stroke: "#000000"; border-radius: 8}}
+    send: Send {style: {fill: "#333333"; stroke: "#000000"; font-color: "#ffffff"; border-radius: 8}}
   }
 }
 ```

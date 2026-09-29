@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: "Explains existing code with rendered diagrams and short tables, as an arc42 or compact C4 document, one file or split into a functional and a technical design (FO/TO) with a threat model. Fixes code blindness. Scope: a feature, a branch or PR, a whole project, a folder, service or module, or only the classes or files the user names. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed or wants a new pattern in it explained; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, a functional or technical design (FO, TO, or only one of them), C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
-version: 6.0.0
+version: 6.1.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 
@@ -51,6 +51,13 @@ Rules:
   with its `path` in the tables. Mark what is not used (an endpoint nothing calls) as a
   plain fact.
 - Never invent. What cannot be worked out becomes at most three questions (Step 6).
+- **Plain language.** Write in the user's language at secondary vocational (mbo) level:
+  short sentences, common words, and the terms the user and the code use. Never coin
+  compounds or lofty words (avoid e.g. "consolewerktuig", "gereedschapskist",
+  "verenigt", "innerlijke rewriter", "onvoorwaardelijk", "idempotentie",
+  "hertypeert"). This holds for table cells, captions and the glossary too.
+- **A table when it is clearer.** Figures are not a goal: 26 test cases with
+  passes/fails are a table, not a picture.
 
 ## Working efficiently
 
@@ -153,11 +160,21 @@ Write every diagram in **D2** (Step 5 turns them into images).
    `kingmadoc threats img/threat-model.yml`, as [reference/threat-model.md](reference/threat-model.md) says.
 5. **Readable in both themes:** every shape with a `fill:` gets a `font-color`, never a
    `font-color` without a fill, never fill white (boundaries and nodes are
-   `fill: transparent`), black dots get a grey `stroke`.
+   `fill: transparent`), black dots get a grey `stroke`. With `explain.palette: drawio`
+   (light mode only) use its colours and render with `--light`
+   ([c4-model.md](reference/c4-model.md#palette-drawio)).
 6. **Tidy arrows:** `direction: down` (people on top, data stores at the bottom; `right`
    only for timelines and swimlanes), one arrow per pair of shapes with a combined label,
-   at most 12 arrows per figure (split it otherwise), labels of at most six words plus
-   `[protocol]`, arrows to the shapes inside a boundary. For a branch, mark new and
+   at most 12 arrows per figure (split it otherwise), labels of at most **four words**,
+   protocol in brackets (`reads [JSON/HTTPS]`), on one line (no `\n`); arrows to the
+   shapes inside a boundary. For nested deployment nodes, one arrow to the outer node
+   instead of one per child.
+7. **C4 blocks:** name plus `[type: technology]` only; the description goes into the
+   table. Give each block a fixed `width` (250-260) so D2 does not cut the text. No
+   `grid-*` inside a C4 boundary: ELK then draws straight lines through the blocks.
+8. **Activity with swimlanes and loops** gets unreadable with ELK: draw a state diagram
+   (linear; `direction: right` when the user wants it horizontal) or a flowchart
+   without lanes instead. For a branch, mark new and
    changed parts by border ([reference/arc42.md](reference/arc42.md#branches-marking-changes)).
 
 ## Step 4. Write the explainer
@@ -183,10 +200,15 @@ documents is not overwritten: edit those. Without `kingmadoc`, make the folder y
 kingmadoc render docs/explain/<NNNN>-<slug>/*.md
 ```
 
-It turns every D2 block into a PNG in `img/` (shown by every editor and Git host), with
-an `.svg` (dark mode) and the `.d2` source next to it. Never convert images yourself.
-The first run downloads D2 itself (checksum-verified). Never ask the user to install D2. A diagram D2 rejects: fix its `.d2` file and render again. No `render` command:
-ask the user to run `pipx upgrade kingmadoc` (from GitHub: `pipx reinstall kingmadoc`).
+It turns every D2 block into a PNG in `img/`, with an `.svg` (dark mode) and the `.d2`
+source next to it, and embeds the PNG in the document as a base64 data URI (`--link`:
+a relative link instead; rendering again replaces the image, never duplicates it).
+Light mode only: add `--light`. Never convert images yourself.
+The first run downloads D2 itself (checksum-verified). Never ask the user to install D2. A diagram D2 rejects: fix its `.d2` file and render again. Always use the latest main: `pip install --pre kingmadoc` (`pipx upgrade kingmadoc
+--pip-args=--pre`; from GitHub: `pipx reinstall kingmadoc`); the PyPI release 0.2.0
+lacks ELK, `scaffold` and `check`. On Windows the
+`kingmadoc.exe` shim can be blocked; run
+`py -3 -c "from kingmadoc.cli import main; main()" render …` instead.
 No `kingmadoc` at all: render with `d2 --pad 20 --layout elk` if present and link the
 SVGs, otherwise say that installing KingmaDoc gives the pictures.
 
@@ -197,7 +219,8 @@ kingmadoc explain check docs/explain/<NNNN>-<slug>
 ```
 
 It fails while a `<placeholder>` is left, a D2 block is not rendered, a linked image is
-missing or a document with figures shows no picture. Fix what it names, render again
+missing or a document with figures shows no picture (embedded images count), and warns
+when a `[Screen]` wireframe has a text its view (named in the caption) does not have. Fix what it names, render again
 and repeat until it passes: the explainer is not done before that. Check every figure
 against its model's checklist (end of the model references) as well. Then hand over in at most five lines: the path, one or
 two sentences on what the system is, the number of figures, and the "Couldn't work out"

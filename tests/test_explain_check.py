@@ -74,3 +74,43 @@ def test_code_links_and_html_are_not_placeholders(tmp_path: Path) -> None:
         "See <https://arc42.org> or <team@example.com>. <kbd>Ctrl</kbd>\n"
     )
     assert check_explainer(_folder(tmp_path, text)) == []
+
+
+EMBEDDED = (
+    "# Shop\n\n<!-- kingmadoc:diagram img/figure-1.d2 -->\n"
+    "![Context](data:image/png;base64,iVBORw0KGgo=)\n\n"
+    "**Figure 1.** Who uses it.\n\n<!-- kingmadoc:diagram img/figure-2.d2 -->\n"
+    "![Flow](data:image/svg+xml;base64,PHN2Zy8+)\n\n**Figure 2.** How it flows.\n"
+)
+
+
+def test_embedded_images_count_as_pictures(tmp_path: Path) -> None:
+    """A data-URI image is there; check says how many pictures the explainer shows."""
+    folder = _folder(tmp_path, EMBEDDED, images=())
+
+    assert check_explainer(folder) == []
+    passed = CliRunner().invoke(cli, ["explain", "check", str(folder)])
+    assert passed.exit_code == 0 and "finished (2 pictures)" in passed.output
+
+
+def test_screen_wireframe_texts_must_come_from_the_view(tmp_path: Path) -> None:
+    """A [Screen] figure's labels are compared with the view its caption names."""
+    from kingmadoc.explain import screen_warnings
+
+    text = EMBEDDED.replace("Who uses it.", "Wireframe of `views/contact.html`.")
+    folder = _folder(tmp_path, text, images=())
+    (folder / "img" / "figure-1.d2").write_text(
+        'title: "[Screen] Contact" {shape: text}\n'
+        'screen: "/contact" {\n  name: "Name [ ___ ]"\n'
+        "  send: Send message\n  extra: Subscribe\n}\n",
+        encoding="utf-8",
+    )
+    view = tmp_path / "views" / "contact.html"
+    view.parent.mkdir()
+    view.write_text("<label>Name</label><button>Send message</button>", encoding="utf-8")
+
+    warnings = screen_warnings(folder, tmp_path)
+
+    assert warnings == ["README.md: img/figure-1.d2: `Subscribe` is not in views/contact.html"]
+    result = CliRunner().invoke(cli, ["explain", "check", str(folder)])
+    assert result.exit_code == 0 and "`Subscribe` is not in" in result.output

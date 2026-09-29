@@ -17,27 +17,29 @@ REFERENCES = sorted((FOLDER / "reference").glob("*.md"))
 
 ARC42_HEADINGS = [
     "#",
+    "## Document control",
     "## What changed",
     "## 1. Introduction and goals",
-    "## 2. Constraints",
-    "## 3. Context and scope",
+    "## 2. Starting situation",
+    "## 3. Architecture constraints",
+    "## 4. Context and scope",
     "### Business context",
     "### Technical context",
-    "## 4. Solution strategy",
-    "## 5. Building block view",
+    "## 5. Solution strategy",
+    "## 6. Building block view",
     "### Level 1: containers",
     "### Level 2: components of",
     "### Level 3: code of",
-    "## 6. Runtime view",
+    "## 7. Runtime view",
     "###",
-    "## 7. Deployment view",
-    "## 8. Cross-cutting concepts",
+    "## 8. Deployment view",
+    "## 9. Cross-cutting concepts",
     "### Conventions",
     "### Threat model",
-    "## 9. Architecture decisions",
-    "## 10. Quality requirements",
-    "## 11. Risks and technical debt",
-    "## 12. Glossary",
+    "## 10. Architecture decisions",
+    "## 11. Quality requirements",
+    "## 12. Risks and technical debt",
+    "## 13. Glossary",
     "## Appendix: where to find what",
     "## Couldn't work out",
 ]
@@ -279,7 +281,7 @@ def test_arrows_stay_tidy() -> None:
     step = re.sub(r"\s+", " ", _read(SKILL).split("## Step 3.", 1)[1].split("## Step 4.", 1)[0])
 
     assert "direction: down" in step and "one arrow per pair" in step
-    assert "at most 12 arrows" in step and "six words" in step
+    assert "at most 12 arrows" in step and "four words" in step
 
 
 def test_hand_over_offers_the_vs_code_preview() -> None:
@@ -399,7 +401,13 @@ def test_arc42_follows_a_software_architecture_document() -> None:
     assert "| Scenario | Context | Quality goal | How it is tested |" in block
     assert "**conventions**: code, branches, commits" in guide
     assert "Tests are facts; do not grade them." in guide
-    assert "section 3 keeps only its Technical context" in re.sub(r"\s+", " ", _read(SPLIT))
+    # Like a classic SAD: document control first, then where it all started.
+    assert "| Version | Date | Author | Change |" in block
+    assert "| Source | Used for |" in block
+    assert "| Constraint | Background |" in block
+    assert "by **general pattern**, never by class or part" in guide
+    assert "passes / fails / doubt / out of scope" in guide
+    assert "section 4 keeps only its Technical context" in re.sub(r"\s+", " ", _read(SPLIT))
 
 
 def test_fo_starts_with_the_domain_model_and_to_has_all_c4_levels() -> None:
@@ -432,3 +440,37 @@ def test_the_scaffold_is_filled_in_one_pass() -> None:
 
     assert "kingmadoc explain scaffold" in step
     assert "one pass per document" in step and "not one edit per placeholder" in step
+
+
+def test_wireframes_are_sketches_with_safe_grids() -> None:
+    """A "design" is a Balsamiq-style sketch; grids always set rows and columns together."""
+    stories = re.sub(r"\s+", " ", _read(FOLDER / "reference" / "stories.md"))
+
+    assert "sketch: true" in stories and "never use screenshots" in stories
+    assert "Always `grid-rows` and `grid-columns` together." in stories
+    assert "`top` is reserved in D2" in stories
+    assert "literally and in the same order" in stories
+    source = _read(FOLDER / "reference" / "stories.md")
+    for example in re.findall(r"```d2\n(.*?)\n```", source, re.S):
+        for grid in re.findall(r"\{([^{}]*grid-(?:rows|columns)[^{}]*)", example):
+            assert "grid-rows" in grid and "grid-columns" in grid, grid
+
+
+def test_skill_examples_keep_arrow_labels_short_and_classes_readable() -> None:
+    """Every D2 example passes render's label and class warnings (agents copy them)."""
+    from kingmadoc.render import class_warnings, label_warnings
+
+    for path in [SKILL, *sorted((FOLDER / "reference").glob("*.md"))]:
+        for example in re.findall(r"^```d2\n(.*?)\n```$", _read(path), re.S | re.M):
+            assert label_warnings(example) == [], (path.name, label_warnings(example))
+            assert class_warnings(example) == [], path.name
+
+
+def test_plain_language_and_tables_over_figures() -> None:
+    """Mbo level in the user's language; a table when it is clearer than a figure."""
+    rules = re.sub(r"\s+", " ", _read(SKILL))
+
+    assert "secondary vocational (mbo) level" in rules and "idempotentie" in rules
+    assert "Figures are not a goal" in rules
+    assert "pip install --pre kingmadoc" in rules
+    assert 'py -3 -c "from kingmadoc.cli import main; main()"' in rules

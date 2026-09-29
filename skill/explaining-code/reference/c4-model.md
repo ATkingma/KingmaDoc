@@ -1,7 +1,7 @@
 # The C4 model (Simon Brown)
 
 Contents: Abstractions · The seven diagrams · Notation rules · Drawing C4 in D2 ·
-Mistakes to avoid · Review checklist.
+Palette: draw.io · Mistakes to avoid · Review checklist.
 
 Every C4 figure in an explainer follows this file. It sums up the C4 model as defined
 by its creator at [c4model.com](https://c4model.com): the abstractions, the seven
@@ -70,24 +70,28 @@ Each diagram "can stand alone, and be (mostly) understood without a narrative".
   `[Container] Webshop`, `[Component] Webshop - API`, `[Deployment] Webshop - production`,
   `[Dynamic] Webshop - placing an order`.
 - **Legend** explaining every shape, colour and line style used (`d2-legend`).
-- **Every element:** a name, its type, its technology (containers, components and
-  deployment nodes) and a short description of its responsibility (deployment nodes and
-  container instances may leave it out), in this layout:
+- **Every element:** a name, its type and its technology (containers, components and
+  deployment nodes), in this layout, with no description line: the short description of
+  its responsibility goes into the table under the figure.
 
   ```text
   **Name**
   [Container: ASP.NET Core 10]
-
-  Checks and stores contact messages.
   ```
+
+- **Fixed width:** every element class gets `width: 250` (250-260), so D2 does not cut
+  the text.
 
 - **Every relationship:** one direction (no two-headed arrows), a label that states the
   intent and reads in the arrow's direction ("Sends order e-mails using", not "Uses" or
   "e-mail"), and between containers the technology or protocol: `[HTTPS/JSON]`,
   `[SQL]`, `[AMQP]`. Several interactions between the same two elements become one
-  arrow with an inclusive label ("Browses and places orders using"); the individual
+  arrow with an inclusive label ("Places orders using"); the individual
   steps go in a dynamic diagram.
-- **Boundaries** as a dashed box named after the system or container they enclose.
+- **Boundaries** as a dashed box named after the system or container they enclose. No
+  `grid-rows`/`grid-columns` inside a boundary: ELK then draws the arrows as straight
+  lines through the blocks.
+- **Nested deployment nodes:** one arrow to the outer node, not one to each child.
 - **Colours** consistent across all figures: the palette below. Explain acronyms in the
   legend or the table under the figure.
 - At most about fifteen elements per diagram; split larger ones by area or feature at
@@ -100,12 +104,12 @@ label elements with Markdown (`|md … |`) and add a `d2-legend` for the classes
 
 ```d2
 classes: {
-  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}}
-  system: {shape: rectangle; style: {fill: "#1168bd"; stroke: "#0b4884"; font-color: "#ffffff"}}
-  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}}
-  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
+  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}; width: 250}
+  system: {shape: rectangle; style: {fill: "#1168bd"; stroke: "#0b4884"; font-color: "#ffffff"}; width: 250}
+  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}; width: 250}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
+  component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}; width: 250}
   boundary: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; stroke-dash: 4; font-size: 15}}
   node: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; font-size: 15}}
 }
@@ -124,22 +128,16 @@ vars: {
 customer: |md
   **Customer**\
   [Person]
-
-  Buys products online.
 | {class: person}
 shop: |md
   **Webshop**\
   [Software System]
-
-  Lets customers browse and order products.
 | {class: system}
 mail: |md
   **E-mail service**\
   [Software System]
-
-  Delivers the order e-mails.
 | {class: external}
-customer -> shop: "Browses and places orders using"
+customer -> shop: "Places orders using"
 shop -> mail: "Sends order e-mails using"
 ```
 
@@ -148,10 +146,10 @@ relationships name the protocol.
 
 ```d2
 classes: {
-  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}}
-  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}}
-  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}; width: 250}
+  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#ffffff"}; width: 250}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
   boundary: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; stroke-dash: 4; font-size: 15}}
 }
 title: "[Container] Webshop" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
@@ -177,30 +175,24 @@ shop: "Webshop [Software System]" {
   web: |md
     **Web app**\
     [Container: Next.js 15]
-
-    Serves the shop pages.
   | {class: container}
   api: |md
     **API**\
     [Container: ASP.NET Core 10]
-
-    Handles orders and payments.
   | {class: container}
   db: |md
     **Database**\
     [Container: PostgreSQL 16]
-
-    Stores products and orders.
   | {class: database}
 }
 mail: |md
   **E-mail service**\
   [Software System]
 | {class: external}
-customer -> shop.web: "Browses and orders using\n[HTTPS]"
-shop.web -> shop.api: "Places orders using\n[HTTPS/JSON]"
-shop.api -> shop.db: "Reads and writes orders using\n[SQL]"
-shop.api -> mail: "Sends order e-mails using\n[SMTP]"
+customer -> shop.web: "Orders using [HTTPS]"
+shop.web -> shop.api: "Places orders [HTTPS/JSON]"
+shop.api -> shop.db: "Reads/writes orders [SQL]"
+shop.api -> mail: "Sends e-mails using [SMTP]"
 ```
 
 **Component** (level 3): one container as the boundary; components name the code
@@ -208,9 +200,9 @@ construct and point to their path in the table below the figure.
 
 ```d2
 classes: {
-  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
+  component: {shape: rectangle; style: {fill: "#85bbf0"; stroke: "#5d82a8"; font-color: "#000000"}; width: 250}
   boundary: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; stroke-dash: 4; font-size: 15}}
 }
 title: "[Component] Webshop - API" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
@@ -235,23 +227,19 @@ api: "API [Container: ASP.NET Core 10]" {
   orders: |md
     **Orders controller**\
     [Component: ASP.NET controller]
-
-    Accepts and validates orders.
   | {class: component}
   store: |md
     **Order repository**\
     [Component: EF Core]
-
-    Saves and loads orders.
   | {class: component}
 }
 db: |md
   **Database**\
   [Container: PostgreSQL 16]
 | {class: database}
-web -> api.orders: "Posts orders to\n[HTTPS/JSON]"
+web -> api.orders: "Posts orders [HTTPS/JSON]"
 api.orders -> api.store: "Saves the order using"
-api.store -> db: "Reads and writes\n[SQL]"
+api.store -> db: "Reads and writes [SQL]"
 ```
 
 **Deployment**: nested deployment nodes (`[Deployment Node: …]`) with the container
@@ -259,8 +247,8 @@ instances they run; infrastructure (proxy, DNS) only when the code configures it
 
 ```d2
 classes: {
-  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
   node: {label.near: top-left; style: {fill: transparent; stroke: "#888888"; font-size: 15}}
 }
 title: "[Deployment] Webshop - production" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
@@ -284,8 +272,8 @@ server: "VPS [Deployment Node: Ubuntu 24.04]" {
     db: "Database [Container: SQLite file]" {class: database}
   }
 }
-server.docker.web -> server.docker.api: "Places orders using\n[HTTP, internal network]"
-server.docker.api -> server.docker.db: "Reads and writes\n[SQLite]"
+server.docker.web -> server.docker.api: "Places orders [HTTP]"
+server.docker.api -> server.docker.db: "Reads and writes [SQLite]"
 ```
 
 **Dynamic**: one feature; the labels are numbered in order. (For many steps or
@@ -293,9 +281,9 @@ replies, draw a sequence diagram instead; see models.md.)
 
 ```d2
 classes: {
-  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}}
-  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
-  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}}
+  person: {shape: c4-person; style: {fill: "#08427b"; stroke: "#073b6f"; font-color: "#ffffff"}; width: 250}
+  container: {shape: rectangle; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
+  database: {shape: cylinder; style: {fill: "#438dd5"; stroke: "#3c7fc0"; font-color: "#ffffff"}; width: 250}
 }
 title: "[Dynamic] Webshop - placing an order" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 direction: down
@@ -313,14 +301,43 @@ customer: "Customer [Person]" {class: person}
 web: "Web app [Container: Next.js 15]" {class: container}
 api: "API [Container: ASP.NET Core 10]" {class: container}
 db: "Database [Container: PostgreSQL 16]" {class: database}
-customer -> web: "1. Submits the order form"
-web -> api: "2. Posts the order to\n[HTTPS/JSON]"
-api -> db: "3. Saves the order in\n[SQL]"
+customer -> web: "1. Submits order form"
+web -> api: "2. Posts order [HTTPS/JSON]"
+api -> db: "3. Saves order [SQL]"
 ```
 
 A **System Landscape** is drawn like the context diagram, without a system in focus.
 
+## Palette: draw.io
+
+With `explain: {palette: drawio}` in `.featuredoc.yml` (for readers in light mode only;
+render with `kingmadoc render --light`), use these colours instead of the C4 blues. One
+text colour (black) for every C4 figure.
+
+| Element                              | Fill      | Stroke    | Text      |
+| ------------------------------------ | --------- | --------- | --------- |
+| Person, system, container, component | `#dae8fc` | `#6c8ebf` | `#000000` |
+| External system                      | `#999999` | `#6b6b6b` | `#000000` |
+| Group, frame, boundary               | `#f5f5f5` | `#666666` | `#000000` |
+| Arrow                                | —         | `#000000` | `#000000` |
+
+Status (traffic light), fill / stroke: green `#d5e8d4` / `#82b366`, red `#f8cecc` /
+`#b85450`, orange `#ffe6cc` / `#d79b00`, grey `#f5f5f5` / `#666666`.
+
+```text
+classes: {
+  person: {shape: c4-person; style: {fill: "#dae8fc"; stroke: "#6c8ebf"; font-color: "#000000"}; width: 250}
+  container: {shape: rectangle; style: {fill: "#dae8fc"; stroke: "#6c8ebf"; font-color: "#000000"}; width: 250}
+  external: {shape: rectangle; style: {fill: "#999999"; stroke: "#6b6b6b"; font-color: "#000000"}; width: 250}
+  boundary: {label.near: top-left; style: {fill: "#f5f5f5"; stroke: "#666666"; stroke-dash: 4; font-color: "#000000"; font-size: 15}}
+}
+(* -> *)[*].style.stroke: "#000000"
+```
+
 ## Mistakes to avoid
+
+- A description line inside a block (it goes into the table), or blocks without a
+  fixed `width` (D2 cuts the text).
 
 - A message bus, API gateway or service mesh as one box in the middle: draw the queues
   or topics, or label the relationship "… via <queue>".
@@ -336,8 +353,8 @@ A **System Landscape** is drawn like the context diagram, without a system in fo
 Before handing over, check every C4 figure; fix it until every answer is yes.
 
 - [ ] It has a title with the diagram type and scope, and a legend.
-- [ ] Every element has a name, a type, a description and (containers, components) a
-      technology.
+- [ ] Every element has a name, a type and (containers, components) a technology; its
+      description is in the table under the figure.
 - [ ] Every acronym, colour, shape and line style is explained (legend or table).
 - [ ] Every arrow has one direction and a specific label that matches it; arrows
       between containers name the protocol.

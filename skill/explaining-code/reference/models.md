@@ -15,20 +15,20 @@ never invent content to fill one. Keep the whole explainer to about eight figure
 
 | If the code has…                                                                  | Add                                     | Kind       | arc42 section |
 | --------------------------------------------------------------------------------- | --------------------------------------- | ---------- | ------------- |
-| HTTP or RPC handlers, clients, callbacks crossing three or more parts             | Sequence diagram per key action         | technical  | 6             |
-| A `status` or `state` field with transition methods, guards on it, an FSM library | State machine per entity                | both       | 6 or 8        |
-| Migrations, ORM models or a schema with more than three related tables            | ER diagram (crow's foot)                | technical  | 8             |
-| Entity or aggregate classes that carry business rules                             | Domain model (conceptual classes)       | functional | 8             |
-| An interface or protocol with several implementations, a plugin registry          | UML class diagram of that part          | technical  | 5 (level 3)   |
-| Many packages, layering or import rules                                           | Package (dependency) diagram            | technical  | 5 or 8        |
-| Several roles acting in turn, approval steps, a workflow engine, queued steps     | Activity diagram with swimlanes         | both       | 6             |
-| Routes of a UI, wizards, multi-step forms                                         | User journey (flowchart)                | functional | 6             |
-| Several user types with different permissions                                     | Use case diagram + permissions table    | functional | 3             |
-| Event classes, publish/subscribe, handlers, sagas                                 | Event flow (event storming colours)     | both       | 6             |
-| Several services or modules with their own model, adapters, upstream APIs         | Context map (DDD)                       | technical  | 3 or 8        |
-| Logins, tokens, personal data, payments, uploads, webhooks                        | Data flow diagram with trust boundaries | technical  | 8             |
-| A complex function with more than three branches, a batch job with retries        | Flowchart                               | technical  | 6             |
-| An algorithm: pathfinding, scheduling, pricing, ranking, recursion, nested loops    | Algorithm (flowchart + trace + formula) | technical  | 8             |
+| HTTP or RPC handlers, clients, callbacks crossing three or more parts             | Sequence diagram per key action         | technical  | 7             |
+| A `status` or `state` field with transition methods, guards on it, an FSM library | State machine per entity                | both       | 7 or 9        |
+| Migrations, ORM models or a schema with more than three related tables            | ER diagram (crow's foot)                | technical  | 9             |
+| Entity or aggregate classes that carry business rules                             | Domain model (conceptual classes)       | functional | 9             |
+| An interface or protocol with several implementations, a plugin registry          | UML class diagram of that part          | technical  | 6 (level 3)   |
+| Many packages, layering or import rules                                           | Package (dependency) diagram            | technical  | 6 or 9        |
+| Several roles acting in turn, approval steps, a workflow engine, queued steps     | Activity diagram with swimlanes         | both       | 7             |
+| Routes of a UI, wizards, multi-step forms                                         | User journey (flowchart)                | functional | 7             |
+| Several user types with different permissions                                     | Use case diagram + permissions table    | functional | 4             |
+| Event classes, publish/subscribe, handlers, sagas                                 | Event flow (event storming colours)     | both       | 7             |
+| Several services or modules with their own model, adapters, upstream APIs         | Context map (DDD)                       | technical  | 4 or 9        |
+| Logins, tokens, personal data, payments, uploads, webhooks                        | Data flow diagram with trust boundaries | technical  | 9             |
+| A complex function with more than three branches, a batch job with retries        | Flowchart                               | technical  | 7             |
+| An algorithm: pathfinding, scheduling, pricing, ranking, recursion, nested loops    | Algorithm (flowchart + trace + formula) | technical  | 9             |
 
 Tie-breakers: one caller-callee chain is a sequence; several roles taking turns are
 swimlanes; the lifecycle of one thing is a state machine. Prefer one clear figure over
@@ -54,23 +54,30 @@ call or message, **dashed arrow = reply**; label calls with the operation
 (`POST /orders`, `save(order)`); alternatives and loops as a group named
 `alt [condition]`, `opt [condition]` or `loop [condition]`; at most about seven
 participants. Draw the happy path, plus an error path only when it explains behaviour.
+Colours: actors `#dae8fc`/`#6c8ebf`, black text; messages black; groups `#f5f5f5`/`#666666`.
 
 ```d2
 title: "[Sequence] Webshop - placing an order" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
-shape: sequence_diagram
-customer: Customer {shape: person}
-web: Web app
-api: API
-db: Database {shape: cylinder}
-customer -> web: submits the order form
-web -> api: POST /orders
-invalid: "alt [body invalid]" {
-  api -> web: 400 Bad Request {style.stroke-dash: 3}
+classes: {
+  actor: {style: {fill: "#dae8fc"; stroke: "#6c8ebf"; font-color: "#000000"}}
+  call: {style: {stroke: "#000000"}}; reply: {style: {stroke: "#000000"; stroke-dash: 3}}
+  group: {style: {fill: "#f5f5f5"; stroke: "#666666"; font-color: "#000000"}}
 }
-api -> db: INSERT order
-db -> api: order id {style.stroke-dash: 3}
-api -> web: 201 Created {style.stroke-dash: 3}
-web -> customer: shows the confirmation {style.stroke-dash: 3}
+shape: sequence_diagram
+customer: Customer {shape: person; class: actor}
+web: Web app {class: actor}
+api: API {class: actor}
+db: Database {shape: cylinder; class: actor}
+customer -> web: submits the order form {class: call}
+web -> api: POST /orders {class: call}
+invalid: "alt [body invalid]" {
+  class: group
+  api -> web: 400 Bad Request {class: reply}
+}
+api -> db: INSERT order {class: call}
+db -> api: order id {class: reply}
+api -> web: 201 Created {class: reply}
+web -> customer: shows the confirmation {class: reply}
 ```
 
 ## State machine (UML)
@@ -93,7 +100,7 @@ paid: Paid {class: state}
 shipped: Shipped {class: state}
 cancelled: Cancelled {class: state}
 start -> draft: "create()"
-draft -> paid: "pay() [amount matches] / send receipt"
+draft -> paid: "pay() [amount ok] / receipt"
 draft -> cancelled: "cancel()"
 paid -> shipped: "ship() / notify customer"
 shipped -> end
@@ -138,25 +145,32 @@ multiplicities (`1`, `0..1`, `*`, `1..*`) on associations. A **domain model** is
 conceptual version for the functional side: business concepts with a few attributes,
 no methods, no types, multiplicities kept.
 
+Draw a class as an `|md` rectangle, not `shape: class` (D2 colours its body with the
+stroke and puts white text on it; `render` warns): the name bold, one member per line
+with `+`/`-`/`#` and a `\` line break, `<`/`>` as `&lt;`/`&gt;` ("malformed Markdown").
+
+
 ```d2
 title: "[Class] Diagram backends" {shape: text; near: top-center; style: {font-size: 24; bold: true}}
 direction: down
-backend: "«interface» DiagramBackend" {
-  shape: class
-  "+render_context(diagram)": str
-}
-mermaid: MermaidBackend {
-  shape: class
-  "+render_context(diagram)": str
-}
-diagram: Diagram {
-  shape: class
-  +title: str
-}
-node: Node {
-  shape: class
+classes: {uml: {shape: rectangle; style: {fill: "#dae8fc"; stroke: "#6c8ebf"; font-color: "#000000"}}}
+backend: |md
+  **«interface» DiagramBackend**\
+  +render_context(diagram): str
+| {class: uml}
+mermaid: |md
+  **MermaidBackend**\
+  +render_context(diagram): str
+| {class: uml}
+diagram: |md
+  **Diagram**\
+  +title: str\
+  +nodes: tuple&lt;Node&gt;
+| {class: uml}
+node: |md
+  **Node**\
   +alias: str
-}
+| {class: uml}
 mermaid -> backend: realises {target-arrowhead: {shape: triangle; style.filled: false}; style.stroke-dash: 3}
 node -> diagram: "1..*" {target-arrowhead: {shape: diamond; style.filled: true}}
 backend -> diagram: formats {style.stroke-dash: 3}
@@ -306,8 +320,8 @@ direction: right
 catalog: Catalog context
 sales: Sales context
 payments: Payment provider (external)
-catalog -> sales: "U: OHS/PL -> D: CF"
-payments -> sales: "U: OHS -> D: ACL"
+catalog -> sales: "U:OHS/PL D:CF"
+payments -> sales: "U:OHS D:ACL"
 ```
 
 ## Algorithm (flowchart, trace table, formula)

@@ -53,10 +53,10 @@ them are updated; files you edited are kept (`--force` replaces them too).
 
 Nothing else to install: the first `kingmadoc render` downloads the D2 diagram renderer by
 itself (pinned version, checksum-verified; `KINGMADOC_D2_DOWNLOAD=0` turns that off).
-The pictures are PNG files linked from plain Markdown, so every Markdown preview shows
-them: Visual Studio and Rider (preview on by default), VS Code (Ctrl+Shift+V), GitHub,
-GitLab and Bitbucket. `render --format svg` links the SVG instead, which follows dark
-mode. VS Code opens `.md` as text: `kingmadoc skills install` offers to make it open
+The pictures are PNGs embedded in the Markdown as data URIs, so the document shows them
+on its own in Visual Studio and Rider (preview on by default) and VS Code (Ctrl+Shift+V).
+GitHub, GitLab and Bitbucket do not show data-URI images: render with `--link` to link
+`img/*.png` instead. `render --format svg` shows the SVG, which follows dark mode. VS Code opens `.md` as text: `kingmadoc skills install` offers to make it open
 explainers as a preview (`--vscode-user` for every folder, `--vscode` for this project).
 
 ### pip
@@ -104,7 +104,7 @@ agent adds the models the code calls for (UML sequence, state machine, class, ac
 with swimlanes, use case, ER, data flow with trust boundaries, context map), each drawn
 by its own notation rules. No stories, no audit. Install it next to the first one and ask the agent to "explain <feature / branch /
 project>". `kingmadoc skills install` installs it together with the first skill; the
-pictures are rendered with `kingmadoc render` as PNG, which every editor shows.
+pictures are rendered with `kingmadoc render` as PNG, embedded in the document (`--link` for Git hosts).
 
 - The Codex and Copilot files are loaded in **every** session (about 17 KB). Codex
   stops reading `AGENTS.md` files after 32 KiB in total by default

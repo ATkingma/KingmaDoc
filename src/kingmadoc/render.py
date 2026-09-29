@@ -5,7 +5,11 @@ Every fenced ``d2`` block becomes two files next to the document, ``img/<doc>-<n
 replaced by only the image, preceded by an HTML comment that points to the source::
 
     <!-- kingmadoc:diagram img/<doc>-<n>.d2 -->
-    ![<nearest heading>](img/<doc>-<n>.svg)
+    ![<nearest heading>](data:image/png;base64,...)
+
+By default the image is embedded as a base64 data URI, so the document shows its
+pictures on its own; ``link=True`` (``--link``) links ``img/<doc>-<n>.png`` instead. The
+files in ``img/`` are written either way, and a second render replaces the image line.
 
 The comment is invisible in Markdown previews. To change a diagram, edit its ``.d2`` file
 (or put a new ``d2`` block in the document) and render again. Documents rendered by the
@@ -17,12 +21,14 @@ pinned release once, so nothing has to be installed besides KingmaDoc.
 
 from __future__ import annotations
 
+import base64
 import os
 import re
 import subprocess
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
+from types import MappingProxyType
 
 from kingmadoc.documents import write_document
 from kingmadoc.exceptions import RenderError
@@ -42,6 +48,14 @@ D2_DARK_THEME = 200
 LAYOUT_ENGINE = "elk"
 # Above this many arrows a figure gets hard to follow (render warns).
 MAX_ARROWS = 12
+# More words than this on one arrow label crowd the figure (a `[protocol]` counts as one).
+MAX_LABEL_WORDS = 4
+_LABEL = re.compile(
+    r'^\s*[\w.]+\s*(?:<->|->|<-|--)\s*[\w.]+\s*:\s*(?P<label>"(?:[^"\\\n]|\\.)*"|[^{\n]*)',
+    re.M,
+)
+# Media types of the embedded images.
+_MEDIA_TYPES = MappingProxyType({"png": "image/png", "svg": "image/svg+xml"})
 _ARROW = re.compile(r"^\s*([\w.]+)\s*(<->|->|<-|--)\s*([\w.]+)", re.M)
 _LEGEND = re.compile(r"vars:\s*\{\s*d2-legend:\s*\{.*?^\s*\}\s*^\}", re.S | re.M)
 
@@ -61,7 +75,11 @@ _HEADING = re.compile(r"^#{1,6} +(.+?) *$", re.M)
 
 
 def render_file(
-    path: Path, d2: Sequence[str], dark: bool = True, image_format: str = "png"
+    path: Path,
+    d2: Sequence[str],
+    dark: bool = True,
+    image_format: str = "png",
+    link: bool = False,
 ) -> list[Path]:
     """Render every D2 diagram in a Markdown file to images and embed only the images.
 
@@ -78,7 +96,8 @@ def render_file(
         path: The Markdown document.
         d2: Command that runs D2 (see :func:`kingmadoc.d2_binary.ensure_d2`).
         dark: Also embed a dark theme in the SVG, used when the viewer is in dark mode.
-        image_format: What the document links: one of :data:`IMAGE_FORMATS`.
+        image_format: What the document shows: one of :data:`IMAGE_FORMATS`.
+        link: Link the image file instead of embedding it as a base64 data URI.
 
     Returns:
         The linked image paths, in document order (empty if there are no diagrams); a
@@ -133,28 +152,52 @@ def render_file(
         reversed(items), reversed(names), reversed(formats), strict=True
     ):
         alt = _nearest_heading(text, item.start()) or "Diagram"
-        text = text[: item.start()] + _embed(alt, name, linked) + text[item.end() :]
+        data = None if link else (image_dir / f"{name}.{linked}").read_bytes()
+        text = text[: item.start()] + _embed(alt, name, linked, data) + text[item.end() :]
     write_document(path, text, overwrite=True)
     return [image_dir / f"{name}.{fmt}" for name, fmt in zip(names, formats, strict=True)]
 
 
-def diagram_warnings(source: str) -> list[str]:
-    """Everything worth fixing in a D2 diagram: dark-mode styles and crowded arrows.
+def diagram_warnings(source: str, light: bool = False) -> list[str]:
+    """Everything worth fixing in a D2 diagram: styles, crowded arrows, long labels.
+
+    Args:
+        source: The D2 source.
+        light: The images are light only (``--light``): white fills are fine then.
+
+    Returns:
+        One message per problem (empty when there is none).
+    """
+    return dark_mode_warnings(source, light) + class_warnings(source) + crowding_warnings(source)
+
+
+def class_warnings(source: str) -> list[str]:
+    """Warn about ``shape: class`` with its own fill.
+
+    D2 colours a class body with the stroke and puts white text on it, so a custom fill
+    makes it unreadable; an ``|md`` rectangle draws a class as intended (models.md).
 
     Args:
         source: The D2 source.
 
     Returns:
-        One message per problem (empty when there is none).
+        One message per class shape with a fill.
     """
-    return dark_mode_warnings(source) + crowding_warnings(source)
+    warnings = []
+    for match in re.finditer(r"\bshape: *class\b", source):
+        if re.search(r"\bfill:", _enclosing_map(source, match.start())):
+            warnings.append(f"{_key(source, match.start())}: shape: class with a fill gets "
+                            "white text on the stroke colour; use an |md rectangle for "
+                            "classes, see models.md")
+    return warnings
 
 
 def crowding_warnings(source: str) -> list[str]:
     """Warn about figures whose arrows get hard to follow.
 
-    More than :data:`MAX_ARROWS` arrows, or two arrows between the same two shapes (one
-    arrow with a combined label reads better).
+    More than :data:`MAX_ARROWS` arrows, two arrows between the same two shapes (one
+    arrow with a combined label reads better), or an arrow label of more than
+    :data:`MAX_LABEL_WORDS` words or with a line break.
 
     Args:
         source: The D2 source.
@@ -163,10 +206,10 @@ def crowding_warnings(source: str) -> list[str]:
         One message per problem.
     """
     body = _LEGEND.sub("", source)
+    warnings = label_warnings(body)
     if "sequence_diagram" in body:
-        return []  # a sequence diagram's arrows are its messages, in order
+        return warnings  # a sequence diagram's arrows are its messages, in order
     pairs = [(a, b) for a, _, b in _ARROW.findall(body)]
-    warnings = []
     if len(pairs) > MAX_ARROWS:
         warnings.append(f"{len(pairs)} arrows (more than {MAX_ARROWS}) are hard to follow; "
                         "split the figure or combine arrows")
@@ -181,16 +224,40 @@ def crowding_warnings(source: str) -> list[str]:
     return warnings
 
 
-def dark_mode_warnings(source: str) -> list[str]:
+def label_warnings(source: str) -> list[str]:
+    """Warn about arrow labels that are too long or span lines.
+
+    Args:
+        source: The D2 source.
+
+    Returns:
+        One message per arrow whose label has more than :data:`MAX_LABEL_WORDS` words
+        (a ``[protocol]`` part counts as one) or a ``\\n``.
+    """
+    warnings = []
+    for match in _LABEL.finditer(source):
+        label = match.group("label").strip().strip('"').strip()
+        if not label:
+            continue
+        words = len(re.sub(r"\[[^\]]*\]", "P", label.replace("\\n", " ")).split())
+        if words > MAX_LABEL_WORDS or "\\n" in label:
+            warnings.append(f"label `{label}` has {words} words; keep arrow labels to "
+                            f"{MAX_LABEL_WORDS} words, protocol in brackets, one line")
+    return warnings
+
+
+def dark_mode_warnings(source: str, light: bool = False) -> list[str]:
     """Find styles in a D2 diagram that break when the image shows in dark mode.
 
     The images carry a dark theme; fixed colours do not follow it. Warned about: a fixed
     ``font-color`` without a fill (dark text on the dark background), a white fill (a
     white box whose labels turn light), and a ``sequence_diagram`` in a labelled
-    container (its key shows as a heading).
+    container (its key shows as a heading). With ``light`` the white fill is fine:
+    light-only images may use draw.io colours on white.
 
     Args:
         source: The D2 source.
+        light: The images are light only (``kingmadoc render --light``).
 
     Returns:
         One message per problem (empty when there is none).
@@ -202,7 +269,8 @@ def dark_mode_warnings(source: str) -> list[str]:
         if not fill or fill.group(1).strip() == "transparent":
             warnings.append(f"{_key(source, match.start())}: font-color without a fill stays "
                             "dark on the dark background; remove the font-color (dark mode)")
-    for match in re.finditer(r"\bfill: *\"?(?:#fff\b|#ffffff|white)\"?", source, re.I):
+    whites = [] if light else re.finditer(r"\bfill: *\"?(?:#fff\b|#ffffff|white)\"?", source, re.I)
+    for match in whites:
         warnings.append(f"{_key(source, match.start())}: a white fill stays white while the "
                         "text on it turns light; use fill: transparent (dark mode)")
     for match in re.finditer(r"^( +)shape: *sequence_diagram", source, re.M):
@@ -295,9 +363,14 @@ def _theme_args(dark: bool) -> list[str]:
     return ["--dark-theme", str(D2_DARK_THEME)] if dark else []
 
 
-def _embed(alt: str, name: str, image_format: str) -> str:
+def _embed(alt: str, name: str, image_format: str, data: bytes | None = None) -> str:
+    """The comment pointing at the source, and the image: embedded, or linked (no data)."""
     alt = alt.replace("[", "(").replace("]", ")")
-    return f"<!-- kingmadoc:diagram img/{name}.d2 -->\n![{alt}](img/{name}.{image_format})"
+    target = f"img/{name}.{image_format}"
+    if data is not None:
+        encoded = base64.b64encode(data).decode("ascii")
+        target = f"data:{_MEDIA_TYPES[image_format]};base64,{encoded}"
+    return f"<!-- kingmadoc:diagram img/{name}.d2 -->\n![{alt}]({target})"
 
 
 def _nearest_heading(text: str, position: int) -> str | None:

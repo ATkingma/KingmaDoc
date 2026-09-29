@@ -7,8 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `explaining-code` skill 6.1, from a real arc42 session that needed six corrections:
+  plain language at mbo level in the user's language (no coined words), a table when it
+  is clearer than a figure, C4 blocks with name and `[type: technology]` only and a fixed
+  width (the description goes into the table), no grids inside C4 boundaries, one arrow
+  to an outer deployment node, a state diagram or plain flowchart instead of swimlanes
+  with loops, and `pip install --pre kingmadoc` (plus a Windows fallback when the exe
+  shim is blocked). arc42 starts with document control (versions, distribution,
+  sources), gets a new section 2 "Starting situation" (the existing process, what the
+  tool could already do by general pattern, the test cases with passes/fails) that
+  `explain scaffold` writes too, and "Architecture constraints" with Constraint |
+  Background per theme; later sections move up one number. A draw.io palette
+  (`explain.palette: drawio`, light mode) with traffic-light status colours; UML classes
+  as `|md` rectangles instead of `shape: class`; sequence colours; Balsamiq-style sketch
+  wireframes with safe grid rules and a check that every text comes from the view.
+- `kingmadoc render` warns about arrow labels of more than four words
+  (`MAX_LABEL_WORDS`; a `[protocol]` counts as one) or with a line break, and about
+  `shape: class` with its own fill.
+- `kingmadoc explain check` warns when a `[Screen]` wireframe has a text that the view
+  named in its caption does not contain (best effort).
+
+### Changed
+
+- `kingmadoc render` embeds each image as a base64 data URI by default, so a document
+  shows its pictures on its own; `--link` links `img/<name>.png` as before. The `img/`
+  files and the `<!-- kingmadoc:diagram … -->` comment stay, so rendering again replaces
+  the image instead of adding one, and documents with relative links are converted.
+  `--light` also drops the white-fill warning (draw.io colours on white are fine there).
+
 ### Fixed
 
+- `kingmadoc explain check` counts embedded (data-URI) images as present and reports
+  how many pictures the explainer shows (it said "missing images: data:…" and "0
+  pictures"); the evals' `pictures_only` check accepts them too.
 - Explainers can no longer end up without pictures. `kingmadoc render` links the SVG of
   a diagram whose PNG conversion fails (a missing `resvg-py` wheel, a Rust panic in
   resvg) instead of failing the whole document, and `resvg-py` is loaded only when a

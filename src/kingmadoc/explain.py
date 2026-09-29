@@ -321,10 +321,84 @@ def check_explainer(folder: Path) -> list[str]:
             shown = ", ".join(left[:3]) + (" …" if len(left) > 3 else "")
             problems.append(f"{name}: {len(left)} placeholders not filled in: {shown}")
         links = [t for t in _IMAGE_LINK.findall(text) if "://" not in t]
-        missing = [t for t in links if not (document.parent / t).is_file()]
+        # An embedded image (data URI) is always there.
+        missing = [
+            t for t in links if not t.startswith("data:") and not (document.parent / t).is_file()
+        ]
         if missing:
             problems.append(f"{name}: missing images: {', '.join(missing)}")
         figures = "**Figure " in text
         if figures and not links:
             problems.append(f"{name}: has figure captions but shows no pictures")
     return problems
+
+
+def count_pictures(folder: Path) -> int:
+    """The number of pictures an explainer shows: embedded and linked images together.
+
+    Args:
+        folder: ``docs/explain/<NNNN>-<slug>``.
+
+    Returns:
+        Image links (data URIs included) over all its documents.
+    """
+    return sum(
+        len(_IMAGE_LINK.findall((folder / name).read_text(encoding="utf-8", errors="replace")))
+        for name in EXPLAINER_DOCUMENTS
+        if (folder / name).is_file()
+    )
+
+
+_SOURCE_COMMENT = re.compile(r"^<!-- kingmadoc:diagram (img/[\w.-]+\.d2) -->$", re.M)
+_CAPTION = re.compile(r"^\*\*Figure \d+\.\*\*.*$", re.M)
+# A D2 label: the quoted or plain text after `key:` (up to `{`, `;` or the line end).
+_D2_LABEL = re.compile(r'^\s*[\w.-]+\s*:\s*(?:"((?:[^"\\\n]|\\.)*)"|([^{;\n"]+))', re.M)
+# Wireframe marks that are drawing, not text of the view.
+_WIREFRAME_MARK = re.compile(r"\[ *_* *\]|☐|☑| v$|^[+|!*]\s*|\s*\*$")
+
+
+def screen_warnings(folder: Path, root: Path) -> list[str]:
+    """Texts in ``[Screen]`` wireframes that the view they show does not contain.
+
+    Best effort: a figure whose D2 title has ``[Screen]`` and whose caption names a
+    view file in a code span (e.g. `` `src/views/contact.html` ``) is checked label by
+    label against that file's text. Wireframes must use the view's own words.
+
+    Args:
+        folder: ``docs/explain/<NNNN>-<slug>``.
+        root: The project root the view paths are relative to.
+
+    Returns:
+        One message per label not found in the view.
+    """
+    warnings = []
+    for name in EXPLAINER_DOCUMENTS:
+        document = folder / name
+        if not document.is_file():
+            continue
+        text = document.read_text(encoding="utf-8", errors="replace")
+        for comment in _SOURCE_COMMENT.finditer(text):
+            source_file = folder / comment.group(1)
+            if not source_file.is_file():
+                continue
+            source = source_file.read_text(encoding="utf-8", errors="replace")
+            if "[Screen]" not in source:
+                continue
+            caption = _CAPTION.search(text, comment.end())
+            views = [
+                root / span
+                for span in (_CODE_SPAN.findall(caption.group(0)) if caption else [])
+                if (root / span).is_file()
+            ]
+            if not views:
+                continue
+            view_text = " ".join(v.read_text(encoding="utf-8", errors="replace") for v in views)
+            for match in _D2_LABEL.finditer(source):
+                label = (match.group(1) or match.group(2) or "").strip()
+                label = _WIREFRAME_MARK.sub("", label).strip().strip(":").strip()
+                if len(label) < 2 or "[Screen]" in label or label.startswith(("/", "#")):
+                    continue
+                if label not in view_text:
+                    warnings.append(f"{name}: {comment.group(1)}: `{label}` is not in "
+                                    f"{', '.join(v.relative_to(root).as_posix() for v in views)}")
+    return warnings
