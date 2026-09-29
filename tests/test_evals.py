@@ -48,9 +48,9 @@ The discount.
 <!-- kingmadoc:diagram img/figure-1.d2 -->
 ![Context](img/figure-1.svg)
 
-## 5. Building block view
-## 6. Runtime view
-## 8. Cross-cutting concepts
+## 6. Building block view
+## 7. Runtime view
+## 9. Cross-cutting concepts
 
 ## Couldn't work out
 
@@ -117,7 +117,7 @@ def test_checks_pass_on_a_good_explainer(tmp_path: Path) -> None:
          "pictures_only"),
         (lambda t: t.replace("figure-1.svg", "figure-9.svg"), "pictures_only"),
         (lambda t: t + "- a?\n- b?\n- c?\n", "max_questions"),
-        (lambda t: t.replace("## 6. Runtime view", ""), "contains"),
+        (lambda t: t.replace("## 7. Runtime view", ""), "contains"),
     ],
 )
 def test_checks_catch_a_bad_explainer(

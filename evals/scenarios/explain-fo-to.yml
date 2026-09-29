@@ -13,7 +13,8 @@ checks:
   - contains:
       files: docs/explain/0001-*/functional.md
       # The request is Dutch, so the agent may write the headings in Dutch.
-      text: ["Domain model | Domeinmodel", "User stories", "Evil user stories"]
+      text: ["Domain model | Domeinmodel", "User stories | Gebruikersverhalen",
+             "Evil user stories | Kwaadwillende gebruikersverhalen"]
   - contains:
       files: docs/explain/0001-*/technical.md
       text: ["Business rules | Bedrijfsregels", "Threat model | Dreigingsmodel",

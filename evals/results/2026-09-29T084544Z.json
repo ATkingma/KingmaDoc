@@ -1,0 +1,122 @@
+{
+  "agent": "claude -p {request} --output-format json --max-turns 80 --allowedTools 'Read,Write,Edit,Glob,Grep,Skill,Bash(kingmadoc:*),Bash(git log:*),Bash(git diff:*),Bash(git status:*),Bash(git show:*),Bash(git branch:*),Bash(git rev-parse:*),Bash(ls:*)'",
+  "results": [
+    {
+      "scenario": "explain-feature",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 84,
+        "total_cost_usd": 0.5269151999999999,
+        "num_turns": 29,
+        "tokens": {
+          "input_tokens": 44,
+          "cache_creation_input_tokens": 42863,
+          "cache_read_input_tokens": 1215876,
+          "output_tokens": 11220
+        },
+        "reply": "cs/explain/0001-placing-an-order/img/figure-3.d2 docs/explain/0001-placing-an-order/img/figure-3.png`.\n\n**Couldn't work out**\n- `shop/settings.py` has no `MIDDLEWARE`, so it isn't clear how `request.user` gets set for `login_required`.\n- `shipped` is a valid order status, but no code sets it.\n\nThe views don't catch a missing product, order or customer, or a bad JSON body. The explainer lists these under edge cases.\n\nVS Code shows the pictures only in its Markdown preview (Ctrl+Shift+V). Do you want explainers to open as a preview by default? I can run `kingmadoc skills install --vscode` if so."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "docs/explain/0001-placing-an-order/README.md"
+        },
+        {
+          "check": "exists docs/explain/README.md",
+          "ok": true,
+          "detail": "docs/explain/README.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/README.md",
+          "ok": false,
+          "detail": "docs/explain/0001-placing-an-order/README.md: '## 5. Building block view'; docs/explain/0001-placing-an-order/README.md: '## 6. Runtime view'; docs/explain/0001-placing-an-order/README.md: '## 8. Cross-cutting concepts'"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "6 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/README.md",
+          "ok": true,
+          "detail": "2 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "20 change(s), all allowed"
+        }
+      ],
+      "passed": 6,
+      "total": 7
+    },
+    {
+      "scenario": "explain-fo-to",
+      "variant": "with skill",
+      "agent": {
+        "exit_code": 0,
+        "seconds": 222,
+        "total_cost_usd": 1.0663586000000003,
+        "num_turns": 43,
+        "tokens": {
+          "input_tokens": 60,
+          "cache_creation_input_tokens": 81735,
+          "cache_read_input_tokens": 2188993,
+          "output_tokens": 30150
+        },
+        "reply": "t ontbreken van logging, limieten, CSRF-bescherming en validatie van invoer. Het model gaat uit van HTTPS, maar de code zegt daar niets over.\n\nE\u00e9n ding om te weten: `shop/settings.py` heeft geen `MIDDLEWARE` en geen sessies. Hoe `request.user` dan gevuld wordt, kon ik niet uitzoeken. Dat staat als open vraag in de TO.\n\nDe renderer geeft nog \u00e9\u00e9n waarschuwing over twee pijlen tussen \"Shop app\" en \"Klant\" in het bedreigingsmodel. Dat is bewust: volgens de TMT-notatie zijn dat twee aparte stromen.\n\nAls je de FO en TO graag in VS Code met plaatjes opent, gebruik dan Ctrl+Shift+V (Markdown-preview)."
+      },
+      "checks": [
+        {
+          "check": "exists docs/explain/0001-*/functional.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/functional.md"
+        },
+        {
+          "check": "exists docs/explain/0001-*/technical.md",
+          "ok": true,
+          "detail": "docs/explain/0001-branch-feature-discount/technical.md"
+        },
+        {
+          "check": "contains docs/explain/0001-*/functional.md",
+          "ok": false,
+          "detail": "docs/explain/0001-branch-feature-discount/functional.md: 'User stories'; docs/explain/0001-branch-feature-discount/functional.md: 'Evil user stories'"
+        },
+        {
+          "check": "contains docs/explain/0001-*/technical.md",
+          "ok": true,
+          "detail": "all present"
+        },
+        {
+          "check": "pictures_only docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "12 images"
+        },
+        {
+          "check": "explain_check docs/explain/0001-*",
+          "ok": true,
+          "detail": "finished"
+        },
+        {
+          "check": "max_questions docs/explain/0001-*/*.md",
+          "ok": true,
+          "detail": "0 question(s)"
+        },
+        {
+          "check": "unchanged_outside [docs/, .claude/]",
+          "ok": true,
+          "detail": "41 change(s), all allowed"
+        }
+      ],
+      "passed": 7,
+      "total": 8
+    }
+  ]
+}

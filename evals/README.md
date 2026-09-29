@@ -44,8 +44,11 @@ recorded result shows a real failure.
 
 | [2026-09-28 06:45](results/2026-09-28T064505Z.json), skill 5.9 (before the optimisation) | 7/7, 173 s, $1.15 | 6/6, 100 s, $0.86 | FO/TO: stopped by the spend limit, D2 left unrendered |
 | [2026-09-28 09:26](results/2026-09-28T092643Z.json), skill 6.0 (scaffold, shorter skill) | 7/7, 256 s, $1.54 | 6/6, 99 s, $0.81 | FO/TO: 8/8, 367 s, $2.10 |
+| [2026-09-29 08:36](results/2026-09-29T083627Z.json) + [08:45](results/2026-09-29T084544Z.json), skill 6.1 | 7/7, 84 s, $0.53 | 6/6, 48 s, $0.32 | FO/TO: 8/8, 222 s, $1.07 |
 
-Rows from 2026-09-28 are re-checked with the current checks (`explain_check`,
+The 6.1 rows are re-checked after the arc42 renumbering (section 2 "Starting situation") and
+with Dutch FO headings accepted; the first 6.1 feature run picked the c4 format on its own,
+which the skill now forbids. Rows from 2026-09-28 are re-checked with the current checks (`explain_check`,
 `__pycache__` ignored, Dutch headings accepted). The 6.0 feature run filled the scaffold
 placeholder by placeholder (41 turns instead of 22); the skill now says to write each
 document in one pass: [2026-09-28 09:30](results/2026-09-28T093046Z.json), explain-feature
