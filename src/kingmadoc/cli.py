@@ -44,6 +44,7 @@ from kingmadoc.explain import (
     index_markdown,
     index_path,
     is_generated_index,
+    lifeline_warnings,
     read_entries,
     screen_warnings,
 )
@@ -804,7 +805,8 @@ def explain_check(folders: tuple[Path, ...]) -> None:
             click.echo(f"{folder}/{problem}", err=True)
         for warning in screen_warnings(folder, folder.resolve().parent.parent.parent):
             click.echo(f"{folder}/{warning} (warning)", err=True)
-        for warning in c4_actor_warnings(explainer_figures(folder)):
+        figures = explainer_figures(folder)
+        for warning in c4_actor_warnings(figures) + lifeline_warnings(figures):
             click.echo(f"{folder}/{warning} (warning)", err=True)
         if problems:
             failed = True

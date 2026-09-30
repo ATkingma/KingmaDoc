@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sequence diagrams draw one lifeline per class, file or external system
+  (`explaining-code` skill 6.2): no merged `DatasetService / DashboardService` lifelines;
+  only a page with its own script (`index.html / index.js`) shares one. About seven
+  lifelines, up to ten, then split the action; `opt` for conditional and `par` for
+  parallel calls. `kingmadoc explain check` warns about a merged lifeline.
 - `explaining-code` skill 6.1, from a real arc42 session that needed six corrections:
   plain language at mbo level in the user's language (no coined words), a table when it
   is clearer than a figure, C4 blocks with name and `[type: technology]` only and a fixed

@@ -52,8 +52,25 @@ two overlapping ones. ArchiMate only if the project already uses it.
 Rules: participants left to right in the order they are first called; solid arrow =
 call or message, **dashed arrow = reply**; label calls with the operation
 (`POST /orders`, `save(order)`); alternatives and loops as a group named
-`alt [condition]`, `opt [condition]` or `loop [condition]`; at most about seven
-participants. Draw the happy path, plus an error path only when it explains behaviour.
+`alt [condition]`, `opt [condition]` or `loop [condition]`. Draw the happy path, plus
+an error path only when it explains behaviour.
+
+Lifelines, one per code element:
+
+- One lifeline is one class, one file or one external system. Never put two classes, two
+  files or two scripts on one lifeline: no `DatasetService / DashboardService`, no
+  `Endpoints` for two endpoint classes, no `api` for a whole layer. When a flow passes
+  through two classes of the same layer, draw both, each with its own calls.
+- The only exception is an HTML page with its own page script (`index.html / index.js`,
+  `details.html / details.js`). Every other script the page loads (for example
+  `charts.js`) gets its own lifeline.
+- Aim for about seven lifelines. When one lifeline per class makes it more, you may go up
+  to about ten. Leave out pure plumbing that only passes a call on (a connection helper,
+  a logger) and say in the caption what was left out. Above ten, split the action into
+  two figures in order instead of merging lifelines.
+- A call that only happens under a condition in the code goes in an `opt [condition]`
+  group. Parallel calls (`Promise.all`, `Task.WhenAll`) go in a `par [...]` group.
+
 Colours: actors `#dae8fc`/`#6c8ebf`, black text; messages black; groups `#f5f5f5`/`#666666`.
 
 ```d2
@@ -387,6 +404,8 @@ Check every figure against its model's rules above before handing over:
 - [ ] It has a title with the model and scope, and a legend when colours, line styles
       or shapes mean something.
 - [ ] Sequence: calls solid, replies dashed, groups named `alt/opt/loop [condition]`.
+- [ ] Sequence: one class, file or system per lifeline; only a page with its own script
+      (`index.html / index.js`) shares one; no `A / B` lifelines.
 - [ ] State machine: one initial state, final states, transitions as
       `event [guard] / action`, only transitions the code allows.
 - [ ] ER: real foreign keys only, cardinality at both ends, key columns only.

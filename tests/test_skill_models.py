@@ -361,3 +361,14 @@ def test_c4_examples_keep_the_same_actors_on_every_level() -> None:
     assert c4_actor_warnings(figures) == []
     text = re.sub(r"\s+", " ", _read(C4_MODEL))
     assert "The same actors on every level" in text and "stakeholders table" in text
+
+
+def test_sequence_lifelines_are_one_code_element_each() -> None:
+    """No merged `A / B` lifelines in the example; the rule and its one exception are stated."""
+    from kingmadoc.explain import lifeline_warnings
+
+    section = re.sub(r"\s+", " ", MODEL_SECTIONS["Sequence diagram (UML)"])
+    assert lifeline_warnings([("sequence.d2", _model("Sequence"))]) == []
+    assert "One lifeline is one class, one file or one external system." in section
+    assert "`index.html / index.js`" in section and "`par [...]`" in section
+    assert "no `A / B` lifelines" in _read(MODELS)

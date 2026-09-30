@@ -59,7 +59,7 @@ in its first line. `kingmadoc render` takes all three files at once.
 | **Scope**        | <feature / branch `<branch>` vs `<base>` / project / part `<path>`>                 |
 | **Stack**        | <languages, frameworks, data stores>                                                |
 | **Entry points** | <`path`, …>                                                                         |
-| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 6.1.0 (split) |
+| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 6.2.0 (split) |
 
 <at most three plain sentences: what it is, for whom, what it does>
 

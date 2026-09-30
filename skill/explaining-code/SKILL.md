@@ -1,7 +1,7 @@
 ---
 name: explaining-code
 description: "Explains existing code with rendered diagrams and short tables, as an arc42 or compact C4 document, one file or split into a functional and a technical design (FO/TO) with a threat model. Fixes code blindness. Scope: a feature, a branch or PR, a whole project, a folder, service or module, or only the classes or files the user names. Use when the user asks to explain, describe, document, map, diagram, draw, visualise or give an overview of existing code or architecture; asks how something works, what it does, how the parts fit together, where something happens, or what a branch, PR, commit or task changed or wants a new pattern in it explained; wants onboarding, a walkthrough, a codebase tour, an architecture or design document, arc42, a functional or technical design (FO, TO, or only one of them), C4, UML, sequence, ER or deployment diagrams of existing code; or no longer understands the code. The request may be in any language. Not for features that are not built yet."
-version: 6.1.0
+version: 6.2.0
 allowed-tools: [Read, Write, Glob, Grep, Bash]
 ---
 

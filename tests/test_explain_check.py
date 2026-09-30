@@ -169,3 +169,32 @@ def test_explain_check_warns_about_c4_actors(tmp_path: Path) -> None:
 
     assert result.exit_code == 0  # warnings, not failures
     assert result.output.count("(warning)") == 3
+
+
+SEQUENCE = '''title: "[Sequence] Dashboard - loading" {shape: text}
+shape: sequence_diagram
+page: "index.html / index.js"
+charts: charts.js
+api: "DatasetEndpoints / DashboardEndpoints"
+svc: DatasetService
+page -> api: GET /datasets
+'''
+
+
+def test_merged_lifelines_are_warned_about_except_a_page_and_its_script(tmp_path: Path) -> None:
+    """One class, file or system per lifeline; `x.html / x.js` is the one allowed pair."""
+    from kingmadoc.explain import lifeline_warnings
+
+    warnings = lifeline_warnings([("img/figure-3.d2", SEQUENCE)])
+
+    assert warnings == ["figure-3.d2: lifeline 'DatasetEndpoints / DashboardEndpoints' merges "
+                        "two classes; give each its own lifeline"]
+    other_page = SEQUENCE.replace("index.html / index.js", "index.html / charts.js")
+    assert len(lifeline_warnings([("f.d2", other_page)])) == 2
+    not_sequence = SEQUENCE.replace("shape: sequence_diagram\n", "")
+    assert lifeline_warnings([("f.d2", not_sequence)]) == []
+
+    folder = _folder(tmp_path, EMBEDDED, images=())
+    (folder / "img" / "figure-1.d2").write_text(SEQUENCE, encoding="utf-8")
+    result = CliRunner().invoke(cli, ["explain", "check", str(folder)])
+    assert result.exit_code == 0 and "merges two classes" in result.output

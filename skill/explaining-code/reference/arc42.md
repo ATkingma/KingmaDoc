@@ -125,7 +125,7 @@ Text in `<angle brackets>` is filled in; leave out subsections marked optional.
 | **Scope**        | <feature / branch `<branch>` vs `<base>` / project / part `<path>`>                 |
 | **Stack**        | <languages, frameworks, data stores>                                                |
 | **Entry points** | <`path`, …>                                                                         |
-| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 6.1.0 (arc42) |
+| **Based on**     | <commit hash (branch)> · <ISO date> · KingmaDoc skill explaining-code 6.2.0 (arc42) |
 
 ## Document control
 

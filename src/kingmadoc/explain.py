@@ -511,3 +511,39 @@ def explainer_figures(folder: Path) -> list[tuple[str, str]]:
             if source.is_file():
                 figures.append((comment.group(1), source.read_text(encoding="utf-8")))
     return figures
+
+
+_PARTICIPANT = re.compile(r'^([\w-]+):[ \t]*"?([^{\n"]*)"?', re.M)
+_NOT_PARTICIPANTS = frozenset({"title", "shape", "classes", "vars", "style", "direction"})
+
+
+def lifeline_warnings(figures: Sequence[tuple[str, str]]) -> list[str]:
+    """Sequence-diagram lifelines that merge two code elements (``A / B``).
+
+    One lifeline is one class, file or external system; the only exception is a page with
+    its own script of the same base name (``index.html / index.js``).
+
+    Args:
+        figures: ``(name, D2 source)`` per figure, e.g. ``("img/figure-2.d2", "...")``.
+
+    Returns:
+        One message per merged lifeline.
+    """
+    warnings = []
+    for name, source in figures:
+        if not re.search(r"\bshape: *sequence_diagram\b", source):
+            continue
+        for key, label in _PARTICIPANT.findall(source):
+            label = label.strip()
+            if key in _NOT_PARTICIPANTS or " / " not in label:
+                continue
+            parts = [p.strip() for p in label.split(" / ")]
+            stems = {Path(p).stem.lower() for p in parts}
+            suffixes = sorted(Path(p).suffix.lower() for p in parts)
+            if len(parts) == 2 and len(stems) == 1 and suffixes in (
+                [".htm", ".js"], [".html", ".js"], [".html", ".ts"], [".htm", ".ts"]
+            ):
+                continue  # a page and its own script
+            warnings.append(f"{Path(name).name}: lifeline '{label}' merges two classes; "
+                            "give each its own lifeline")
+    return warnings
