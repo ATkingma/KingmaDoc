@@ -47,6 +47,7 @@ from kingmadoc.explain import (
     lifeline_warnings,
     read_entries,
     screen_warnings,
+    sequence_warnings,
 )
 from kingmadoc.facts.branch import branch_changes
 from kingmadoc.facts.collect import FACT_SECTIONS, collect_facts, facts_markdown, facts_to_dict
@@ -806,7 +807,8 @@ def explain_check(folders: tuple[Path, ...]) -> None:
         for warning in screen_warnings(folder, folder.resolve().parent.parent.parent):
             click.echo(f"{folder}/{warning} (warning)", err=True)
         figures = explainer_figures(folder)
-        for warning in c4_actor_warnings(figures) + lifeline_warnings(figures):
+        warnings = c4_actor_warnings(figures) + lifeline_warnings(figures)
+        for warning in warnings + sequence_warnings(figures):
             click.echo(f"{folder}/{warning} (warning)", err=True)
         if problems:
             failed = True

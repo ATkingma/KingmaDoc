@@ -198,3 +198,56 @@ def test_merged_lifelines_are_warned_about_except_a_page_and_its_script(tmp_path
     (folder / "img" / "figure-1.d2").write_text(SEQUENCE, encoding="utf-8")
     result = CliRunner().invoke(cli, ["explain", "check", str(folder)])
     assert result.exit_code == 0 and "merges two classes" in result.output
+
+
+FLAT = '''title: "[Sequence] Dashboard - loading" {shape: text}
+shape: sequence_diagram
+page: "index.html / index.js"
+api: DashboardEndpoints
+svc: DashboardService
+db: Database {shape: cylinder}
+page -> api: GET /summary
+api -> svc: "GetSummaryAsync(datasetId)"
+svc -> db: SELECT summary
+db -> svc: rows {style.stroke-dash: 3}
+svc -> api: DashboardSummary {style.stroke-dash: 3}
+api -> page: 200 JSON {style.stroke-dash: 3}
+'''
+
+
+def test_abbreviated_calls_are_warned_about() -> None:
+    from kingmadoc.explain import sequence_warnings
+
+    source = FLAT.replace("GetSummaryAsync(datasetId)", "Get...Async(datasetId)")
+    warnings = sequence_warnings([("img/figure-2.d2", source)])
+
+    assert "figure-2.d2: message 'Get...Async(datasetId)' abbreviates a call" in warnings[0]
+    spanned = source.replace("page -> api:", "page.m -> api.c1:")
+    assert not any("abbreviates" in w for w in sequence_warnings([("f.d2", FLAT)]))
+    assert any("abbreviates" in w for w in sequence_warnings([("f.d2", spanned)]))
+
+
+def test_a_span_on_a_database_is_warned_about() -> None:
+    from kingmadoc.explain import sequence_warnings
+
+    source = FLAT.replace("svc -> db:", "svc.c1 -> db.q1:")
+    source = source.replace("db -> svc:", "db.q1 -> svc.c1:")
+    warnings = sequence_warnings([("f.d2", source)])
+
+    assert warnings == ["f.d2: `db` is a database; draw no activation bar on it (refer to it "
+                        "without an id)"]
+
+
+def test_many_calls_without_activation_bars_are_warned_about() -> None:
+    from kingmadoc.explain import MAX_CALLS_WITHOUT_SPANS, sequence_warnings
+
+    few = "shape: sequence_diagram\na -> b: x\nb -> c: y\nc -> d: z\n"
+    many = FLAT + "page -> api: GET /charts\n"
+
+    assert MAX_CALLS_WITHOUT_SPANS == 3
+    assert sequence_warnings([("f.d2", few)]) == []
+    assert sequence_warnings([("f.d2", many)]) == [
+        "f.d2: 4 calls and no activation bars; use spans (`api.c1 -> svc.c1`) on our own "
+        "lifelines"]
+    spanned = many.replace("api -> svc:", "api.c1 -> svc.c1:")
+    assert sequence_warnings([("f.d2", spanned)]) == []

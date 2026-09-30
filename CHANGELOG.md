@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sequence diagrams show activation bars on our own lifelines (D2 spans such as
+  `api.c1 -> svc.c1`), none on a database; never abbreviate a call (`Get...Async`);
+  labels stay between their lifelines with the full SQL in a check table under the
+  figure; one round trip is one message; calls sit where the code makes them
+  (`explaining-code` skill 6.3). `kingmadoc explain check` warns about an abbreviated
+  call, a span on a database, and more than three calls without any span.
 - Sequence diagrams draw one lifeline per class, file or external system
   (`explaining-code` skill 6.2): no merged `DatasetService / DashboardService` lifelines;
   only a page with its own script (`index.html / index.js`) shares one. About seven
