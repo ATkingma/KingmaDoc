@@ -129,7 +129,7 @@ def test_workflow_sections_in_order_and_short() -> None:
     assert positions == sorted(positions)
     for reference in REFERENCES:  # every reference file is linked from SKILL.md
         assert f"reference/{reference.name}" in text, reference.name
-        assert len(_read(reference).splitlines()) < 425, reference.name
+        assert len(_read(reference).splitlines()) < 450, reference.name
     assert len(text.splitlines()) < 300
 
 

@@ -71,6 +71,27 @@ Lifelines, one per code element:
 - A call that only happens under a condition in the code goes in an `opt [condition]`
   group. Parallel calls (`Promise.all`, `Task.WhenAll`) go in a `par [...]` group.
 
+Activation bars, labels and a check table:
+
+- Every lifeline of our own code gets an activation bar (UML execution specification)
+  from the call it receives to the reply it sends. In D2 that is a span: refer to
+  `participant.id` instead of `participant` on both the call and the reply, e.g.
+  `api.c1 -> svc.c1: "GetSummaryAsync(datasetId)"` and `svc.c1 -> api.c1: DashboardSummary`.
+  One new id per call; style the spans like their participants. The page or caller that
+  stays busy through the whole flow keeps one span.
+- No activation bar on a database, queue or external system: refer to it without an id
+  (`repo.c1 -> db: ...`), because it is not our code.
+- Never abbreviate a call: no `Get...Async`, no `...` in a method name. Parallel calls
+  each get their own route and method name inside the `par` group. Replies carry the
+  real return type (`RootSummary[]`, `200 JSON`).
+- Keep labels short enough to stay between their two lifelines: D2 does not widen the
+  gap for a long label and refuses `width` on a participant with spans. Put the full SQL
+  or parameters in a table under the figure (request, endpoint and service method,
+  repository method, SQL, return type), so the reader can check each step in the code.
+- One round trip is one message: a batch with two SELECTs is one call with one reply.
+- Read the caller before you draw it: a call made from inside another call (a chart
+  drawn right after its data arrives) goes where the code makes it, not at the end.
+
 Colours: actors `#dae8fc`/`#6c8ebf`, black text; messages black; groups `#f5f5f5`/`#666666`.
 
 ```d2
@@ -83,18 +104,24 @@ classes: {
 shape: sequence_diagram
 customer: Customer {shape: person; class: actor}
 web: Web app {class: actor}
-api: API {class: actor}
+api: OrdersController {class: actor}
+svc: OrderService {class: actor}
 db: Database {shape: cylinder; class: actor}
-customer -> web: submits the order form {class: call}
-web -> api: POST /orders {class: call}
+web.main: {class: actor}
+api.c1: {class: actor}
+svc.c1: {class: actor}
+customer -> web.main: submits the order form {class: call}
+web.main -> api.c1: POST /orders {class: call}
 invalid: "alt [body invalid]" {
   class: group
-  api -> web: 400 Bad Request {class: reply}
+  api.c1 -> web.main: 400 Bad Request {class: reply}
 }
-api -> db: INSERT order {class: call}
-db -> api: order id {class: reply}
-api -> web: 201 Created {class: reply}
-web -> customer: shows the confirmation {class: reply}
+api.c1 -> svc.c1: "PlaceAsync(order)" {class: call}
+svc.c1 -> db: INSERT order {class: call}
+db -> svc.c1: order id {class: reply}
+svc.c1 -> api.c1: Order {class: reply}
+api.c1 -> web.main: 201 JSON {class: reply}
+web.main -> customer: shows the confirmation {class: reply}
 ```
 
 ## State machine (UML)
@@ -406,6 +433,9 @@ Check every figure against its model's rules above before handing over:
 - [ ] Sequence: calls solid, replies dashed, groups named `alt/opt/loop [condition]`.
 - [ ] Sequence: one class, file or system per lifeline; only a page with its own script
       (`index.html / index.js`) shares one; no `A / B` lifelines.
+- [ ] Sequence: activation bars on our own lifelines, none on the database; no
+      abbreviated calls (`Get...Async`); labels stay between their lifelines; a check
+      table maps each request to its method, SQL and return type.
 - [ ] State machine: one initial state, final states, transitions as
       `event [guard] / action`, only transitions the code allows.
 - [ ] ER: real foreign keys only, cardinality at both ends, key columns only.

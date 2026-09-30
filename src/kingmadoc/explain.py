@@ -547,3 +547,46 @@ def lifeline_warnings(figures: Sequence[tuple[str, str]]) -> list[str]:
             warnings.append(f"{Path(name).name}: lifeline '{label}' merges two classes; "
                             "give each its own lifeline")
     return warnings
+
+
+_MESSAGE = re.compile(r"^\s*([\w.-]+)\s*->\s*([\w.-]+)\s*:\s*(.*)$", re.M)
+_ABBREVIATED = re.compile(r"\w\.\.\.\w")
+# A sequence diagram with more calls than this should show activation bars (spans).
+MAX_CALLS_WITHOUT_SPANS = 3
+
+
+def sequence_warnings(figures: Sequence[tuple[str, str]]) -> list[str]:
+    """Sequence diagrams the reader cannot check against the code.
+
+    Warned about: an abbreviated call (``Get...Async``), an activation bar (span) on a
+    database (``shape: cylinder``), and more than :data:`MAX_CALLS_WITHOUT_SPANS` calls
+    without any activation bar.
+
+    Args:
+        figures: ``(name, D2 source)`` per figure, e.g. ``("img/figure-2.d2", "...")``.
+
+    Returns:
+        One message per problem.
+    """
+    warnings = []
+    for name, source in figures:
+        if not re.search(r"\bshape: *sequence_diagram\b", source):
+            continue
+        short = Path(name).name
+        messages = _MESSAGE.findall(source)
+        for _, _, label in messages:
+            text = label.split("{", 1)[0].strip().strip('"')
+            if _ABBREVIATED.search(text):
+                warnings.append(f"{short}: message '{text}' abbreviates a call; write the "
+                                "full method name")
+        cylinders = {key for key, attrs in re.findall(r"^([\w-]+):[^\n{]*\{([^}\n]*)\}", source,
+                                                       re.M) if "cylinder" in attrs}
+        spanned = {end.split(".")[0] for a, b, _ in messages for end in (a, b) if "." in end}
+        for database in sorted(cylinders & spanned):
+            warnings.append(f"{short}: `{database}` is a database; draw no activation bar on it "
+                            "(refer to it without an id)")
+        calls = [m for m in messages if "reply" not in m[2] and "stroke-dash" not in m[2]]
+        if len(calls) > MAX_CALLS_WITHOUT_SPANS and not spanned:
+            warnings.append(f"{short}: {len(calls)} calls and no activation bars; use spans "
+                            "(`api.c1 -> svc.c1`) on our own lifelines")
+    return warnings

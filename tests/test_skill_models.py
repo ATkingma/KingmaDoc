@@ -372,3 +372,16 @@ def test_sequence_lifelines_are_one_code_element_each() -> None:
     assert "One lifeline is one class, one file or one external system." in section
     assert "`index.html / index.js`" in section and "`par [...]`" in section
     assert "no `A / B` lifelines" in _read(MODELS)
+
+
+def test_sequence_example_has_activation_bars_but_not_on_the_database() -> None:
+    from kingmadoc.explain import sequence_warnings
+
+    source = _model("Sequence")
+    assert sequence_warnings([("sequence.d2", source)]) == []
+    for span in ("web.main", "api.c1", "svc.c1"):
+        assert span in source, span
+    assert "db." not in source
+    section = re.sub(r"\s+", " ", MODEL_SECTIONS["Sequence diagram (UML)"])
+    assert "Never abbreviate a call" in section and "One round trip is one message" in section
+    assert "no abbreviated calls (`Get...Async`)" in re.sub(r"\s+", " ", _read(MODELS))
